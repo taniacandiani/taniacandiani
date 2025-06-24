@@ -1,103 +1,109 @@
-import Image from "next/image";
+  import Image from "next/image";
+  import Section from '@/components/Section';
+  import Hero from '@/components/Hero';
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  export default function Home() {
+    const slides = [
+      {
+        image: 'fondo1.jpg',
+        title: 'Desminar',
+        text:  'Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá, son para Candiani una alegoría del campo tras la batalla, su pavimento de violencia reconfigurada guarda los restos de la guerra',
+      },
+      {
+        image: 'fondo2.jpg',
+        title: 'Desminar',
+        text:  'Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá, son para Candiani una alegoría del campo tras la batalla, su pavimento de violencia reconfigurada guarda los restos de la guerra',
+      },
+      {
+        image: 'fondo3.jpg',
+        title: 'Desminar',
+        text:  'Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá, son para Candiani una alegoría del campo tras la batalla, su pavimento de violencia reconfigurada guarda los restos de la guerra',
+      },
+    ];
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
-}
+    return (
+      <div>
+        <Hero slides={slides} />
+
+        <Section>
+          <div className="py-40">
+            <h3 className="text-5xl font-bold mb-12">Noticias</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* News Column 1 */}
+              <div className="flex flex-col">
+                <div className="border-b border-gray-200 pb-12 h-[300px]">
+                  <Image
+                    src="/fondo1.jpg"
+                    alt="News 1"
+                    width={400}
+                    height={300}
+                    className="w-full h-full object-cover rounded-[5px]"
+                  />
+                </div>
+                <h4 className="text-2xl font-semibold mt-8 mb-4">Lorem Ipsum</h4>
+                <p className="text-gray-700 mb-4">
+                  Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, 
+                  creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá
+                </p>
+                <a href="#" className="flex items-center text-2xl pt-5 text-black hover:underline">
+                  Leer Más 
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
+
+              {/* News Column 2 */}
+              <div className="flex flex-col">
+                <div className="border-b border-gray-200 pb-12 h-[300px]">
+                  <Image
+                    src="/fondo2.jpg"
+                    alt="News 2"
+                    width={400}
+                    height={300}
+                    className="w-full h-full object-cover rounded-[5px]"
+                  />
+                </div>
+                <h4 className="text-2xl font-semibold mt-8 mb-4">Lorem Ipsum</h4>
+                <p className="text-gray-700 mb-4">
+                  Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, 
+                  creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá
+                </p>
+                <a href="#" className="flex items-center text-2xl pt-5 text-black hover:underline">
+                  Leer Más 
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
+
+              {/* News Column 3 */}
+              <div className="flex flex-col">
+                <div className="border-b border-gray-200 pb-12 h-[300px]">
+                  <Image
+                    src="/fondo3.jpg"
+                    alt="News 3"
+                    width={400}
+                    height={300}
+                    className="w-full h-full object-cover rounded-[5px]"
+                  />
+                </div>
+                <h4 className="text-2xl font-semibold mt-8 mb-4">Lorem Ipsum</h4>
+                <p className="text-gray-700 mb-4">
+                  Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, 
+                  creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá
+                </p>
+                <a href="#" className="flex items-center text-2xl pt-5 text-black hover:underline">
+                  Leer Más 
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </Section>
+      </div>
+    );
+  }
