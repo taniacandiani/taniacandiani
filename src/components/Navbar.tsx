@@ -1,7 +1,9 @@
 'use client';
 
-import Section from '@/components/Section';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import LanguageSelector from '@/components/ui/LanguageSelector';
+import { NAVIGATION_ITEMS, SOCIAL_LINKS } from '@/constants/navigation';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,26 +20,20 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [isMenuOpen]);
 
-  // Handle click outside menu items
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setIsMenuOpen(false);
-    }
-  };
+  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <nav className="fixed w-full bg-white z-10 shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div className="flex-1">
-          <div className="flex items-center gap-2 pt-2">
-            <button className="hover:text-gray-600 font-bold">Español</button>
-            <span className="text-gray-400">|</span>
-            <button className="hover:text-gray-600">English</button>
-          </div>
+          <LanguageSelector className="pt-2" />
         </div>
-        <a href="/" className="text-4xl font-medium tracking-widest text-center flex-1">TANIA CANDIANI</a>
+        
+        <Link href="/" className="text-4xl font-medium tracking-widest text-center flex-1">
+          TANIA CANDIANI
+        </Link>
+        
         <div className="flex items-center gap-10 flex-1 justify-end">
-         
           {/* Animated hamburger menu button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -63,7 +59,7 @@ export default function Navbar() {
       <div 
         onClick={(e) => {
           if (e.target === e.currentTarget) {
-            setIsMenuOpen(false);
+            closeMenu();
           }
         }}
         className={`fixed inset-0 bg-black/80 text-white transform transition-all duration-300 ease-in-out ${
@@ -71,19 +67,39 @@ export default function Navbar() {
         }`}
       >
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-center">
-          <a href="/" className="text-4xl font-medium tracking-widest text-white">TANIA CANDIANI</a>
+          <Link href="/" className="text-4xl font-medium tracking-widest text-white">
+            TANIA CANDIANI
+          </Link>
         </div>
+        
         <div className="h-[calc(100vh-100px)] flex flex-col">
           <div className="flex-1 flex flex-col items-center justify-center gap-8">
-            <a href="#proyectos" className="text-4xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Proyectos</a>
-            <a href="#noticias" className="text-4xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Noticias</a>
-            <a href="#acerca" className="text-4xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Acerca</a>
-            <a href="#contacto" className="text-4xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Contacto</a>
+            {NAVIGATION_ITEMS.map((item) => (
+              <Link 
+                key={item.href}
+                href={item.href} 
+                className="text-4xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300"
+                onClick={closeMenu}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
+          
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 ml-8">
-            <a href="https://instagram.com/taniacandiani" className="text-2xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Instagram</a>
+            <a 
+              href={SOCIAL_LINKS.instagram} 
+              className="text-2xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300"
+            >
+              Instagram
+            </a>
             <span className="text-gray-400 text-2xl">|</span>
-            <a href="mailto:contact@taniacandiani.com" className="text-2xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">Email</a>
+            <a 
+              href={SOCIAL_LINKS.email} 
+              className="text-2xl relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300"
+            >
+              Email
+            </a>
           </div>
         </div>
       </div>

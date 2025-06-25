@@ -4,17 +4,24 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Tania Candiani',
-  description: 'Portfolio website for Tania Candiani',
+  title: 'Tania Candiani - Artista Contemporánea',
+  description: 'Portfolio oficial de Tania Candiani - Artista contemporánea especializada en sitio específico',
+  keywords: 'arte contemporáneo, Tania Candiani, sitio específico, instalaciones',
+  authors: [{ name: 'Tania Candiani' }],
+  openGraph: {
+    title: 'Tania Candiani',
+    description: 'Portfolio website for Tania Candiani',
+    type: 'website',
+  },
 };
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
         <Navbar />
         <main>
