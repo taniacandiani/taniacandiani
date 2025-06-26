@@ -1,0 +1,12 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "node server.js"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+restartPolicyType = "always"
+
+[env]
+NODE_ENV = "production"
+NEXT_TELEMETRY_DISABLED = "1" 

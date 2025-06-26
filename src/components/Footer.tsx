@@ -1,6 +1,6 @@
 import React from 'react';
 import Section from '@/components/Section';
-import Navigation from '@/components/ui/Navigation';
+import DynamicNavigation from '@/components/ui/DynamicNavigation';
 import LanguageSelector from '@/components/ui/LanguageSelector';
 
 const Footer: React.FC = () => {
@@ -13,7 +13,11 @@ const Footer: React.FC = () => {
           </div>
           
           <div className="flex-1 flex justify-center">
-            <Navigation className="mx-auto" />
+            <DynamicNavigation 
+              className="mx-auto" 
+              area="footer"
+              fallback={true}
+            />
           </div>
           
           <div>

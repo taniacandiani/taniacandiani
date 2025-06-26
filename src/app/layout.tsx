@@ -23,11 +23,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es">
       <body>
-        <Navbar />
-        <main>
-          {children}
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
