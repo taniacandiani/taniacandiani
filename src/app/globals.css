@@ -70,10 +70,31 @@ h4 {
   font-weight: bold;
 }
 
+/* Clase específica para h4 sin bold en página de proyectos */
+.projects-h4 {
+  font-weight: 400 !important;
+}
+
 
 h3 {
   font-size: 69px;
   font-weight: 500;
+}
+
+/* Animación para transición suave entre vistas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 

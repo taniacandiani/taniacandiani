@@ -22,7 +22,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [] }) => {
 
   return (
     <Section fullWidth>
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden mt-16">
         <div className="slider transition-opacity duration-500 ease-in-out">
           <Image
             src={slides[currentSlide].image}
@@ -30,12 +30,12 @@ const Hero: React.FC<HeroProps> = ({ slides = [] }) => {
             width={1920}
             height={1080}
             priority
-            className={`w-full h-screen object-cover transition-opacity duration-500 ease-in-out ${fade ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-[85vh] object-cover transition-opacity duration-500 ease-in-out ${fade ? 'opacity-100' : 'opacity-0'}`}
           />
           <div className="absolute inset-0 bg-black opacity-50"></div>
         </div>
         
-        <div className="absolute bottom-40 left-20 p-4 text-left text-white max-w-2xl">
+        <div className="absolute bottom-44 left-20 p-4 text-left text-white max-w-2xl">
           <h2 className="text-5xl font-bold mb-4">{slides[currentSlide].title}</h2>
           <p className="mt-1 text-justify">{slides[currentSlide].text}</p>
         </div>

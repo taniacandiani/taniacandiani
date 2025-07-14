@@ -3,13 +3,14 @@ import Footer from '@/components/Footer';
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  hasNavbarOffset?: boolean;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout({ children, hasNavbarOffset = true }: MainLayoutProps) {
   return (
     <>
       <Navbar />
-      <main>
+      <main className={hasNavbarOffset ? 'pt-24' : ''}>
         {children}
       </main>
       <Footer />

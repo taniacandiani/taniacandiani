@@ -22,4 +22,20 @@ export interface ProjectInfo {
   curator: string;
   year: string;
   category: string;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  year: number;
+  description?: string;
+  slug?: string;
+}
+
+export interface ProjectCategory {
+  id: string;
+  name: string;
+  count: number;
 } 

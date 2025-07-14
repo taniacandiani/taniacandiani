@@ -15,17 +15,10 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <button 
-        onClick={() => handleLanguageChange('es')}
-        className={`hover:text-gray-600 ${currentLanguage === 'es' ? 'font-bold' : ''}`}
-      >
-        Español
-      </button>
-      <span className="text-gray-400">|</span>
+    <div className={`flex items-center ${className}`}>
       <button 
         onClick={() => handleLanguageChange('en')}
-        className={`hover:text-gray-600 ${currentLanguage === 'en' ? 'font-bold' : ''}`}
+        className="hover:text-gray-600 transition-colors duration-200"
       >
         English
       </button>

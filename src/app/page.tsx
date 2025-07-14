@@ -6,7 +6,7 @@ import { HERO_SLIDES, NEWS_ITEMS } from '@/data/content';
 
 export default function Home() {
   return (
-    <MainLayout>
+    <MainLayout hasNavbarOffset={false}>
       <div>
         <Hero slides={HERO_SLIDES} />
 
