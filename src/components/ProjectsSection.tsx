@@ -120,7 +120,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               thumbnail_bar
             </span>
           </button>
-          <h4 className="text-2xl leading-none">Proyectos</h4>
+          <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">PROYECTOS</h1>
         </div>
         <div className="flex items-center gap-4">
           {/* Botón de cambio de vista */}

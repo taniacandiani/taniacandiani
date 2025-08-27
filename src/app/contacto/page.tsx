@@ -72,11 +72,11 @@ export default function ContactPage() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-2">
               {contactContent.title}
             </h1>
             <p className="text-lg text-black max-w-2xl">

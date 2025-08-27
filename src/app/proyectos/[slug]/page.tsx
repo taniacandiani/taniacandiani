@@ -9,6 +9,7 @@ import { Project, ProjectCategory } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
+import RichContent from '@/components/ui/RichContent';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -406,7 +407,7 @@ export default function ProjectPage({ params }: Props) {
                 {activeTab === 'detalles' && (
                   <div>
                     {project.projectDetails ? (
-                      <div dangerouslySetInnerHTML={{ __html: project.projectDetails }} />
+                      <RichContent content={project.projectDetails} />
                     ) : (
                       <p>Detalles del proyecto no disponibles.</p>
                     )}
@@ -415,7 +416,7 @@ export default function ProjectPage({ params }: Props) {
                 {activeTab === 'ficha' && (
                   <div>
                     {project.technicalSheet ? (
-                      <div dangerouslySetInnerHTML={{ __html: project.technicalSheet }} />
+                      <RichContent content={project.technicalSheet} />
                     ) : (
                       <p>Información técnica no disponible para este proyecto.</p>
                     )}

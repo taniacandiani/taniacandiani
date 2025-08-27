@@ -10,6 +10,7 @@ import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage, NewsCategory } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
+import RichContent from '@/components/ui/RichContent';
 
 export default function NoticiasPage() {
   const router = useRouter();
@@ -165,7 +166,7 @@ export default function NoticiasPage() {
                 thumbnail_bar
               </span>
             </button>
-            <h4 className="text-2xl leading-none">Noticias</h4>
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">NOTICIAS</h1>
           </div>
         </div>
 
@@ -291,9 +292,10 @@ export default function NoticiasPage() {
                           <h2 className="text-xl font-medium text-black group-hover:text-gray-700 transition-colors">
                             {newsItem.title}
                           </h2>
-                          <p className="text-black text-sm leading-relaxed">
-                            {newsItem.description}
-                          </p>
+                          <div 
+                            className="text-black text-sm leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: newsItem.description }}
+                          />
                           <div className="pt-2">
                             <span className="text-black text-sm group-hover:underline">
                               Leer más →

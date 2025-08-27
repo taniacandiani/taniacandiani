@@ -9,6 +9,7 @@ import { NewsItem, NewsCategory } from '@/types';
 import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES, SAMPLE_NEWS } from '@/data/content';
+import RichContent from '@/components/ui/RichContent';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -134,7 +135,7 @@ export default function NoticiaPage({ params }: Props) {
                 thumbnail_bar
               </span>
             </button>
-            <h4 className="text-2xl leading-none">Noticias</h4>
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">NOTICIAS</h1>
           </div>
         </div>
 
@@ -247,9 +248,10 @@ export default function NoticiaPage({ params }: Props) {
 
               {/* Content - FOURTH */}
               <div className="prose prose-lg max-w-none mb-12">
-                <div className="text-black leading-relaxed whitespace-pre-wrap">
-                  {newsItem.content || newsItem.description}
-                </div>
+                <RichContent 
+                  content={newsItem.content || newsItem.description} 
+                  className="text-black leading-relaxed"
+                />
               </div>
 
               {/* Tags - FIFTH */}

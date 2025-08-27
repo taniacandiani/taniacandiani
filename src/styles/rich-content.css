@@ -1,0 +1,257 @@
+/* Estilos para el contenido rico del editor TipTap en páginas públicas */
+
+/* Contenedor principal del contenido rico */
+.rich-content {
+  font-family: 'DINNextLTPro', sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #000000;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Párrafos */
+.rich-content p {
+  margin: 0 0 1.5em 0;
+  padding: 0;
+  color: #000000;
+}
+
+.rich-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Saltos de línea */
+.rich-content br {
+  display: block;
+  content: "";
+  margin: 0.5em 0;
+}
+
+/* Saltos de línea específicos */
+.rich-content .line-break {
+  display: block;
+  height: 0.5em;
+  content: "";
+}
+
+/* Párrafos procesados */
+.rich-content .paragraph {
+  margin: 0 0 1em 0;
+  padding: 0;
+  color: #000000;
+}
+
+.rich-content .paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* Encabezados */
+.rich-content h1,
+.rich-content h2,
+.rich-content h3,
+.rich-content h4,
+.rich-content h5,
+.rich-content h6 {
+  margin: 2em 0 1em 0;
+  padding: 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.rich-content h1 {
+  font-size: 2em;
+  margin-top: 1.5em;
+}
+
+.rich-content h2 {
+  font-size: 1.75em;
+  margin-top: 1.5em;
+}
+
+.rich-content h3 {
+  font-size: 1.5em;
+  margin-top: 1.5em;
+}
+
+/* Listas */
+.rich-content ul,
+.rich-content ol {
+  margin: 1.5em 0;
+  padding-left: 2em;
+}
+
+.rich-content li {
+  margin: 0.5em 0;
+  line-height: 1.6;
+}
+
+.rich-content ul li {
+  list-style-type: disc;
+}
+
+.rich-content ol li {
+  list-style-type: decimal;
+}
+
+/* Enlaces */
+.rich-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.rich-content a:hover {
+  color: #1d4ed8;
+  text-decoration-thickness: 2px;
+}
+
+/* Imágenes */
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Citas */
+.rich-content blockquote {
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  border-left: 4px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-style: italic;
+  color: #6b7280;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Código */
+.rich-content code {
+  background-color: #f3f4f6;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+  color: #d97706;
+}
+
+.rich-content pre {
+  background-color: #1f2937;
+  color: #f9fafb;
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+.rich-content pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+/* Separadores */
+.rich-content hr {
+  margin: 2em 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Tablas */
+.rich-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.9em;
+}
+
+.rich-content th,
+.rich-content td {
+  padding: 0.75em;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rich-content th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rich-content {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  .rich-content h1 {
+    font-size: 1.75em;
+  }
+  
+  .rich-content h2 {
+    font-size: 1.5em;
+  }
+  
+  .rich-content h3 {
+    font-size: 1.25em;
+  }
+  
+  .rich-content ul,
+  .rich-content ol {
+    padding-left: 1.5em;
+  }
+}
+
+/* Prevenir encimamiento de texto */
+.rich-content * {
+  box-sizing: border-box;
+}
+
+/* Asegurar que todo el texto sea negro y use la tipografía correcta */
+.rich-content,
+.rich-content * {
+  color: #000000 !important;
+  font-family: 'DINNextLTPro', sans-serif !important;
+}
+
+/* Regla específica para cuando se usa text-xs */
+.rich-content.text-xs,
+.rich-content.text-xs * {
+  font-size: 12px !important;
+}
+
+/* Regla específica para cuando se usa text-sm */
+.rich-content.text-sm,
+.rich-content.text-sm * {
+  font-size: 14px !important;
+}
+
+/* Asegurar que el contenido no se salga del contenedor */
+.rich-content {
+  overflow: hidden;
+}
+
+/* Espaciado consistente para elementos inline */
+.rich-content strong,
+.rich-content b {
+  font-weight: 600;
+}
+
+.rich-content em,
+.rich-content i {
+  font-style: italic;
+}
+
+.rich-content u {
+  text-decoration: underline;
+}
+
+.rich-content s,
+.rich-content strike {
+  text-decoration: line-through;
+}

@@ -9,6 +9,7 @@ import { AboutContent, Publication } from '@/types';
 import { AboutStorage } from '@/lib/aboutStorage';
 import { PublicationStorage } from '@/lib/publicationStorage';
 import { ABOUT_CONTENT, SAMPLE_PUBLICATIONS } from '@/data/content';
+import RichContent from '@/components/ui/RichContent';
 
 export default function AcercaPage() {
   const [aboutContent, setAboutContent] = useState<AboutContent>(ABOUT_CONTENT);
@@ -58,31 +59,30 @@ export default function AcercaPage() {
 
   return (
     <MainLayout>
-      <Section className="py-20">
-        <div className="max-w-4xl mx-auto">
+      <div className="container-mobile py-8 pt-16">
           {/* Title */}
-          <div className="mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
               {aboutContent.title}
             </h1>
           </div>
 
           {/* About Content */}
-          <div className="prose prose-lg max-w-none mb-20">
-            <div 
-              dangerouslySetInnerHTML={{ __html: aboutContent.content }}
+          <div className="prose prose-lg max-w-3xl mb-20">
+            <RichContent 
+              content={aboutContent.content}
               className="text-black leading-relaxed"
             />
           </div>
 
           {/* Publications Section */}
           <div className="mt-20">
-            <h2 className="text-3xl font-bold text-black mb-12">
-              Publicaciones
+            <h2 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-12">
+              PUBLICACIONES
             </h2>
             
             {publications.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {publications.map((publication) => (
                   <div key={publication.id} className="group">
                     <div className="space-y-4">
@@ -141,7 +141,6 @@ export default function AcercaPage() {
             )}
           </div>
         </div>
-      </Section>
-    </MainLayout>
+      </MainLayout>
   );
 }

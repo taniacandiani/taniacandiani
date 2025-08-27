@@ -117,7 +117,7 @@ export default function Home() {
 
         <Section as="main">
           <div className="main-section py-40">
-            <h3 className="font-bold mb-12">Noticias</h3>
+            <h3 className="font-medium text-black mb-12">NOTICIAS</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {homeNews.length > 0 ? (
