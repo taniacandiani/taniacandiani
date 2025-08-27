@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Publication } from '@/types';
 import { PublicationStorage } from '@/lib/publicationStorage';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 export default function NewPublicationPage() {
   const router = useRouter();
@@ -13,11 +14,10 @@ export default function NewPublicationPage() {
     description: '',
     thumbnail: '/fondo1.jpg',
     downloadLink: '',
-    status: 'draft',
-    featured: false
+    status: 'draft'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title || !formData.description) {
@@ -25,19 +25,28 @@ export default function NewPublicationPage() {
       return;
     }
 
-    const publication: Publication = {
-      id: `pub-${Date.now()}`,
-      title: formData.title!,
-      description: formData.description!,
-      thumbnail: formData.thumbnail!,
-      downloadLink: formData.downloadLink || '#',
-      publishedAt: new Date().toISOString(),
-      status: formData.status as 'published' | 'draft',
-      featured: formData.featured!
-    };
+    try {
+      const publication: Publication = {
+        id: PublicationStorage.generateId(),
+        title: formData.title!,
+        description: formData.description!,
+        thumbnail: formData.thumbnail!,
+        downloadLink: formData.downloadLink || '#',
+        publishedAt: new Date().toISOString(),
+        status: formData.status as 'published' | 'draft'
+      };
 
-    PublicationStorage.save(publication);
-    router.push('/admin/acerca/publicaciones');
+      await PublicationStorage.save(publication);
+      
+      // Mostrar mensaje de éxito
+      alert('Publicación creada exitosamente');
+      
+      // Redirigir a la lista de publicaciones
+      router.push('/admin/acerca/publicaciones');
+    } catch (error) {
+      console.error('Error creating publication:', error);
+      alert('Error al crear la publicación. Intenta de nuevo.');
+    }
   };
 
   return (
@@ -105,18 +114,14 @@ export default function NewPublicationPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Imagen y Enlaces</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Imagen de portada
-              </label>
-              <select
-                value={formData.thumbnail}
-                onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="/fondo1.jpg">Fondo 1</option>
-                <option value="/fondo2.jpg">Fondo 2</option>
-                <option value="/fondo3.jpg">Fondo 3</option>
-              </select>
+              <ImageUploader
+                label="Imagen de portada"
+                projectId="new-publication"
+                currentImage={formData.thumbnail}
+                onImageUpload={(imageUrl) => setFormData({ ...formData, thumbnail: imageUrl })}
+                required={false}
+                contentType="acerca"
+              />
             </div>
 
             <div>
@@ -137,7 +142,7 @@ export default function NewPublicationPage() {
         {/* Configuración */}
         <div className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuración</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Estado
@@ -150,19 +155,6 @@ export default function NewPublicationPage() {
                 <option value="draft">Borrador</option>
                 <option value="published">Publicado</option>
               </select>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={formData.featured}
-                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-              />
-              <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-                Publicación destacada
-              </label>
             </div>
           </div>
         </div>

@@ -1,45 +1,90 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ContactContent } from '@/types';
-import { ContactStorage } from '@/lib/contactStorage';
-import { CONTACT_CONTENT } from '@/data/content';
+import RichTextEditor from '@/components/ui/RichTextEditor';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function AdminContactPage() {
-  const [content, setContent] = useState<ContactContent>(CONTACT_CONTENT);
+  const [content, setContent] = useState<ContactContent | null>(null);
+  const [isEditing, setIsEditing] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    const stored = ContactStorage.get();
-    if (stored) {
-      setContent(stored);
-    } else {
-      ContactStorage.save(CONTACT_CONTENT);
-    }
+    const loadContent = async () => {
+      try {
+        setLoading(true);
+        console.log('Cargando contenido de contacto...');
+        
+        const response = await fetch('/api/contact');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Contenido de contacto cargado:', data);
+          setContent(data);
+        } else {
+          console.log('No se pudo cargar el contenido de contacto');
+          setContent(null);
+        }
+      } catch (error) {
+        console.error('Error cargando contenido de contacto:', error);
+        setContent(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadContent();
   }, []);
 
   const handleSave = async () => {
+    if (!content) return;
+    
     setSaving(true);
     try {
-      const updated: ContactContent = {
+      const updatedContent = {
         ...content,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
       };
-      ContactStorage.save(updated);
-      setContent(updated);
-      alert('Contenido de Contacto guardado correctamente');
+      
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedContent),
+      });
+      
+      if (response.ok) {
+        setContent(updatedContent);
+        showSuccess('Contenido Guardado', 'El contenido se ha guardado correctamente');
+      } else {
+        throw new Error('Error al guardar');
+      }
     } catch (error) {
-      console.error('Error al guardar contacto:', error);
-      alert('Error al guardar el contenido');
+      console.error('Error al guardar:', error);
+      showError('Error al Guardar', 'Ha ocurrido un error al guardar el contenido');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    const stored = ContactStorage.get();
-    setContent(stored || CONTACT_CONTENT);
+  const handleCancel = async () => {
+    try {
+      const response = await fetch('/api/contact');
+      if (response.ok) {
+        const data = await response.json();
+        setContent(data);
+      } else {
+        setContent(null);
+      }
+    } catch (error) {
+      console.error('Error restaurando contenido:', error);
+      setContent(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -51,6 +96,14 @@ export default function AdminContactPage() {
       minute: '2-digit',
     });
   };
+
+  if (loading) {
+    return <div className="text-center py-8">Cargando contenido...</div>;
+  }
+
+  if (!content) {
+    return <div className="text-center py-8">No se pudo cargar el contenido de contacto.</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -134,6 +187,15 @@ export default function AdminContactPage() {
           </div>
         </div>
       </div>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

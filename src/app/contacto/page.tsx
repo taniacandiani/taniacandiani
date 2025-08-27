@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { ContactContent } from '@/types';
-import { ContactStorage } from '@/lib/contactStorage';
-import { CONTACT_CONTENT } from '@/data/content';
 
 export default function ContactPage() {
   const [contactContent, setContactContent] = useState<ContactContent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,21 +17,49 @@ export default function ContactPage() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
-    const stored = ContactStorage.get();
-    if (stored) {
-      setContactContent(stored);
-    } else {
-      // initialize with defaults
-      ContactStorage.save(CONTACT_CONTENT);
-      setContactContent(CONTACT_CONTENT);
-    }
-
-    const handleUpdated = (e: Event) => {
-      const detail = (e as CustomEvent<ContactContent>).detail;
-      setContactContent(detail || CONTACT_CONTENT);
+    const loadContent = async () => {
+      try {
+        setLoading(true);
+        
+        const response = await fetch('/api/contact');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Contenido de contacto cargado desde API:', data);
+          setContactContent(data);
+        } else {
+          console.log('No se pudo cargar el contenido de contacto desde la API');
+          setContactContent(null);
+        }
+      } catch (error) {
+        console.error('Error loading contact data:', error);
+        setContactContent(null);
+      } finally {
+        setLoading(false);
+      }
     };
-    window.addEventListener('contactContentUpdated', handleUpdated as EventListener);
-    return () => window.removeEventListener('contactContentUpdated', handleUpdated as EventListener);
+
+    loadContent();
+  }, []);
+
+  // Listen for updates from admin
+  useEffect(() => {
+    const handleContactUpdate = async () => {
+      try {
+        const response = await fetch('/api/contact');
+        if (response.ok) {
+          const data = await response.json();
+          setContactContent(data);
+        }
+      } catch (error) {
+        console.error('Error updating contact content:', error);
+      }
+    };
+
+    window.addEventListener('contactContentUpdated', handleContactUpdate);
+
+    return () => {
+      window.removeEventListener('contactContentUpdated', handleContactUpdate);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,13 +84,26 @@ export default function ContactPage() {
     });
   };
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando contenido...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (!contactContent) {
     return (
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="text-gray-400 text-6xl mb-4">📧</div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-2">Cargando...</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-2">No hay contenido</h1>
           </div>
         </div>
       </MainLayout>
@@ -72,11 +112,11 @@ export default function ContactPage() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-white py-20">
+      <div className="min-h-screen bg-white pt-16 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-2">
+          <div className="mb-8">
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-3">
               {contactContent.title}
             </h1>
             <p className="text-lg text-black max-w-2xl">

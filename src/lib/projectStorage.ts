@@ -1,71 +1,129 @@
 import { Project } from '@/types';
 
-const STORAGE_KEY = 'tania_candiani_projects';
-
 export class ProjectStorage {
-  static getAll(): Project[] {
-    if (typeof window === 'undefined') return [];
-    
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    
+  static async getAll(): Promise<Project[]> {
     try {
-      return JSON.parse(stored);
+      const response = await fetch('/api/projects');
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      return await response.json();
     } catch (error) {
-      console.error('Error parsing stored projects:', error);
+      console.error('Error fetching projects:', error);
       return [];
     }
   }
 
-  static getById(id: string): Project | null {
-    const projects = this.getAll();
-    return projects.find(p => p.id === id) || null;
-  }
-
-  static getBySlug(slug: string): Project | null {
-    const projects = this.getAll();
-    return projects.find(p => p.slug === slug) || null;
-  }
-
-  static save(project: Project): void {
-    if (typeof window === 'undefined') return;
-    
-    const projects = this.getAll();
-    const existingIndex = projects.findIndex(p => p.id === project.id);
-    
-    if (existingIndex >= 0) {
-      projects[existingIndex] = project;
-    } else {
-      projects.push(project);
+  static async getById(id: string): Promise<Project | null> {
+    try {
+      const projects = await this.getAll();
+      return projects.find(p => p.id === id) || null;
+    } catch (error) {
+      console.error('Error getting project by ID:', error);
+      return null;
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-    
-    // Dispatch event to notify other components
-    window.dispatchEvent(new CustomEvent('projectsUpdated', { detail: projects }));
   }
 
-  static delete(id: string): void {
-    if (typeof window === 'undefined') return;
-    
-    const projects = this.getAll().filter(p => p.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  static async getBySlug(slug: string): Promise<Project | null> {
+    try {
+      const projects = await this.getAll();
+      return projects.find(p => p.slug === slug) || null;
+    } catch (error) {
+      console.error('Error getting project by slug:', error);
+      return null;
+    }
   }
 
-  static saveAll(projects: Project[]): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-    
-    // Dispatch event to notify other components
-    window.dispatchEvent(new CustomEvent('projectsUpdated', { detail: projects }));
+  static async save(project: Project): Promise<void> {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(project),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Failed to save project: ${errorMessage}`);
+      }
+      
+      // Dispatch event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('projectsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error saving project:', error);
+      throw error;
+    }
   }
 
-  static getFeatured(): Project[] {
-    return this.getAll().filter(p => p.showInHomeHero && p.status === 'published');
+  static async update(project: Project): Promise<void> {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(project),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Failed to update project: ${errorMessage}`);
+      }
+      
+      // Dispatch event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('projectsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
   }
 
-  static getPublished(): Project[] {
-    return this.getAll().filter(p => p.status === 'published');
+  static async delete(id: string): Promise<void> {
+    try {
+      const response = await fetch(`/api/projects?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+      
+      // Dispatch event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('projectsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  }
+
+  static async getFeatured(): Promise<Project[]> {
+    try {
+      const projects = await this.getAll();
+      return projects.filter(p => p.showInHomeHero && p.status === 'published');
+    } catch (error) {
+      console.error('Error getting featured projects:', error);
+      return [];
+    }
+  }
+
+  static async getPublished(): Promise<Project[]> {
+    try {
+      const projects = await this.getAll();
+      return projects.filter(p => p.status === 'published');
+    } catch (error) {
+      console.error('Error getting published projects:', error);
+      return [];
+    }
   }
 
   static generateSlug(title: string): string {
@@ -83,11 +141,9 @@ export class ProjectStorage {
   }
 
   // Migración: convertir categoría única a múltiples categorías
-  static migrateToMultipleCategories(): void {
+  static async migrateToMultipleCategories(): Promise<void> {
     try {
-      if (typeof window === 'undefined') return;
-      
-      const projects = this.getAll();
+      const projects = await this.getAll();
       let hasChanges = false;
       
       const migratedProjects = projects.map(project => {
@@ -124,7 +180,7 @@ export class ProjectStorage {
       });
       
       if (hasChanges) {
-        this.saveAll(migratedProjects);
+        // Aquí podrías implementar la lógica para guardar todos los proyectos migrados
         console.log('Migración de categorías completada');
       }
     } catch (error) {

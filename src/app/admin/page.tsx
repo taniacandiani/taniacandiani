@@ -18,43 +18,73 @@ export default function AdminDashboard() {
     totalPublications: 0,
     publishedPublications: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize with existing projects if localStorage is empty
-    const storedProjects = ProjectStorage.getAll();
-    if (storedProjects.length === 0) {
-      ProjectStorage.saveAll(PROJECTS);
-    }
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialize with existing projects if storage is empty
+        const storedProjects = await ProjectStorage.getAll();
+        if (storedProjects.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default projects from content.ts');
+        }
 
-    // Initialize with existing news if localStorage is empty
-    const storedNews = NewsStorage.getAll();
-    if (storedNews.length === 0) {
-      NewsStorage.saveAll(SAMPLE_NEWS);
-    }
+        // Initialize with existing news if storage is empty
+        const storedNews = await NewsStorage.getAll();
+        if (storedNews.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default news from content.ts');
+        }
 
-    // Initialize with existing publications if localStorage is empty
-    const storedPublications = PublicationStorage.getAll();
-    if (storedPublications.length === 0) {
-      PublicationStorage.saveAll(SAMPLE_PUBLICATIONS);
-    }
+        // Initialize with existing publications if storage is empty
+        const storedPublications = await PublicationStorage.getAll();
+        if (storedPublications.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default publications from content.ts');
+        }
 
-    const projects = ProjectStorage.getAll();
-    const news = NewsStorage.getAll();
-    const publications = PublicationStorage.getAll();
-    const publishedNews = news.filter(n => n.status === 'published');
-    const homeNews = NewsStorage.getForHome(); // Obtiene las últimas 3 noticias publicadas
-    const publishedPublications = publications.filter(p => p.status === 'published');
+        const projects = await ProjectStorage.getAll();
+        const news = await NewsStorage.getAll();
+        const publications = await PublicationStorage.getAll();
+        const publishedNews = news.filter(n => n.status === 'published');
+        const homeNews = await NewsStorage.getForHome(); // Obtiene las últimas 3 noticias publicadas
+        const publishedPublications = publications.filter(p => p.status === 'published');
 
-    setStats({
-      totalProjects: projects.length,
-      publishedProjects: projects.filter(p => p.status === 'published').length,
-      featuredProjects: projects.filter(p => p.showInHomeHero).length,
-      totalNews: news.length,
-      publishedNews: publishedNews.length,
-      homeNews: homeNews.length,
-      totalPublications: publications.length,
-      publishedPublications: publishedPublications.length
-    });
+        setStats({
+          totalProjects: projects.length,
+          publishedProjects: projects.filter(p => p.status === 'published').length,
+          featuredProjects: projects.filter(p => p.showInHomeHero).length,
+          totalNews: news.length,
+          publishedNews: publishedNews.length,
+          homeNews: homeNews.length,
+          totalPublications: publications.length,
+          publishedPublications: publishedPublications.length
+        });
+      } catch (error) {
+        console.error('Error initializing admin data:', error);
+        // Fallback to static content
+        setStats({
+          totalProjects: PROJECTS.length,
+          publishedProjects: PROJECTS.filter(p => p.status === 'published').length,
+          featuredProjects: PROJECTS.filter(p => p.showInHomeHero).length,
+          totalNews: SAMPLE_NEWS.length,
+          publishedNews: SAMPLE_NEWS.filter(n => n.status === 'published').length,
+          homeNews: Math.min(SAMPLE_NEWS.filter(n => n.status === 'published').length, 3),
+          totalPublications: SAMPLE_PUBLICATIONS.length,
+          publishedPublications: SAMPLE_PUBLICATIONS.filter(p => p.status === 'published').length
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
   const quickActions = [
@@ -88,6 +118,17 @@ export default function AdminDashboard() {
       external: true
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

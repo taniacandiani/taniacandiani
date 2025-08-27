@@ -13,49 +13,84 @@ export default function ProyectosPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Solo ejecutar migración en el cliente
-    if (typeof window !== 'undefined') {
+    const initializeData = async () => {
       try {
-        // Migrar proyectos existentes a múltiples categorías
-        ProjectStorage.migrateToMultipleCategories();
+        setLoading(true);
+        
+        // Solo ejecutar migración en el cliente
+        if (typeof window !== 'undefined') {
+          try {
+            // Migrar proyectos existentes a múltiples categorías
+            await ProjectStorage.migrateToMultipleCategories();
+          } catch (error) {
+            console.error('Error durante migración:', error);
+          }
+        }
+        
+        // Initialize with existing projects if storage is empty
+        const storedProjects = await ProjectStorage.getAll();
+        if (storedProjects.length === 0 && !isInitialized) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default projects from content.ts');
+          setProjects(PROJECTS);
+        } else {
+          setProjects(storedProjects);
+        }
+
+        // Initialize with existing categories if storage is empty
+        const storedCategories = await CategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(PROJECT_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
+        }
+
+        setIsInitialized(true);
       } catch (error) {
-        console.error('Error durante migración:', error);
+        console.error('Error initializing projects data:', error);
+        // Fallback to static content
+        setProjects(PROJECTS);
+        setCategories(PROJECT_CATEGORIES);
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    // Initialize with existing projects if localStorage is empty
-    const storedProjects = ProjectStorage.getAll();
-    if (storedProjects.length === 0 && !isInitialized) {
-      ProjectStorage.saveAll(PROJECTS);
-      setProjects(PROJECTS);
-    } else {
-      setProjects(storedProjects);
-    }
+    };
 
-    // Initialize with existing categories if localStorage is empty
-    const storedCategories = CategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      CategoryStorage.saveAll(PROJECT_CATEGORIES);
-    }
-
-    setIsInitialized(true);
+    initializeData();
   }, [isInitialized]);
 
   // Update categories count based on current projects
   useEffect(() => {
     if (projects.length > 0) {
-      const updatedCategories = CategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+      const updateCategoryCounts = async () => {
+        try {
+          const updatedCategories = await CategoryStorage.updateCounts();
+          setCategories(updatedCategories);
+        } catch (error) {
+          console.error('Error updating category counts:', error);
+        }
+      };
+
+      updateCategoryCounts();
     }
   }, [projects]);
 
   // Listen for category updates from admin
   useEffect(() => {
-    const handleCategoriesUpdate = () => {
-      const updatedCategories = CategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+    const handleCategoriesUpdate = async () => {
+      try {
+        const updatedCategories = await CategoryStorage.updateCounts();
+        setCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error updating categories:', error);
+      }
     };
 
     window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
@@ -63,6 +98,19 @@ export default function ProyectosPage() {
       window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
     };
   }, []);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando proyectos...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const publishedProjects = projects.filter(p => p.status === 'published');
 

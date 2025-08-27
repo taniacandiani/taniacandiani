@@ -1,0 +1,38 @@
+[
+  {
+    "id": "arqueologia-medios",
+    "name": "Arqueología de los Medios",
+    "count": 12,
+    "createdAt": "2024-12-15T10:00:00Z"
+  },
+  {
+    "id": "sitio-especifico",
+    "name": "Sitio Específico",
+    "count": 8,
+    "createdAt": "2024-12-15T10:00:00Z"
+  },
+  {
+    "id": "practicas-sociales",
+    "name": "Prácticas Sociales",
+    "count": 15,
+    "createdAt": "2024-12-15T10:00:00Z"
+  },
+  {
+    "id": "lorem-ipsum",
+    "name": "Lorem Ipsum",
+    "count": 6,
+    "createdAt": "2024-12-15T10:00:00Z"
+  },
+  {
+    "id": "lorem-lorem",
+    "name": "Lorem Lorem",
+    "count": 9,
+    "createdAt": "2024-12-15T10:00:00Z"
+  },
+  {
+    "id": "holamundoproyectos",
+    "name": "holamundoproyectos",
+    "count": 0,
+    "createdAt": "2025-08-27T14:21:35.801Z"
+  }
+]

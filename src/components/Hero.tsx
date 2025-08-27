@@ -4,18 +4,38 @@ import React, { memo, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Section from '@/components/Section';
 import { useSlider } from '@/hooks/useSlider';
-import { HeroProps } from '@/types';
+import { HeroProps, Project } from '@/types';
 import { PROJECT_INFO } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 
 const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 5000 }) => {
   const [updateTrigger, setUpdateTrigger] = useState(0);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const { currentSlide, fade, nextSlide, prevSlide } = useSlider({ 
     itemCount: slides.length,
     autoPlay,
     interval
   });
+
+  // Load featured projects
+  useEffect(() => {
+    const loadFeaturedProjects = async () => {
+      try {
+        setLoading(true);
+        const projects = await ProjectStorage.getFeatured();
+        setFeaturedProjects(projects);
+      } catch (error) {
+        console.error('Error loading featured projects:', error);
+        setFeaturedProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFeaturedProjects();
+  }, [updateTrigger]);
 
   const handlePrevSlide = useCallback(() => {
     prevSlide();
@@ -27,31 +47,27 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
 
   // Find if current slide corresponds to a project
   const getCurrentProjectLink = useCallback(() => {
-    if (slides.length === 0) return '#';
+    if (slides.length === 0 || loading) return '#';
     
     const currentSlideData = slides[currentSlide];
-    const featuredProjects = ProjectStorage.getFeatured();
-    
     const matchingProject = featuredProjects.find(project => 
       project.title === currentSlideData.title
     );
     
     return matchingProject ? `/proyectos/${matchingProject.slug}` : '#';
-  }, [slides, currentSlide]);
+  }, [slides, currentSlide, featuredProjects, loading]);
 
   // Get current project info for metadata display
   const getCurrentProjectInfo = useCallback(() => {
-    if (slides.length === 0) return null;
+    if (slides.length === 0 || loading) return null;
     
     const currentSlideData = slides[currentSlide];
-    const featuredProjects = ProjectStorage.getFeatured();
-    
     const matchingProject = featuredProjects.find(project => 
       project.title === currentSlideData.title
     );
     
     return matchingProject;
-  }, [slides, currentSlide, updateTrigger]);
+  }, [slides, currentSlide, featuredProjects, loading]);
 
   // Listen for project updates to refresh metadata
   useEffect(() => {
@@ -110,28 +126,28 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
             <div className="hidden sm:flex flex-col lg:pl-6 order-2 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Comisionado por</span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
-                {getCurrentProjectInfo()?.commissionedBy || 'No disponible'}
+                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.commissionedBy || 'No disponible')}
               </span>
             </div>
             
             <div className="hidden md:flex flex-col order-3 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Ubicación</span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
-                {getCurrentProjectInfo()?.location || 'No disponible'}
+                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.location || 'No disponible')}
               </span>
             </div>
             
             <div className="flex flex-col order-4 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Año</span>
               <span className="text-xs lg:text-sm">
-                {getCurrentProjectInfo()?.year || 'No disponible'}
+                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.year || 'No disponible')}
               </span>
             </div>
             
             <div className="flex flex-col order-5 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Categoría</span>
               <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">
-                {getCurrentProjectInfo()?.category || 'No disponible'}
+                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.category || 'No disponible')}
               </span>
             </div>
 

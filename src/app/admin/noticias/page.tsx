@@ -5,29 +5,61 @@ import Link from 'next/link';
 import { NewsItem } from '@/types';
 import { NewsStorage } from '@/lib/newsStorage';
 import { SAMPLE_NEWS } from '@/data/content';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function AdminNoticiasPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [homeNewsCount, setHomeNewsCount] = useState(0);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Migrar noticias existentes a múltiples categorías
-    NewsStorage.migrateToMultipleCategories();
-    loadNews();
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Migrar noticias existentes a múltiples categorías
+        await NewsStorage.migrateToMultipleCategories();
+        await loadNews();
+      } catch (error) {
+        console.error('Error initializing news data:', error);
+        // Fallback to static content
+        setNews(SAMPLE_NEWS);
+        setHomeNewsCount(SAMPLE_NEWS.filter(n => n.status === 'published').length);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
-  const loadNews = () => {
-    // Migrar noticias existentes a múltiples categorías
-    NewsStorage.migrateToMultipleCategories();
-    
-    const storedNews = NewsStorage.getAll();
-    if (storedNews.length === 0) {
-      NewsStorage.saveAll(SAMPLE_NEWS);
+  const loadNews = async () => {
+    try {
+      // Migrar noticias existentes a múltiples categorías
+      await NewsStorage.migrateToMultipleCategories();
+      
+      const storedNews = await NewsStorage.getAll();
+      if (storedNews.length === 0) {
+        // Note: saveAll is not implemented in the new async version
+        // We'll rely on the JSON files for now
+        console.log('Using default news from content.ts');
+        setNews(SAMPLE_NEWS);
+        setHomeNewsCount(SAMPLE_NEWS.filter(n => n.status === 'published').length);
+      } else {
+        setNews(storedNews);
+        const homeNews = await NewsStorage.getForHome();
+        setHomeNewsCount(homeNews.length);
+      }
+    } catch (error) {
+      console.error('Error loading news:', error);
+      // Fallback to static content
       setNews(SAMPLE_NEWS);
-    } else {
-      setNews(storedNews);
+      setHomeNewsCount(SAMPLE_NEWS.filter(n => n.status === 'published').length);
     }
   };
 
@@ -48,19 +80,32 @@ export default function AdminNoticiasPage() {
     setFilteredNews(filtered);
   }, [searchTerm, statusFilter, news]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta noticia?')) {
-      NewsStorage.remove(id);
-      loadNews();
+      try {
+        await NewsStorage.remove(id);
+        await loadNews();
+        showSuccess('Noticia Eliminada', 'La noticia se ha eliminado correctamente');
+      } catch (error) {
+        console.error('Error deleting news:', error);
+        showError('Error al Eliminar', 'Ha ocurrido un error al eliminar la noticia');
+      }
     }
   };
 
-  const handleToggleStatus = (id: string, currentStatus: string) => {
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newsItem = news.find(n => n.id === id);
     if (newsItem) {
-      const newStatus = currentStatus === 'published' ? 'draft' : 'published';
-      NewsStorage.save({ ...newsItem, status: newStatus as 'published' | 'draft' | 'archived' });
-      loadNews();
+      try {
+        const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+        await NewsStorage.save({ ...newsItem, status: newStatus as 'published' | 'draft' | 'archived' });
+        await loadNews();
+        const statusText = newStatus === 'published' ? 'publicada' : 'enviada a borrador';
+        showSuccess('Estado Cambiado', `La noticia ha sido ${statusText}`);
+      } catch (error) {
+        console.error('Error toggling news status:', error);
+        showError('Error al Cambiar Estado', 'Ha ocurrido un error al cambiar el estado de la noticia');
+      }
     }
   };
 
@@ -87,8 +132,6 @@ export default function AdminNoticiasPage() {
       </span>
     );
   };
-
-  const homeNewsCount = NewsStorage.getForHome().length;
 
   return (
     <div className="space-y-8">
@@ -161,7 +204,11 @@ export default function AdminNoticiasPage() {
 
       {/* News List */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {filteredNews.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center">
+            <p className="text-gray-500">Cargando noticias...</p>
+          </div>
+        ) : filteredNews.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-gray-500">No se encontraron noticias.</p>
           </div>
@@ -199,7 +246,7 @@ export default function AdminNoticiasPage() {
                       {formatDate(newsItem.publishedAt)}
                     </td>
                     <td className="py-4 px-6">
-                      {NewsStorage.getForHome().some(n => n.id === newsItem.id) ? (
+                      {news.filter(n => n.status === 'published').slice(0, 3).some(n => n.id === newsItem.id) ? (
                         <span className="text-green-600 text-sm">✓ Sí</span>
                       ) : (
                         <span className="text-gray-400 text-sm">No</span>
@@ -241,6 +288,15 @@ export default function AdminNoticiasPage() {
           </div>
         )}
       </div>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

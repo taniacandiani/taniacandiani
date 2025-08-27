@@ -6,46 +6,75 @@ import Link from 'next/link';
 import MainLayout from '@/components/MainLayout';
 import Section from '@/components/Section';
 import { AboutContent, Publication } from '@/types';
-import { AboutStorage } from '@/lib/aboutStorage';
 import { PublicationStorage } from '@/lib/publicationStorage';
-import { ABOUT_CONTENT, SAMPLE_PUBLICATIONS } from '@/data/content';
+import { SAMPLE_PUBLICATIONS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 
 export default function AcercaPage() {
-  const [aboutContent, setAboutContent] = useState<AboutContent>(ABOUT_CONTENT);
+  const [aboutContent, setAboutContent] = useState<AboutContent | null>(null);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize about content
-    const storedContent = AboutStorage.get();
-    if (storedContent) {
-      setAboutContent(storedContent);
-    } else {
-      AboutStorage.save(ABOUT_CONTENT);
-    }
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialize about content from API
+        const aboutResponse = await fetch('/api/about');
+        if (aboutResponse.ok) {
+          const aboutData = await aboutResponse.json();
+          console.log('Contenido de Acerca cargado desde API:', aboutData);
+          setAboutContent(aboutData);
+        } else {
+          console.log('No se pudo cargar el contenido de Acerca desde la API');
+          setAboutContent(null);
+        }
 
-    // Initialize publications
-    const storedPublications = PublicationStorage.getAll();
-    if (storedPublications.length === 0) {
-      PublicationStorage.saveAll(SAMPLE_PUBLICATIONS);
-      setPublications(SAMPLE_PUBLICATIONS);
-    } else {
-      setPublications(PublicationStorage.getPublished());
-    }
+        // Initialize publications
+        const storedPublications = await PublicationStorage.getAll();
+        if (storedPublications.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default publications from content.ts');
+          setPublications(SAMPLE_PUBLICATIONS);
+        } else {
+          const publishedPublications = await PublicationStorage.getPublished();
+          setPublications(publishedPublications);
+        }
+      } catch (error) {
+        console.error('Error loading about data:', error);
+        setAboutContent(null);
+        setPublications(SAMPLE_PUBLICATIONS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
   // Listen for updates from admin
   useEffect(() => {
-    const handleAboutUpdate = () => {
-      const updatedContent = AboutStorage.get();
-      if (updatedContent) {
-        setAboutContent(updatedContent);
+    const handleAboutUpdate = async () => {
+      try {
+        const aboutResponse = await fetch('/api/about');
+        if (aboutResponse.ok) {
+          const aboutData = await aboutResponse.json();
+          setAboutContent(aboutData);
+        }
+      } catch (error) {
+        console.error('Error updating about content:', error);
       }
     };
 
-    const handlePublicationsUpdate = () => {
-      const updatedPublications = PublicationStorage.getPublished();
-      setPublications(updatedPublications);
+    const handlePublicationsUpdate = async () => {
+      try {
+        const updatedPublications = await PublicationStorage.getPublished();
+        setPublications(updatedPublications);
+      } catch (error) {
+        console.error('Error updating publications:', error);
+      }
     };
 
     window.addEventListener('aboutUpdated', handleAboutUpdate);
@@ -60,28 +89,37 @@ export default function AcercaPage() {
   return (
     <MainLayout>
       <div className="container-mobile py-8 pt-16">
-          {/* Title */}
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
-              {aboutContent.title}
-            </h1>
-          </div>
+        {aboutContent && (
+          <>
+            {/* Title */}
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
+                {aboutContent.title}
+              </h1>
+            </div>
 
-          {/* About Content */}
-          <div className="prose prose-lg max-w-3xl mb-20">
-            <RichContent 
-              content={aboutContent.content}
-              className="text-black leading-relaxed"
-            />
-          </div>
+            {/* About Content */}
+            <div className="prose prose-lg max-w-3xl mb-20">
+              <RichContent 
+                content={aboutContent.content}
+                className="text-black leading-relaxed"
+              />
+            </div>
+          </>
+        )}
 
-          {/* Publications Section */}
-          <div className="mt-20">
+        {/* Publications Section */}
+        <div className="mt-20">
             <h2 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-12">
               PUBLICACIONES
             </h2>
             
-            {publications.length > 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando publicaciones...</p>
+              </div>
+            ) : publications.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {publications.map((publication) => (
                   <div key={publication.id} className="group flex flex-col h-full">

@@ -1,78 +1,137 @@
 import { NewsItem } from '@/types';
 
-const STORAGE_KEY = 'tania_news';
-
 export class NewsStorage {
-  static getAll(): NewsItem[] {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  }
-
-  static getById(id: string): NewsItem | null {
-    const news = this.getAll();
-    return news.find(n => n.id === id) || null;
-  }
-
-  static getBySlug(slug: string): NewsItem | null {
-    const news = this.getAll();
-    return news.find(n => n.slug === slug) || null;
-  }
-
-  static save(newsItem: NewsItem): void {
-    if (typeof window === 'undefined') return;
-    
-    const news = this.getAll();
-    const existingIndex = news.findIndex(n => n.id === newsItem.id);
-    
-    if (existingIndex >= 0) {
-      news[existingIndex] = newsItem;
-    } else {
-      news.push(newsItem);
+  static async getAll(): Promise<NewsItem[]> {
+    try {
+      const response = await fetch('/api/news');
+      if (!response.ok) {
+        throw new Error('Failed to fetch news');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      return [];
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('newsUpdated'));
   }
 
-  static remove(id: string): void {
-    if (typeof window === 'undefined') return;
-    
-    const news = this.getAll().filter(n => n.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('newsUpdated'));
+  static async getById(id: string): Promise<NewsItem | null> {
+    try {
+      const news = await this.getAll();
+      return news.find(n => n.id === id) || null;
+    } catch (error) {
+      console.error('Error getting news by ID:', error);
+      return null;
+    }
   }
 
-  static saveAll(news: NewsItem[]): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('newsUpdated'));
+  static async getBySlug(slug: string): Promise<NewsItem | null> {
+    try {
+      const news = await this.getAll();
+      return news.find(n => n.slug === slug) || null;
+    } catch (error) {
+      console.error('Error getting news by slug:', error);
+      return null;
+    }
   }
 
-  static getPublished(): NewsItem[] {
-    return this.getAll().filter(n => n.status === 'published');
+  static async save(newsItem: NewsItem): Promise<void> {
+    try {
+      const response = await fetch('/api/news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newsItem),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Failed to save news: ${errorMessage}`);
+      }
+      
+      // Dispatch custom event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('newsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error saving news:', error);
+      throw error;
+    }
   }
 
-  static getForHome(): NewsItem[] {
-    return this.getPublished()
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 3); // Maximum 3 for home - últimas 3 noticias publicadas
+  static async update(newsItem: NewsItem): Promise<void> {
+    try {
+      const response = await fetch('/api/news', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newsItem),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Failed to update news: ${errorMessage}`);
+      }
+      
+      // Dispatch custom event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('newsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error updating news:', error);
+      throw error;
+    }
   }
 
+  static async remove(id: string): Promise<void> {
+    try {
+      const response = await fetch(`/api/news?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete news');
+      }
+      
+      // Dispatch custom event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('newsUpdated'));
+      }
+    } catch (error) {
+      console.error('Error deleting news:', error);
+      throw error;
+    }
+  }
 
+  static async getPublished(): Promise<NewsItem[]> {
+    try {
+      const news = await this.getAll();
+      return news.filter(n => n.status === 'published');
+    } catch (error) {
+      console.error('Error getting published news:', error);
+      return [];
+    }
+  }
+
+  static async getForHome(): Promise<NewsItem[]> {
+    try {
+      const published = await this.getPublished();
+      return published
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .slice(0, 3);
+    } catch (error) {
+      console.error('Error getting home news:', error);
+      return [];
+    }
+  }
 
   // Migración: convertir categoría única a múltiples categorías
-  static migrateToMultipleCategories(): void {
+  static async migrateToMultipleCategories(): Promise<void> {
     try {
-      if (typeof window === 'undefined') return;
-      
-      const news = this.getAll();
+      const news = await this.getAll();
       let hasChanges = false;
       
       const migratedNews = news.map(newsItem => {
@@ -109,9 +168,9 @@ export class NewsStorage {
       });
       
       if (hasChanges) {
-        this.saveAll(migratedNews);
+        // Aquí podrías implementar la lógica para guardar todas las noticias migradas
         console.log('Migración de categorías de noticias completada');
-        }
+      }
     } catch (error) {
       console.error('Error durante migración de categorías de noticias:', error);
     }

@@ -9,28 +9,54 @@ import { SAMPLE_PUBLICATIONS } from '@/data/content';
 
 export default function AdminPublicationsPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
-
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPublications();
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        await loadPublications();
+      } catch (error) {
+        console.error('Error initializing publications data:', error);
+        // Fallback to static content
+        setPublications(SAMPLE_PUBLICATIONS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
-  const loadPublications = () => {
-    const storedPublications = PublicationStorage.getAll();
-    if (storedPublications.length === 0) {
-      PublicationStorage.saveAll(SAMPLE_PUBLICATIONS);
+  const loadPublications = async () => {
+    try {
+      const storedPublications = await PublicationStorage.getAll();
+      if (storedPublications.length === 0) {
+        // Note: saveAll is not implemented in the new async version
+        // We'll rely on the JSON files for now
+        console.log('Using default publications from content.ts');
+        setPublications(SAMPLE_PUBLICATIONS);
+      } else {
+        setPublications(storedPublications);
+      }
+    } catch (error) {
+      console.error('Error loading publications:', error);
+      // Fallback to static content
       setPublications(SAMPLE_PUBLICATIONS);
-    } else {
-      setPublications(storedPublications);
     }
   };
 
 
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
-      PublicationStorage.remove(id);
-      loadPublications();
+      try {
+        await PublicationStorage.remove(id);
+        await loadPublications();
+      } catch (error) {
+        console.error('Error deleting publication:', error);
+        // You might want to show an error notification here
+      }
     }
   };
 
@@ -60,7 +86,6 @@ export default function AdminPublicationsPage() {
   };
 
   const publishedCount = publications.filter(p => p.status === 'published').length;
-  const featuredCount = publications.filter(p => p.featured && p.status === 'published').length;
 
   return (
     <div className="space-y-8">
@@ -87,7 +112,7 @@ export default function AdminPublicationsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">{publications.length}</div>
           <div className="text-sm text-gray-600">Total publicaciones</div>
@@ -96,17 +121,18 @@ export default function AdminPublicationsPage() {
           <div className="text-2xl font-bold text-green-600">{publishedCount}</div>
           <div className="text-sm text-gray-600">Publicadas</div>
         </div>
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="text-2xl font-bold text-purple-600">{featuredCount}</div>
-          <div className="text-sm text-gray-600">Destacadas</div>
-        </div>
       </div>
 
 
 
       {/* Publications List */}
       <div className="bg-white rounded-lg border border-gray-200">
-        {publications.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando publicaciones...</p>
+          </div>
+        ) : publications.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-gray-400 text-4xl mb-4">📚</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay publicaciones</h3>
@@ -131,9 +157,6 @@ export default function AdminPublicationsPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Destacada
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                     Acciones
@@ -162,13 +185,6 @@ export default function AdminPublicationsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(publication.status || 'draft')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {publication.featured ? (
-                        <span className="text-purple-600">✓ Sí</span>
-                      ) : (
-                        <span className="text-gray-400">✗ No</span>
-                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium w-40">
                       <div className="flex items-center justify-center gap-3">

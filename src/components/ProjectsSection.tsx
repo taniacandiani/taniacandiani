@@ -67,7 +67,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
   // Filtrar y ordenar proyectos
   const filteredAndSortedProjects = useMemo(() => {
-    let filtered = projects;
+    // Asegurar que no hay proyectos duplicados por ID
+    const uniqueProjects = projects.filter((project, index, self) => 
+      index === self.findIndex(p => p.id === project.id)
+    );
+
+    let filtered = uniqueProjects;
 
     // Filtrar por término de búsqueda
     if (filterState.searchTerm) {

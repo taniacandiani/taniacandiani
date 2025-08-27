@@ -5,39 +5,77 @@ import Link from 'next/link';
 import { Project } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { PROJECTS } from '@/data/content';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function AdminProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Solo ejecutar migración en el cliente
-    if (typeof window !== 'undefined') {
+    const initializeData = async () => {
       try {
-        // Migrar proyectos existentes a múltiples categorías
-        ProjectStorage.migrateToMultipleCategories();
+        setLoading(true);
+        
+        // Solo ejecutar migración en el cliente
+        if (typeof window !== 'undefined') {
+          try {
+            // Migrar proyectos existentes a múltiples categorías
+            await ProjectStorage.migrateToMultipleCategories();
+          } catch (error) {
+            console.error('Error durante migración:', error);
+          }
+        }
+        
+        // Initialize with existing projects if storage is empty
+        const storedProjects = await ProjectStorage.getAll();
+        if (storedProjects.length === 0 && !isInitialized) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default projects from content.ts');
+          setProjects(PROJECTS);
+        } else {
+          setProjects(storedProjects);
+        }
+        
+        setIsInitialized(true);
       } catch (error) {
-        console.error('Error durante migración:', error);
+        console.error('Error initializing projects data:', error);
+        // Fallback to static content
+        setProjects(PROJECTS);
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    // Initialize with existing projects if localStorage is empty
-    const storedProjects = ProjectStorage.getAll();
-    if (storedProjects.length === 0 && !isInitialized) {
-      ProjectStorage.saveAll(PROJECTS);
-      setProjects(PROJECTS);
-    } else {
-      setProjects(storedProjects);
-    }
-    setIsInitialized(true);
+    };
+
+    initializeData();
   }, [isInitialized]);
 
-  const handleDeleteProject = (id: string) => {
+  const handleDeleteProject = async (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-      ProjectStorage.delete(id);
-      setProjects(ProjectStorage.getAll());
+      try {
+        await ProjectStorage.delete(id);
+        const updatedProjects = await ProjectStorage.getAll();
+        setProjects(updatedProjects);
+        showSuccess('Proyecto Eliminado', 'El proyecto se ha eliminado correctamente');
+      } catch (error) {
+        showError('Error al Eliminar', 'Ha ocurrido un error al eliminar el proyecto');
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando proyectos...</p>
+        </div>
+      </div>
+    );
+  }
 
   const publishedProjects = projects.filter(p => p.status === 'published');
   const draftProjects = projects.filter(p => p.status === 'draft');
@@ -222,6 +260,15 @@ export default function AdminProjects() {
           ← Volver al Dashboard
         </Link>
       </div>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

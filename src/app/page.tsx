@@ -15,61 +15,90 @@ export default function Home() {
   const [heroSlides, setHeroSlides] = useState<Slide[]>(HERO_SLIDES);
   const [homeNews, setHomeNews] = useState<NewsItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize with existing projects if localStorage is empty
-    const storedProjects = ProjectStorage.getAll();
-    if (storedProjects.length === 0 && !isInitialized) {
-      ProjectStorage.saveAll(PROJECTS);
-    }
-    
-    // Initialize with existing news if localStorage is empty
-    const storedNews = NewsStorage.getAll();
-    if (storedNews.length === 0 && !isInitialized) {
-      NewsStorage.saveAll(SAMPLE_NEWS);
-    }
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialize with existing projects if storage is empty
+        const storedProjects = await ProjectStorage.getAll();
+        if (storedProjects.length === 0 && !isInitialized) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default projects from content.ts');
+        }
+        
+        // Initialize with existing news if storage is empty
+        const storedNews = await NewsStorage.getAll();
+        if (storedNews.length === 0 && !isInitialized) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default news from content.ts');
+        }
 
-    // Get featured projects for hero
-    const featuredProjects = ProjectStorage.getFeatured();
-    
-    if (featuredProjects.length > 0) {
-      const projectSlides: Slide[] = featuredProjects.map(project => ({
-        image: project.heroImages?.[0] || project.image,
-        title: project.title,
-        text: project.heroDescription || project.description
-      }));
-      
-      // Only show featured projects, no static slides
-      setHeroSlides(projectSlides);
-    } else {
-      // Fallback to static slides if no projects are featured
-      setHeroSlides(HERO_SLIDES);
-    }
+        // Get featured projects for hero
+        const featuredProjects = await ProjectStorage.getFeatured();
+        
+        if (featuredProjects.length > 0) {
+          const projectSlides: Slide[] = featuredProjects.map(project => ({
+            image: project.heroImages?.[0] || project.image,
+            title: project.title,
+            text: project.heroDescription || project.description
+          }));
+          
+          // Only show featured projects, no static slides
+          setHeroSlides(projectSlides);
+        } else {
+          // Fallback to static slides if no projects are featured
+          setHeroSlides(HERO_SLIDES);
+        }
 
-    // Get news for home
-    const newsForHome = NewsStorage.getForHome();
-    setHomeNews(newsForHome);
-    
-    setIsInitialized(true);
+        // Get news for home
+        const newsForHome = await NewsStorage.getForHome();
+        setHomeNews(newsForHome);
+        
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        // Fallback to static content
+        setHeroSlides(HERO_SLIDES);
+        setHomeNews(SAMPLE_NEWS.slice(0, 3));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, [isInitialized]);
 
   // Listen for news updates from admin
   useEffect(() => {
-    const handleNewsUpdate = () => {
-      const newsForHome = NewsStorage.getForHome();
-      setHomeNews(newsForHome);
+    const handleNewsUpdate = async () => {
+      try {
+        const newsForHome = await NewsStorage.getForHome();
+        setHomeNews(newsForHome);
+      } catch (error) {
+        console.error('Error updating news:', error);
+      }
     };
 
-    const handleProjectsUpdate = () => {
-      const featuredProjects = ProjectStorage.getFeatured();
-      if (featuredProjects.length > 0) {
-        const projectSlides: Slide[] = featuredProjects.map(project => ({
-          image: project.heroImages?.[0] || project.image,
-          title: project.title,
-          text: project.heroDescription || project.description
-        }));
-        setHeroSlides(projectSlides);
-      } else {
+    const handleProjectsUpdate = async () => {
+      try {
+        const featuredProjects = await ProjectStorage.getFeatured();
+        if (featuredProjects.length > 0) {
+          const projectSlides: Slide[] = featuredProjects.map(project => ({
+            image: project.heroImages?.[0] || project.image,
+            title: project.title,
+            text: project.heroDescription || project.description
+          }));
+          setHeroSlides(projectSlides);
+        } else {
+          setHeroSlides(HERO_SLIDES);
+        }
+      } catch (error) {
+        console.error('Error updating projects:', error);
         setHeroSlides(HERO_SLIDES);
       }
     };
@@ -105,6 +134,19 @@ export default function Home() {
       "name": "Artista Independiente"
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout hasNavbarOffset={false}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout hasNavbarOffset={false}>

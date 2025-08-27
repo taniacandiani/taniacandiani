@@ -11,6 +11,8 @@ import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -31,37 +33,46 @@ export default function EditNewsPage({ params }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
     async function loadNews() {
-      const resolvedParams = await params;
-      const newsItem = NewsStorage.getById(resolvedParams.id);
-      
-      if (!newsItem) {
-        alert('Noticia no encontrada');
+      try {
+        const resolvedParams = await params;
+        const newsItem = await NewsStorage.getById(resolvedParams.id);
+        
+        if (!newsItem) {
+          showError('Noticia No Encontrada', 'La noticia solicitada no existe');
+          router.push('/admin/noticias');
+          return;
+        }
+
+        setFormData(newsItem);
+
+        // Migrar noticias existentes a múltiples categorías
+        await NewsStorage.migrateToMultipleCategories();
+        
+        // Initialize categories
+        const storedCategories = await NewsCategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(NEWS_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
+        }
+
+        if (!newsItem.categories && storedCategories.length > 0) {
+          setFormData(prev => ({ ...prev, categories: [storedCategories[0].name] }));
+        }
+      } catch (error) {
+        console.error('Error loading news:', error);
+        showError('Error al Cargar', 'Ha ocurrido un error al cargar la noticia');
         router.push('/admin/noticias');
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      setFormData(newsItem);
-
-      // Migrar noticias existentes a múltiples categorías
-      NewsStorage.migrateToMultipleCategories();
-      
-      // Initialize categories
-      const storedCategories = NewsCategoryStorage.getAll();
-      if (storedCategories.length === 0) {
-        NewsCategoryStorage.saveAll(NEWS_CATEGORIES);
-        setCategories(NEWS_CATEGORIES);
-      } else {
-        setCategories(storedCategories);
-      }
-
-      if (!newsItem.categories && storedCategories.length > 0) {
-        setFormData(prev => ({ ...prev, categories: [storedCategories[0].name] }));
-      }
-
-      setLoading(false);
     }
 
     loadNews();
@@ -75,20 +86,20 @@ export default function EditNewsPage({ params }: Props) {
 
     try {
       if (!formData.title || !formData.content) {
-        alert('Por favor completa todos los campos requeridos');
+        showError('Error de Validación', 'Por favor completa todos los campos requeridos');
         setSaving(false);
         return;
       }
 
       if (!formData.categories || formData.categories.length === 0) {
-        alert('Debes seleccionar al menos una categoría');
+        showError('Error de Validación', 'Debes seleccionar al menos una categoría');
         setSaving(false);
         return;
       }
 
       // Validar que haya una imagen
       if (!formData.image || formData.image.trim() === '') {
-        alert('Debes agregar una imagen para la noticia');
+        showError('Error de Validación', 'Debes agregar una imagen para la noticia');
         setSaving(false);
         return;
       }
@@ -96,24 +107,34 @@ export default function EditNewsPage({ params }: Props) {
       const slug = generateSlug(formData.title);
       const publishedAt = formData.publishedAt || new Date().toISOString();
 
+      // Asegurar que todos los campos requeridos estén presentes
       const newsItem: NewsItem = {
         ...formData as NewsItem,
+        id: formData.id || '',
+        title: formData.title || '',
+        content: formData.content || '',
+        image: formData.image || '',
         slug,
         publishedAt,
+        categories: formData.categories || [],
+        author: formData.author || 'Tania Candiani',
+        status: formData.status || 'draft',
         tags: formData.tags || []
       };
 
-      NewsStorage.save(newsItem);
+      console.log('Noticia a actualizar:', newsItem);
+
+      await NewsStorage.update(newsItem);
       
       // Dispatch event to notify other components
       window.dispatchEvent(new CustomEvent('newsUpdated', { detail: newsItem }));
       
       // Show success message without redirecting
-      alert('Noticia actualizada correctamente');
+      showSuccess('Noticia Actualizada', 'La noticia se ha actualizado correctamente');
       // Stay in the editor - don't redirect
     } catch (error) {
       console.error('Error al actualizar la noticia:', error);
-      alert('Error al actualizar la noticia');
+      showError('Error al Actualizar', 'Ha ocurrido un error al actualizar la noticia');
     } finally {
       setSaving(false);
     }
@@ -293,10 +314,11 @@ export default function EditNewsPage({ params }: Props) {
             <div className="space-y-4">
               <ImageUploader
                 label="Imagen Principal"
-                projectId={formData.id || 'news'}
+                projectId={formData.slug || formData.id || 'noticia-sin-titulo'}
                 currentImage={formData.image}
                 onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
                 required={true}
+                contentType="noticias"
               />
             </div>
           </div>
@@ -373,6 +395,15 @@ export default function EditNewsPage({ params }: Props) {
           </button>
         </div>
       </form>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

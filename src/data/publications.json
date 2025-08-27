@@ -1,0 +1,38 @@
+[
+  {
+    "id": "pub-1700524800000-xyz789ghi",
+    "title": "Prácticas Sociales en el Arte Digital",
+    "description": "Análisis de cómo el arte digital está creando nuevas formas de interacción social y participación colectiva.",
+    "thumbnail": "/fondo2.jpg",
+    "downloadLink": "#",
+    "publishedAt": "2023-11-20T00:00:00.000Z",
+    "status": "published"
+  },
+  {
+    "id": "pub-1694304000000-mno456pqr",
+    "title": "Sitio Específico y Memoria Colectiva",
+    "description": "Reflexiones sobre la relación entre el lugar, la memoria y la creación artística en contextos urbanos.",
+    "thumbnail": "/fondo3.jpg",
+    "downloadLink": "#",
+    "publishedAt": "2023-09-10T00:00:00.000Z",
+    "status": "published"
+  },
+  {
+    "id": "pub-1686009600000-stu123vwx",
+    "title": "Intersecciones Tecnológicas",
+    "description": "Exploración de las convergencias entre tecnología, arte y sociedad en el siglo XXI.",
+    "thumbnail": "/fondo1.jpg",
+    "downloadLink": "#",
+    "publishedAt": "2023-06-05T00:00:00.000Z",
+    "status": "published"
+  },
+  {
+    "id": "pub-1756306041482-rkjs91erz",
+    "title": "pruebapublicacion",
+    "description": "asdad",
+    "thumbnail": "/uploads/proyectos/prueba/1756299015785-MDAP-images-0.jpg",
+    "downloadLink": "#",
+    "publishedAt": "2025-08-27T14:47:21.482Z",
+    "status": "published"
+  }
+]

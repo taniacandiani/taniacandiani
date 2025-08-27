@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { ProjectCategory } from '@/types';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
@@ -13,32 +15,59 @@ export default function AdminCategories() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Initialize with existing categories if localStorage is empty
-    const storedCategories = CategoryStorage.getAll();
-    if (storedCategories.length === 0 && !isInitialized) {
-      CategoryStorage.saveAll(PROJECT_CATEGORIES);
-      setCategories(PROJECT_CATEGORIES);
-    } else {
-      setCategories(storedCategories);
-    }
-    setIsInitialized(true);
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialize with existing categories if storage is empty
+        const storedCategories = await CategoryStorage.getAll();
+        if (storedCategories.length === 0 && !isInitialized) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(PROJECT_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
+        }
+        
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing categories:', error);
+        // Fallback to static content
+        setCategories(PROJECT_CATEGORIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, [isInitialized]);
 
   // Update counts when component mounts
   useEffect(() => {
     if (categories.length > 0) {
-      const updatedCategories = CategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+      const updateCategoryCounts = async () => {
+        try {
+          const updatedCategories = await CategoryStorage.updateCounts();
+          setCategories(updatedCategories);
+        } catch (error) {
+          console.error('Error updating category counts:', error);
+        }
+      };
+
+      updateCategoryCounts();
     }
   }, [categories.length]);
 
-  const handleSaveCategory = (e: React.FormEvent) => {
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newCategoryName.trim()) {
-      alert('Por favor ingresa un nombre para la categoría');
+      showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
       return;
     }
 
@@ -49,38 +78,45 @@ export default function AdminCategories() {
     );
     
     if (existingCategory) {
-      alert('Ya existe una categoría con ese nombre');
+      showError('Error de Validación', 'Ya existe una categoría con ese nombre');
       return;
     }
 
-    if (editingCategory) {
-      // Update existing category
-      const updatedCategory: ProjectCategory = {
-        ...editingCategory,
-        name: newCategoryName.trim(),
-        description: newCategoryDescription.trim() || undefined
-      };
-      CategoryStorage.save(updatedCategory);
-    } else {
-      // Create new category
-      const newCategory: ProjectCategory = {
-        id: CategoryStorage.generateSlug(newCategoryName),
-        name: newCategoryName.trim(),
-        count: 0,
-        description: newCategoryDescription.trim() || undefined
-      };
-      CategoryStorage.save(newCategory);
-    }
+    try {
+      if (editingCategory) {
+        // Update existing category
+        const updatedCategory: ProjectCategory = {
+          ...editingCategory,
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim() || undefined
+        };
+        await CategoryStorage.save(updatedCategory);
+        showSuccess('Categoría Actualizada', 'La categoría se ha actualizado correctamente');
+      } else {
+        // Create new category
+        const newCategory: ProjectCategory = {
+          id: CategoryStorage.generateSlug(newCategoryName),
+          name: newCategoryName.trim(),
+          count: 0,
+          description: newCategoryDescription.trim() || undefined
+        };
+        await CategoryStorage.save(newCategory);
+        showSuccess('Categoría Creada', 'La categoría se ha creado correctamente');
+      }
 
-    // Refresh categories and update counts
-    const updatedCategories = CategoryStorage.updateCounts();
-    setCategories(updatedCategories);
-    
-    // Reset form
-    setShowForm(false);
-    setEditingCategory(null);
-    setNewCategoryName('');
-    setNewCategoryDescription('');
+      // Refresh categories and update counts
+      const updatedCategories = await CategoryStorage.updateCounts();
+      setCategories(updatedCategories);
+      
+      // Reset form
+      setShowForm(false);
+      setEditingCategory(null);
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+    } catch (error) {
+      console.error('Error saving category:', error);
+      showError('Error al Guardar', 'Ha ocurrido un error al guardar la categoría');
+    }
   };
 
   const handleEditCategory = (category: ProjectCategory) => {
@@ -90,15 +126,21 @@ export default function AdminCategories() {
     setShowForm(true);
   };
 
-  const handleDeleteCategory = (category: ProjectCategory) => {
+  const handleDeleteCategory = async (category: ProjectCategory) => {
     if (confirm(`¿Estás seguro de que quieres eliminar la categoría "${category.name}"?`)) {
-      const result = CategoryStorage.delete(category.id);
-      
-      if (result.success) {
-        const updatedCategories = CategoryStorage.updateCounts();
-        setCategories(updatedCategories);
-      } else {
-        alert(result.message);
+      try {
+        const result = await CategoryStorage.delete(category.id);
+        
+        if (result.success) {
+          const updatedCategories = await CategoryStorage.updateCounts();
+          setCategories(updatedCategories);
+          showSuccess('Categoría Eliminada', 'La categoría se ha eliminado correctamente');
+        } else {
+          showError('Error al Eliminar', result.message);
+        }
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        showError('Error al Eliminar', 'Ha ocurrido un error al eliminar la categoría');
       }
     }
   };
@@ -116,6 +158,17 @@ export default function AdminCategories() {
     setNewCategoryName('');
     setNewCategoryDescription('');
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando categorías...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -353,6 +406,15 @@ export default function AdminCategories() {
           </div>
         </div>
       </div>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

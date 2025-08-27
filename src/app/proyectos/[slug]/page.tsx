@@ -76,28 +76,34 @@ export default function ProjectPage({ params }: Props) {
         // Await params to get the slug
         const { slug } = await params;
         
-        // Initialize with existing projects if localStorage is empty
-        const storedProjects = ProjectStorage.getAll();
+        // Initialize with existing projects if storage is empty
+        const storedProjects = await ProjectStorage.getAll();
         if (storedProjects.length === 0) {
-          ProjectStorage.saveAll(PROJECTS);
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default projects from content.ts');
+          setAllProjects(PROJECTS);
+        } else {
+          // Get all projects for sidebar
+          const projects = await ProjectStorage.getPublished();
+          setAllProjects(projects);
         }
         
-        // Get all projects for sidebar
-        const projects = ProjectStorage.getPublished();
-        setAllProjects(projects);
-        
-        // Initialize with existing categories if localStorage is empty
-        const storedCategories = CategoryStorage.getAll();
+        // Initialize with existing categories if storage is empty
+        const storedCategories = await CategoryStorage.getAll();
         if (storedCategories.length === 0) {
-          CategoryStorage.saveAll(PROJECT_CATEGORIES);
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(PROJECT_CATEGORIES);
+        } else {
+          // Update categories count based on current projects
+          const updatedCategories = await CategoryStorage.updateCounts();
+          setCategories(updatedCategories);
         }
-        
-        // Update categories count based on current projects
-        const updatedCategories = CategoryStorage.updateCounts();
-        setCategories(updatedCategories);
         
         // Find project by slug
-        const foundProject = ProjectStorage.getBySlug(slug) || 
+        const foundProject = await ProjectStorage.getBySlug(slug) || 
                              PROJECTS.find(p => p.slug === slug);
         
         if (!foundProject) {
@@ -119,9 +125,13 @@ export default function ProjectPage({ params }: Props) {
 
   // Listen for category updates from admin
   useEffect(() => {
-    const handleCategoriesUpdate = () => {
-      const updatedCategories = CategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+    const handleCategoriesUpdate = async () => {
+      try {
+        const updatedCategories = await CategoryStorage.updateCounts();
+        setCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error updating categories:', error);
+      }
     };
 
     const handleProjectsUpdate = async () => {
@@ -129,10 +139,10 @@ export default function ProjectPage({ params }: Props) {
       try {
         const { slug } = await params;
         if (slug) {
-          const updatedProject = ProjectStorage.getBySlug(slug);
-                  if (updatedProject) {
-          setProject(updatedProject);
-        }
+          const updatedProject = await ProjectStorage.getBySlug(slug);
+          if (updatedProject) {
+            setProject(updatedProject);
+          }
         }
       } catch (error) {
         console.error('Error updating project:', error);

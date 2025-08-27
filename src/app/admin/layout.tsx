@@ -33,6 +33,7 @@ export default function AdminLayout({
       { href: '/admin/acerca/publicaciones', label: 'Publicaciones' }
     ]},
     { href: '/admin/contacto', label: 'Contacto' },
+    { href: '/admin/media', label: 'Media' },
   ];
 
   const isActive = (href: string, exact = false) => {
@@ -108,6 +109,12 @@ export default function AdminLayout({
                       className="block px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors"
                     >
                       + Nueva Noticia
+                    </Link>
+                    <Link
+                      href="/admin/media"
+                      className="block px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                    >
+                      📁 Gestionar Media
                     </Link>
                     <Link
                       href="/"

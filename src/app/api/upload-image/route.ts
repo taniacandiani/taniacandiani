@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('image') as File;
     const projectId = formData.get('projectId') as string;
+    const contentType = formData.get('contentType') as string || 'proyectos'; // Default a proyectos para compatibilidad
     
     if (!file) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 });
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Crear directorio si no existe
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proyectos', projectId);
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', contentType, projectId);
     await mkdir(uploadDir, { recursive: true });
     
     // Generar nombre único para evitar conflictos
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filepath, buffer);
     
     // Retornar URL de la imagen
-    const imageUrl = `/uploads/proyectos/${projectId}/${filename}`;
+    const imageUrl = `/uploads/${contentType}/${projectId}/${filename}`;
     
     return NextResponse.json({ 
       imageUrl,

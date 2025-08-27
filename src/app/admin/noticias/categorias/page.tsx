@@ -5,24 +5,49 @@ import Link from 'next/link';
 import { NewsCategoryStorage, NewsCategory } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function NewsCategoriasPage() {
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [editingCategory, setEditingCategory] = useState<NewsCategory | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    loadCategories();
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        await loadCategories();
+      } catch (error) {
+        console.error('Error initializing categories:', error);
+        // Fallback to static content
+        setCategories(NEWS_CATEGORIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
-  const loadCategories = () => {
-    const storedCategories = NewsCategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      NewsCategoryStorage.saveAll(NEWS_CATEGORIES);
+  const loadCategories = async () => {
+    try {
+      const storedCategories = await NewsCategoryStorage.getAll();
+      if (storedCategories.length === 0) {
+        // Note: saveAll is not implemented in the new async version
+        // We'll rely on the JSON files for now
+        console.log('Using default categories from content.ts');
+        setCategories(NEWS_CATEGORIES);
+      } else {
+        setCategories(storedCategories);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Fallback to static content
       setCategories(NEWS_CATEGORIES);
-    } else {
-      setCategories(storedCategories);
     }
   };
 
@@ -30,9 +55,9 @@ export default function NewsCategoriasPage() {
     return generateSlug(name);
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
-      alert('Por favor ingresa un nombre para la categoría');
+      showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
       return;
     }
 
@@ -40,30 +65,36 @@ export default function NewsCategoriasPage() {
     const existingCategory = categories.find(c => c.id === id || c.name === newCategoryName.trim());
     
     if (existingCategory) {
-      alert('Ya existe una categoría con ese nombre');
+      showError('Error de Validación', 'Ya existe una categoría con ese nombre');
       return;
     }
 
-    const newCategory: NewsCategory = {
-      id,
-      name: newCategoryName.trim(),
-      count: 0,
-      description: newCategoryDescription.trim() || undefined
-    };
+    try {
+      const newCategory: NewsCategory = {
+        id,
+        name: newCategoryName.trim(),
+        count: 0,
+        description: newCategoryDescription.trim() || undefined
+      };
 
-    NewsCategoryStorage.save(newCategory);
-    loadCategories();
-    setNewCategoryName('');
-    setNewCategoryDescription('');
+      await NewsCategoryStorage.save(newCategory);
+      await loadCategories();
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+      showSuccess('Categoría Creada', 'La categoría se ha creado correctamente');
+    } catch (error) {
+      console.error('Error adding category:', error);
+      showError('Error al Crear', 'Ha ocurrido un error al crear la categoría');
+    }
   };
 
   const handleEditCategory = (category: NewsCategory) => {
     setEditingCategory({ ...category });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingCategory || !editingCategory.name.trim()) {
-      alert('Por favor ingresa un nombre para la categoría');
+      showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
       return;
     }
 
@@ -74,35 +105,47 @@ export default function NewsCategoriasPage() {
     );
     
     if (conflictingCategory) {
-      alert('Ya existe una categoría con ese nombre');
+      showError('Error de Validación', 'Ya existe una categoría con ese nombre');
       return;
     }
 
-    const updatedCategory: NewsCategory = {
-      ...editingCategory,
-      name: editingCategory.name.trim(),
-      description: editingCategory.description?.trim() || undefined
-    };
+    try {
+      const updatedCategory: NewsCategory = {
+        ...editingCategory,
+        name: editingCategory.name.trim(),
+        description: editingCategory.description?.trim() || undefined
+      };
 
-    NewsCategoryStorage.save(updatedCategory);
-    loadCategories();
-    setEditingCategory(null);
+      await NewsCategoryStorage.save(updatedCategory);
+      await loadCategories();
+      setEditingCategory(null);
+      showSuccess('Categoría Actualizada', 'La categoría se ha actualizado correctamente');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      showError('Error al Actualizar', 'Ha ocurrido un error al actualizar la categoría');
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingCategory(null);
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     const category = categories.find(c => c.id === id);
     if (!category) return;
 
     if (confirm(`¿Estás seguro de que quieres eliminar la categoría "${category.name}"?`)) {
-      const result = NewsCategoryStorage.delete(id);
-      if (result.success) {
-        loadCategories();
-      } else {
-        alert(result.message);
+      try {
+        const result = await NewsCategoryStorage.delete(id);
+        if (result.success) {
+          await loadCategories();
+          showSuccess('Categoría Eliminada', 'La categoría se ha eliminado correctamente');
+        } else {
+          showError('Error al Eliminar', result.message);
+        }
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        showError('Error al Eliminar', 'Ha ocurrido un error al eliminar la categoría');
       }
     }
   };
@@ -176,7 +219,12 @@ export default function NewsCategoriasPage() {
           </p>
         </div>
 
-        {categories.length === 0 ? (
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-500">Cargando categorías...</p>
+          </div>
+        ) : categories.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-gray-500">No hay categorías registradas.</p>
           </div>
@@ -296,6 +344,15 @@ export default function NewsCategoriasPage() {
           </div>
         </div>
       </div>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

@@ -28,28 +28,35 @@ export default function NoticiaPage({ params }: Props) {
       try {
         const { slug } = await params;
         
-        // Initialize with sample news if localStorage is empty
-        const storedNews = NewsStorage.getAll();
+        // Initialize with sample news if storage is empty
+        const storedNews = await NewsStorage.getAll();
         if (storedNews.length === 0) {
-          NewsStorage.saveAll(SAMPLE_NEWS);
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default news from content.ts');
         }
 
         // Initialize categories
-        const storedCategories = NewsCategoryStorage.getAll();
+        const storedCategories = await NewsCategoryStorage.getAll();
         if (storedCategories.length === 0) {
-          NewsCategoryStorage.saveAll(NEWS_CATEGORIES);
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(NEWS_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
         }
         
         // Get all news for sidebar
-        const publishedNews = NewsStorage.getPublished();
+        const publishedNews = await NewsStorage.getPublished();
         setAllNews(publishedNews);
         
         // Update categories count based on current news
-        const updatedCategories = NewsCategoryStorage.updateCounts();
+        const updatedCategories = await NewsCategoryStorage.updateCounts();
         setCategories(updatedCategories);
         
         // Find news item by slug
-        const foundNews = NewsStorage.getBySlug(slug) || 
+        const foundNews = await NewsStorage.getBySlug(slug) || 
                           SAMPLE_NEWS.find(n => n.slug === slug);
         
         if (!foundNews || foundNews.status !== 'published') {
@@ -74,9 +81,13 @@ export default function NoticiaPage({ params }: Props) {
 
   // Listen for categories updates from admin
   useEffect(() => {
-    const handleCategoriesUpdate = () => {
-      const updatedCategories = NewsCategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+    const handleCategoriesUpdate = async () => {
+      try {
+        const updatedCategories = await NewsCategoryStorage.updateCounts();
+        setCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error updating categories:', error);
+      }
     };
 
     window.addEventListener('newsCategoriesUpdated', handleCategoriesUpdate);

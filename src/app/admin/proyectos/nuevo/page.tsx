@@ -9,6 +9,8 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -31,21 +33,34 @@ export default function NewProjectPage() {
     location: '',
     tags: [],
   });
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Initialize categories
-    const storedCategories = CategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      CategoryStorage.saveAll(PROJECT_CATEGORIES);
-      setCategories(PROJECT_CATEGORIES);
-    } else {
-      setCategories(storedCategories);
-    }
+    const initializeCategories = async () => {
+      try {
+        // Initialize categories
+        const storedCategories = await CategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(PROJECT_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
+        }
 
-    // Set default category if we don't have one
-    if (!formData.category && storedCategories.length > 0) {
-      setFormData(prev => ({ ...prev, category: storedCategories[0].name }));
-    }
+        // Set default category if we don't have one
+        if (!formData.category && storedCategories.length > 0) {
+          setFormData(prev => ({ ...prev, category: storedCategories[0].name }));
+        }
+      } catch (error) {
+        console.error('Error initializing categories:', error);
+        // Fallback to static content
+        setCategories(PROJECT_CATEGORIES);
+      }
+    };
+
+    initializeCategories();
   }, [formData.category]);
 
   // Ensure form always has at least one hero image slot
@@ -55,10 +70,10 @@ export default function NewProjectPage() {
     }
   }, [formData.heroImages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) {
-      alert('Por favor completa al menos el título');
+      showError('Error de Validación', 'Por favor completa al menos el título');
       return;
     }
     
@@ -66,7 +81,7 @@ export default function NewProjectPage() {
     
     // Validar que haya al menos una imagen del hero
     if (!cleanHeroImages || cleanHeroImages.length === 0 || cleanHeroImages[0] === '') {
-      alert('Debes agregar al menos una imagen del hero');
+      showError('Error de Validación', 'Debes agregar al menos una imagen del hero');
       return;
     }
     
@@ -80,33 +95,38 @@ export default function NewProjectPage() {
       image: formData.image || ''
     };
 
-    ProjectStorage.save(newProject);
-    
-    // Dispatch event to notify other components about the update
-    window.dispatchEvent(new CustomEvent('projectsUpdated'));
-    
-    // Mostrar mensaje de éxito y limpiar el formulario
-    alert('Proyecto creado exitosamente');
-    
-    // Limpiar el formulario para crear otro proyecto
-    setFormData({
-      title: '',
-      subtitle: '',
-      category: '',
-      year: new Date().getFullYear(),
-      image: '',
-      heroImages: [''],
-      projectDetails: '',
-      technicalSheet: '',
-      downloadLink: '',
-      additionalImage: '',
-      showInHomeHero: false,
-      heroDescription: '',
-      commissionedBy: '',
-      curator: '',
-      location: '',
-      tags: [],
-    });
+    try {
+      await ProjectStorage.save(newProject);
+      
+      // Dispatch event to notify other components about the update
+      window.dispatchEvent(new CustomEvent('projectsUpdated'));
+      
+      // Mostrar mensaje de éxito y limpiar el formulario
+      showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente');
+      
+      // Limpiar el formulario para crear otro proyecto
+      setFormData({
+        title: '',
+        subtitle: '',
+        category: '',
+        year: new Date().getFullYear(),
+        image: '',
+        heroImages: [''],
+        projectDetails: '',
+        technicalSheet: '',
+        downloadLink: '',
+        additionalImage: '',
+        showInHomeHero: false,
+        heroDescription: '',
+        commissionedBy: '',
+        curator: '',
+        location: '',
+        tags: [],
+      });
+    } catch (error) {
+      console.error('Error saving project:', error);
+      showError('Error al Guardar', 'Ha ocurrido un error al guardar el proyecto');
+    }
   };
 
   const handleHeroImageChange = (index: number, value: string) => {
@@ -255,97 +275,93 @@ export default function NewProjectPage() {
         <div className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
           
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <div className="space-y-4">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Imagen del Hero * <span className="text-red-500">*</span>
-                    </label>
-                    
-                    {/* Campo único para agregar múltiples imágenes del hero */}
-                    <div 
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
-                      onClick={() => document.getElementById('hero-images-input-new')?.click()}
-                    >
-                      <div className="text-gray-400 mb-4">
-                        <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Imagen del Hero <span className="text-red-500">*</span>
+                </label>
+                
+                {/* Usar ImageUploader para las imágenes del hero */}
+                <ImageUploader
+                  label=""
+                  projectId="new"
+                  currentImage=""
+                  onImageUpload={(imageUrl) => {
+                    if (imageUrl) {
+                      const newHeroImages = [...(formData.heroImages || [''])];
+                      if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                        newHeroImages[0] = imageUrl;
+                      } else {
+                        newHeroImages.push(imageUrl);
+                      }
+                      setFormData({ ...formData, heroImages: newHeroImages });
+                    }
+                  }}
+                  required={true}
+                  contentType="proyectos"
+                  multiple={true}
+                  onImagesUpload={(imageUrls) => {
+                    if (imageUrls.length > 0) {
+                      const newHeroImages = [...(formData.heroImages || [''])];
+                      // Reemplazar imágenes vacías o agregar nuevas
+                      let currentIndex = 0;
+                      for (let i = 0; i < newHeroImages.length && currentIndex < imageUrls.length; i++) {
+                        if (!newHeroImages[i] || newHeroImages[i].trim() === '') {
+                          newHeroImages[i] = imageUrls[currentIndex];
+                          currentIndex++;
+                        }
+                      }
+                      // Agregar las imágenes restantes
+                      while (currentIndex < imageUrls.length) {
+                        newHeroImages.push(imageUrls[currentIndex]);
+                        currentIndex++;
+                      }
+                      setFormData({ ...formData, heroImages: newHeroImages });
+                    }
+                  }}
+                />
+                
+                {/* Mostrar miniaturas de las imágenes cargadas */}
+                {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600 font-medium">Imágenes del Hero cargadas:</p>
+                    {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
+                      <div key={index} className="relative inline-block">
+                        <img
+                          src={image}
+                          alt={`Imagen del hero ${index + 1}`}
+                          className="w-32 h-32 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newHeroImages = [...formData.heroImages];
+                            newHeroImages[index] = '';
+                            setFormData({ ...formData, heroImages: newHeroImages });
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        >
+                          ×
+                        </button>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        <p className="font-medium">Arrastra una imagen aquí o imágenes</p>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF hasta 5MB</p>
-                      </div>
-                      
-                      {/* Input de archivo oculto */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            Array.from(e.target.files).forEach(file => {
-                              // Simular upload para cada archivo
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                const imageUrl = event.target?.result as string;
-                                const newHeroImages = [...(formData.heroImages || [''])];
-                                if (newHeroImages.length === 0 || newHeroImages[0] === '') {
-                                  newHeroImages[0] = imageUrl;
-                                } else {
-                                  newHeroImages.push(imageUrl);
-                                }
-                                setFormData({ ...formData, heroImages: newHeroImages });
-                              };
-                              reader.readAsDataURL(file);
-                            });
-                          }
-                        }}
-                        className="hidden"
-                        id="hero-images-input-new"
-                      />
-                    </div>
-                    
-                    {/* Mostrar miniaturas de las imágenes cargadas */}
-                    {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                      <div className="space-y-3">
-                        {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                          <div key={index} className="relative inline-block">
-                            <img
-                              src={image}
-                              alt={`Imagen del hero ${index + 1}`}
-                              className="w-32 h-32 object-cover rounded-lg border"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newHeroImages = [...formData.heroImages];
-                                newHeroImages[index] = '';
-                                setFormData({ ...formData, heroImages: newHeroImages });
-                              }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
-                </div>
-
-                <div>
-                  <ImageUploader
-                    label="Imagen Secundaria"
-                    projectId="new"
-                    currentImage={formData.image}
-                    onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
-                    required={false}
-                  />
-                </div>
+                )}
               </div>
+            </div>
 
-          
+            <div>
+              <ImageUploader
+                label="Imagen Secundaria"
+                projectId="new"
+                currentImage={formData.image}
+                onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
+                required={false}
+                contentType="proyectos"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Contenido */}
@@ -477,6 +493,15 @@ export default function NewProjectPage() {
           </button>
         </div>
       </form>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

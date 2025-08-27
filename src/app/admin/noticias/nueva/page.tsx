@@ -6,14 +6,16 @@ import Link from 'next/link';
 import { NewsItem } from '@/types';
 import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage, NewsCategory } from '@/lib/newsCategoryStorage';
-import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function NewNewsPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Partial<NewsItem>>({
     title: '',
     content: '',
@@ -26,27 +28,49 @@ export default function NewNewsPage() {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Migrar noticias existentes a múltiples categorías
-    NewsStorage.migrateToMultipleCategories();
-    
-    // Initialize categories
-    const storedCategories = NewsCategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      NewsCategoryStorage.saveAll(NEWS_CATEGORIES);
-      setCategories(NEWS_CATEGORIES);
-    } else {
-      setCategories(storedCategories);
-    }
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Migrar noticias existentes a múltiples categorías
+        await NewsStorage.migrateToMultipleCategories();
+        
+        // Initialize categories
+        const storedCategories = await NewsCategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Si no hay categorías, usar las del archivo content.ts
+          const defaultCategories = [
+            { id: 'exposiciones', name: 'Exposiciones', count: 0 },
+            { id: 'conferencias', name: 'Conferencias', count: 0 },
+            { id: 'residencias', name: 'Residencias', count: 0 },
+            { id: 'talleres', name: 'Talleres', count: 0 },
+            { id: 'proyectos', name: 'Proyectos', count: 0 }
+          ];
+          setCategories(defaultCategories);
+        } else {
+          setCategories(storedCategories);
+        }
 
-    // Set default categories if we don't have any
-    if (!formData.categories || formData.categories.length === 0) {
-      setFormData(prev => ({ ...prev, categories: [storedCategories[0]?.name].filter(Boolean) }));
-    }
-  }, [formData.categories]);
+        // Set default categories if we don't have any
+        if (!formData.categories || formData.categories.length === 0) {
+          setFormData(prev => ({ 
+            ...prev, 
+            categories: [storedCategories[0]?.name || 'Exposiciones'].filter(Boolean) 
+          }));
+        }
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        showError('Error', 'Error al cargar las categorías');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-
+    initializeData();
+  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
@@ -74,39 +98,84 @@ export default function NewNewsPage() {
     });
   };
 
-
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title || !formData.content || !formData.image) {
-      alert('Por favor completa al menos el título, contenido e imagen');
+      showError('Error de Validación', 'Por favor completa al menos el título, contenido e imagen');
       return;
     }
 
     if (!formData.categories || formData.categories.length === 0) {
-      alert('Debes seleccionar al menos una categoría');
+      showError('Error de Validación', 'Debes seleccionar al menos una categoría');
       return;
     }
 
+    try {
+      // Asegurarse de que el slug se genere correctamente
+      const finalSlug = formData.slug && formData.slug.trim() !== '' 
+        ? formData.slug.trim() 
+        : generateSlug(formData.title!);
 
+      console.log('Debug - Slug generado:', finalSlug);
+      console.log('Debug - Título:', formData.title);
+      console.log('Debug - Slug del formulario:', formData.slug);
 
-    const newsItem: NewsItem = {
-      id: Date.now().toString(),
-      title: formData.title!,
-      content: formData.content!,
-      image: formData.image!,
-      slug: formData.slug || generateSlug(formData.title!),
-      publishedAt: formData.publishedAt!,
-      categories: formData.categories || [],
-      author: formData.author,
-      status: formData.status as 'published' | 'draft' | 'archived',
-      tags: formData.tags || []
-    };
+      // Generar un ID único usando timestamp + random para evitar duplicados
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    NewsStorage.save(newsItem);
-    router.push('/admin/noticias');
+      const newsItem: NewsItem = {
+        id: uniqueId,
+        title: formData.title!,
+        content: formData.content!,
+        image: formData.image!,
+        slug: finalSlug,
+        publishedAt: formData.publishedAt!,
+        categories: formData.categories || [],
+        author: formData.author || 'Tania Candiani',
+        status: formData.status as 'published' | 'draft' | 'archived',
+        tags: formData.tags || []
+      };
+
+      console.log('Debug - Noticia a guardar:', newsItem);
+
+      await NewsStorage.save(newsItem);
+      
+      showSuccess('Noticia Creada', 'La noticia se ha creado exitosamente');
+      
+      // Limpiar el formulario
+      setFormData({
+        title: '',
+        content: '',
+        image: '',
+        slug: '',
+        categories: [],
+        status: 'draft',
+        tags: [],
+        publishedAt: new Date().toISOString()
+      });
+      
+      // Redirigir a la lista de noticias
+      setTimeout(() => {
+        router.push('/admin/noticias');
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error creating news:', error);
+      showError('Error', 'Error al crear la noticia. Intenta de nuevo.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando categorías...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -160,10 +229,6 @@ export default function NewNewsPage() {
                 Se genera automáticamente desde el título, pero puedes personalizarlo
               </p>
             </div>
-
-
-
-
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -236,10 +301,11 @@ export default function NewNewsPage() {
           <div className="space-y-4">
             <ImageUploader
               label="Imagen Principal"
-              projectId="new-news"
+              projectId={formData.slug || 'noticia-sin-titulo'}
               currentImage={formData.image}
               onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
               required={true}
+              contentType="noticias"
             />
           </div>
         </div>
@@ -257,8 +323,6 @@ export default function NewNewsPage() {
             />
           </div>
         </div>
-
-
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Etiquetas</h2>
@@ -320,6 +384,15 @@ export default function NewNewsPage() {
           </button>
         </div>
       </form>
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

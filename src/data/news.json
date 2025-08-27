@@ -1,0 +1,89 @@
+[
+  {
+    "id": "noticia-2",
+    "title": "Conferencia Internacional de Medios Arqueológicos",
+    "content": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.",
+    "image": "/fondo2.jpg",
+    "slug": "conferencia-medios-arqueologicos",
+    "publishedAt": "2024-12-10T14:30:00Z",
+    "categories": [
+      "Conferencias"
+    ],
+    "author": "Tania Candiani",
+    "status": "published",
+    "tags": [
+      "conferencia",
+      "medios",
+      "arqueología"
+    ]
+  },
+  {
+    "id": "noticia-3",
+    "title": "Residencia Artística en México 2024",
+    "content": "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.",
+    "image": "/fondo3.jpg",
+    "slug": "residencia-artistica-mexico-2024",
+    "publishedAt": "2024-12-05T09:15:00Z",
+    "categories": [
+      "Residencias"
+    ],
+    "author": "Tania Candiani",
+    "status": "published",
+    "tags": [
+      "residencia",
+      "méxico",
+      "arte"
+    ]
+  },
+  {
+    "id": "noticia-4",
+    "title": "Taller de Prácticas Sociales en el Arte",
+    "content": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.",
+    "image": "/fondo1.jpg",
+    "slug": "taller-practicas-sociales-arte",
+    "publishedAt": "2024-11-28T16:45:00Z",
+    "categories": [
+      "Talleres"
+    ],
+    "author": "Tania Candiani",
+    "status": "published",
+    "tags": [
+      "taller",
+      "prácticas sociales",
+      "arte"
+    ]
+  },
+  {
+    "id": "noticia-5",
+    "title": "Nuevo Proyecto de Sitio Específico",
+    "content": "Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis.",
+    "image": "/fondo2.jpg",
+    "slug": "nuevo-proyecto-sitio-especifico",
+    "publishedAt": "2024-11-20T11:20:00Z",
+    "categories": [
+      "Proyectos"
+    ],
+    "author": "Tania Candiani",
+    "status": "published",
+    "tags": [
+      "proyecto",
+      "sitio específico",
+      "nuevo"
+    ]
+  },
+  {
+    "id": "1756304091109-5a25qm9yk",
+    "title": "estoesunaprueba",
+    "content": "<p class=\"mb-0\">hola mundo</p>",
+    "image": "/uploads/noticias/new-news/1756296416054-Screenshot 2025-08-14 at 10.29.21 p.m..png",
+    "slug": "estoesunaprueba",
+    "publishedAt": "2025-08-27T14:14:28.140Z",
+    "categories": [
+      "Exposiciones",
+      "holamundonoticia"
+    ],
+    "author": "Tania Candiani",
+    "status": "published",
+    "tags": []
+  }
+]

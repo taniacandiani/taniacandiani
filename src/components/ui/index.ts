@@ -12,3 +12,5 @@ export { default as GoToTopButton } from './GoToTopButton';
 export { default as RichTextEditor } from './RichTextEditor';
 export { default as RichContent } from './RichContent';
 export { default as ImageUploader } from './ImageUploader';
+export { default as MediaSelector } from './MediaSelector';
+export { default as ToastNotification } from './Notification';

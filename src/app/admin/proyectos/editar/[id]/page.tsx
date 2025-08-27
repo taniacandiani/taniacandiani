@@ -9,6 +9,9 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import MediaSelector from '@/components/ui/MediaSelector';
+import { useNotification } from '@/components/ui/Notification';
+import ToastNotification from '@/components/ui/Notification';
 
 export default function EditProjectPage() {
   const router = useRouter();
@@ -17,35 +20,48 @@ export default function EditProjectPage() {
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showMediaSelector, setShowMediaSelector] = useState(false);
+  const [mediaSelectorType, setMediaSelectorType] = useState<'hero' | 'secondary' | null>(null);
+  const [mediaSelectorIndex, setMediaSelectorIndex] = useState<number>(0);
+  const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
-    // Migrar proyectos existentes a múltiples categorías
-    ProjectStorage.migrateToMultipleCategories();
-    
-    // Initialize categories
-    const storedCategories = CategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      CategoryStorage.saveAll(PROJECT_CATEGORIES);
-      setCategories(PROJECT_CATEGORIES);
-    } else {
-      setCategories(storedCategories);
-    }
-
-    // Load project
-    const loadProject = async () => {
-      const id = await params.id as string;
-      if (id) {
-        const foundProject = ProjectStorage.getById(id);
-        if (foundProject) {
-          setProject(foundProject);
+    const initializeData = async () => {
+      try {
+        // Migrar proyectos existentes a múltiples categorías
+        await ProjectStorage.migrateToMultipleCategories();
+        
+        // Initialize categories
+        const storedCategories = await CategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(PROJECT_CATEGORIES);
         } else {
-          router.push('/admin/proyectos');
+          setCategories(storedCategories);
         }
+
+        // Load project
+        const id = await params.id as string;
+        if (id) {
+          const foundProject = await ProjectStorage.getById(id);
+          if (foundProject) {
+            setProject(foundProject);
+          } else {
+            router.push('/admin/proyectos');
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        // Fallback to static content
+        setCategories(PROJECT_CATEGORIES);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    loadProject();
+    initializeData();
   }, [params.id, router]);
 
   // Ensure project always has at least one hero image slot
@@ -61,37 +77,57 @@ export default function EditProjectPage() {
 
     // Validar que haya al menos una categoría seleccionada
     if (!project.categories || project.categories.length === 0) {
-      alert('Debes seleccionar al menos una categoría');
+      showError('Error de Validación', 'Debes seleccionar al menos una categoría');
       return;
     }
 
     // Validar que haya al menos una imagen del hero
     const cleanHeroImages = getCleanHeroImages();
     if (!cleanHeroImages || cleanHeroImages.length === 0 || cleanHeroImages[0] === '') {
-      alert('Debes agregar al menos una imagen del hero');
+      showError('Error de Validación', 'Debes agregar al menos una imagen del hero');
       return;
     }
 
     setSaving(true);
     try {
+      // Asegurar que todos los campos requeridos estén presentes
       const updatedProject: Project = {
         ...project,
+        id: project.id || '',
+        title: project.title || '',
         slug: ProjectStorage.generateSlug(project.title),
+        year: project.year || new Date().getFullYear(),
+        status: project.status || 'draft',
+        categories: project.categories || [],
         heroImages: cleanHeroImages,
-        // Mantener la imagen secundaria separada del hero
-        image: project.image || ''
+        image: project.image || '',
+        // Campos opcionales con valores por defecto
+        description: project.description || '',
+        tags: project.tags || [],
+        featured: project.featured || false,
+        showInHomeHero: project.showInHomeHero || false,
+        projectDetails: project.projectDetails || '',
+        technicalSheet: project.technicalSheet || '',
+        downloadLink: project.downloadLink || '',
+        additionalImage: project.additionalImage || '',
+        heroDescription: project.heroDescription || '',
+        commissionedBy: project.commissionedBy || '',
+        curator: project.curator || '',
+        location: project.location || ''
       };
 
-      ProjectStorage.save(updatedProject);
+      console.log('Proyecto a actualizar:', updatedProject);
+
+      await ProjectStorage.update(updatedProject);
       
       // Dispatch event to notify other components about the update
       window.dispatchEvent(new CustomEvent('projectsUpdated'));
       
       // Mostrar mensaje de éxito en lugar de redirigir
-      alert('Proyecto guardado exitosamente');
+      showSuccess('Proyecto Guardado', 'El proyecto se ha guardado exitosamente');
     } catch (error) {
       console.error('Error al guardar:', error);
-      alert('Error al guardar el proyecto');
+      showError('Error al Guardar', 'Ha ocurrido un error al guardar el proyecto');
     } finally {
       setSaving(false);
     }
@@ -102,6 +138,24 @@ export default function EditProjectPage() {
     const newHeroImages = [...(project.heroImages || [''])];
     newHeroImages[index] = value;
     setProject({ ...project, heroImages: newHeroImages });
+  };
+
+  const openMediaSelector = (type: 'hero' | 'secondary', index: number = 0) => {
+    setMediaSelectorType(type);
+    setMediaSelectorIndex(index);
+    setShowMediaSelector(true);
+  };
+
+  const handleMediaSelection = (imageUrl: string) => {
+    if (!project || !mediaSelectorType) return;
+    
+    if (mediaSelectorType === 'hero') {
+      const newHeroImages = [...(project.heroImages || [''])];
+      newHeroImages[mediaSelectorIndex] = imageUrl;
+      setProject({ ...project, heroImages: newHeroImages });
+    } else if (mediaSelectorType === 'secondary') {
+      setProject({ ...project, image: imageUrl });
+    }
   };
 
   const addHeroImage = () => {
@@ -296,86 +350,137 @@ export default function EditProjectPage() {
                       Imagen del Hero * <span className="text-red-500">*</span>
                     </label>
                     
-                    {/* Campo único para agregar múltiples imágenes del hero */}
-                    <div 
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
-                      onClick={() => document.getElementById('hero-images-input')?.click()}
-                    >
-                      <div className="text-gray-400 mb-4">
-                        <svg className="mx-auto h-9 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        <p className="font-medium">Arrastra una imagen aquí o imágenes</p>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF hasta 5MB</p>
-                      </div>
+                    {/* Botón para agregar imágenes del hero desde Media */}
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => openMediaSelector('hero', 0)}
+                        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
+                      >
+                        <div className="text-gray-400 mb-4">
+                          <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p className="font-medium">Seleccionar imagen del Hero</p>
+                          <p className="text-xs text-gray-500 mt-1">Haz clic para elegir una imagen del Media</p>
+                        </div>
+                      </button>
                       
-                      {/* Input de archivo oculto */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            Array.from(e.target.files).forEach(file => {
-                              // Simular upload para cada archivo
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                const imageUrl = event.target?.result as string;
-                                const newHeroImages = [...(project.heroImages || [''])];
-                                if (newHeroImages.length === 0 || newHeroImages[0] === '') {
-                                  newHeroImages[0] = imageUrl;
-                                } else {
-                                  newHeroImages.push(imageUrl);
-                                }
-                                setProject({ ...project, heroImages: newHeroImages });
-                              };
-                              reader.readAsDataURL(file);
-                            });
-                          }
-                        }}
-                        className="hidden"
-                        id="hero-images-input"
-                      />
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={addHeroImage}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                        >
+                          + Agregar otra imagen del Hero
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Mostrar miniaturas de las imágenes cargadas */}
                     {project.heroImages && project.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                      <div className="flex flex-wrap gap-3">
-                        {project.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                          <div key={index} className="relative inline-block">
-                            <img
-                              src={image}
-                              alt={`Imagen del hero ${index + 1}`}
-                              className="w-16 h-16 object-cover rounded-lg border"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newHeroImages = [...project.heroImages];
-                                newHeroImages[index] = '';
-                                setProject({ ...project, heroImages: newHeroImages });
-                              }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-3">
+                          {project.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
+                            <div key={index} className="relative inline-block">
+                              <img
+                                src={image}
+                                alt={`Imagen del hero ${index + 1}`}
+                                className="w-16 h-16 object-cover rounded-lg border"
+                              />
+                              <div className="absolute -top-2 -right-2 flex space-x-1">
+                                <button
+                                  type="button"
+                                  onClick={() => openMediaSelector('hero', index)}
+                                  className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-blue-600"
+                                  title="Cambiar imagen"
+                                >
+                                  ↻
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const currentHeroImages = project.heroImages || [''];
+                                    const newHeroImages = [...currentHeroImages];
+                                    newHeroImages[index] = '';
+                                    setProject({ ...project, heroImages: newHeroImages });
+                                  }}
+                                  className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                                  title="Eliminar imagen"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentHeroImages = project.heroImages || [''];
+                              const lastIndex = currentHeroImages.filter(img => img && img.trim() !== '').length;
+                              openMediaSelector('hero', lastIndex);
+                            }}
+                            className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                          >
+                            + Agregar imagen
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <ImageUploader
-                    label="Imagen Secundaria"
-                    projectId={project.id}
-                    currentImage={project.image}
-                    onImageUpload={(imageUrl) => setProject({ ...project, image: imageUrl })}
-                    required={false}
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imagen Secundaria
+                  </label>
+                  
+                  {project.image ? (
+                    <div className="space-y-3">
+                      <img
+                        src={project.image}
+                        alt="Imagen secundaria"
+                        className="w-32 h-32 object-cover rounded-lg border"
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openMediaSelector('secondary')}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                        >
+                          Cambiar Imagen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProject({ ...project, image: '' })}
+                          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openMediaSelector('secondary')}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
+                    >
+                      <div className="text-gray-400 mb-4">
+                        <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium">Seleccionar imagen del Media</p>
+                        <p className="text-xs text-gray-500 mt-1">Haz clic para elegir una imagen existente</p>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -532,6 +637,24 @@ export default function EditProjectPage() {
           </button>
         </div>
       </form>
+      
+      {/* Media Selector Modal */}
+      <MediaSelector
+        isOpen={showMediaSelector}
+        onClose={() => setShowMediaSelector(false)}
+        onSelect={handleMediaSelection}
+        title={mediaSelectorType === 'hero' ? 'Seleccionar Imagen del Hero' : 'Seleccionar Imagen Secundaria'}
+        contentType="proyectos"
+      />
+      
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

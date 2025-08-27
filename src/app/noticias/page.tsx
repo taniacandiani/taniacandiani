@@ -24,25 +24,48 @@ export default function NoticiasPage() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Migrar noticias existentes a múltiples categorías
-    NewsStorage.migrateToMultipleCategories();
-    
-    // Initialize with sample news if localStorage is empty
-    const storedNews = NewsStorage.getAll();
-    if (storedNews.length === 0) {
-      NewsStorage.saveAll(SAMPLE_NEWS);
-      setNews(SAMPLE_NEWS);
-    } else {
-      setNews(storedNews);
-    }
+    const initializeData = async () => {
+      try {
+        setLoading(true);
+        
+        // Migrar noticias existentes a múltiples categorías
+        await NewsStorage.migrateToMultipleCategories();
+        
+        // Initialize with sample news if storage is empty
+        const storedNews = await NewsStorage.getAll();
+        if (storedNews.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default news from content.ts');
+          setNews(SAMPLE_NEWS);
+        } else {
+          setNews(storedNews);
+        }
 
-    // Initialize categories
-    const storedCategories = NewsCategoryStorage.getAll();
-    if (storedCategories.length === 0) {
-      NewsCategoryStorage.saveAll(NEWS_CATEGORIES);
-    }
+        // Initialize categories
+        const storedCategories = await NewsCategoryStorage.getAll();
+        if (storedCategories.length === 0) {
+          // Note: saveAll is not implemented in the new async version
+          // We'll rely on the JSON files for now
+          console.log('Using default categories from content.ts');
+          setCategories(NEWS_CATEGORIES);
+        } else {
+          setCategories(storedCategories);
+        }
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        // Fallback to static content
+        setNews(SAMPLE_NEWS);
+        setCategories(NEWS_CATEGORIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
   useEffect(() => {
@@ -50,8 +73,16 @@ export default function NoticiasPage() {
     setFilteredNews(publishedNews);
 
     // Update categories with counts
-    const updatedCategories = NewsCategoryStorage.updateCounts();
-    setCategories(updatedCategories);
+    const updateCategoryCounts = async () => {
+      try {
+        const updatedCategories = await NewsCategoryStorage.updateCounts();
+        setCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error updating category counts:', error);
+      }
+    };
+
+    updateCategoryCounts();
   }, [news]);
 
   // Initialize filters from URL params
@@ -88,14 +119,22 @@ export default function NoticiasPage() {
 
   // Listen for news updates from admin
   useEffect(() => {
-    const handleNewsUpdate = () => {
-      const updatedNews = NewsStorage.getAll();
-      setNews(updatedNews);
+    const handleNewsUpdate = async () => {
+      try {
+        const updatedNews = await NewsStorage.getAll();
+        setNews(updatedNews);
+      } catch (error) {
+        console.error('Error updating news:', error);
+      }
     };
 
-    const handleCategoriesUpdate = () => {
-      const updatedCategories = NewsCategoryStorage.updateCounts();
-      setCategories(updatedCategories);
+    const handleCategoriesUpdate = async () => {
+      try {
+        const updatedCategories = await NewsCategoryStorage.updateCounts();
+        setCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error updating categories:', error);
+      }
     };
 
     window.addEventListener('newsUpdated', handleNewsUpdate);
@@ -108,6 +147,8 @@ export default function NoticiasPage() {
 
   // Get available years
   const availableYears = useMemo(() => {
+    if (!Array.isArray(news)) return [];
+    
     const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [news]);
@@ -152,6 +193,21 @@ export default function NoticiasPage() {
       day: 'numeric'
     });
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container-mobile py-8 pt-16">
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando noticias...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

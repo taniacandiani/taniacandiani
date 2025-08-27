@@ -1,0 +1,70 @@
+[
+  {
+    "id": "lifeblood",
+    "title": "Lifeblood",
+    "subtitle": "Lifeblood - Echoing Landscape",
+    "image": "/fondo1.jpg",
+    "category": "Arqueología de los Medios",
+    "year": 2023,
+    "description": "Exploración de la relación entre el nacimiento de la ciudad de Houston y las vías fluviales que atraviesan su geografía.",
+    "slug": "lifeblood",
+    "tags": [
+      "Houston",
+      "vías fluviales",
+      "historia",
+      "video instalación"
+    ],
+    "featured": true,
+    "status": "published",
+    "heroImages": [
+      "/fondo1.jpg",
+      "/fondo2.jpg",
+      "/fondo3.jpg"
+    ],
+    "projectDetails": "<p><strong>Lifeblood</strong> es el nombre de la exposición individual, en el <strong>Blaffer Art Museum de la Universidad de Houston</strong>, curada por <strong>Steven Matijcio</strong>, en la que <strong>Tania Candiani</strong> exploró la relación entre el nacimiento de la ciudad de Houston y las vías fluviales que atraviesan su geografía.</p><p>El alma de la exposición es el video Echoing Landscape.</p><p>Una instalación inmersiva de sonido y video con narración poética que cuenta la historia fragmentada de las vías fluviales en Houston a través de cuatro capítulos: un pasado precolonial, violencia y trabajo, desastres urbano y la actualidad.</p>",
+    "technicalSheet": "<p><strong>Técnica:</strong> Video instalación inmersiva</p><p><strong>Duración:</strong> 15 minutos (loop)</p><p><strong>Dimensiones:</strong> Variable</p><p><strong>Materiales:</strong> Video HD, sistema de sonido multicanal, proyección</p><p><strong>Año de creación:</strong> 2023</p><p><strong>Comisión:</strong> Blaffer Art Museum, Universidad de Houston</p>",
+    "downloadLink": "#",
+    "additionalImage": "/fondo2.jpg",
+    "showInHomeHero": true,
+    "heroDescription": "Las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria, creado en 2017 por la artista Doris Salcedo en la ciudad de Bogotá, son para Candiani una alegoría del campo tras la batalla, su pavimento de violencia reconfigurada guarda los restos de la guerra",
+    "commissionedBy": "Blaffer Art Museum, Universidad de Houston",
+    "curator": "Steven Matijcio",
+    "location": "Houston, Texas",
+    "categories": [
+      "Arqueología de los Medios",
+      "Sitio Específico",
+      "holamundoproyectos"
+    ]
+  },
+  {
+    "id": "desminar",
+    "title": "Desminar - Fragmentos de Memoria",
+    "image": "/fondo1.jpg",
+    "category": "Arqueología de los Medios",
+    "year": 2024,
+    "description": "Proyecto contemporáneo que explora la intersección entre tecnología y memoria a través de las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria.",
+    "slug": "desminar-fragmentos-memoria",
+    "tags": [
+      "memoria",
+      "violencia",
+      "reconstrucción"
+    ],
+    "featured": true,
+    "status": "published",
+    "heroImages": [
+      "/fondo1.jpg"
+    ],
+    "projectDetails": "<p>Proyecto que explora la memoria colectiva y la reconstrucción a través de la tecnología.</p>",
+    "technicalSheet": "<p><strong>Técnica:</strong> Instalación multimedia</p><p><strong>Año:</strong> 2024</p>",
+    "downloadLink": "#",
+    "additionalImage": "",
+    "showInHomeHero": false,
+    "heroDescription": "",
+    "commissionedBy": "",
+    "curator": "",
+    "location": "",
+    "categories": [
+      "Arqueología de los Medios"
+    ]
+  }
+]

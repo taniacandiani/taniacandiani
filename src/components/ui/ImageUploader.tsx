@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import MediaSelector from './MediaSelector';
 
 interface ImageUploaderProps {
   onImageUpload: (imageUrl: string) => void;
@@ -10,6 +11,7 @@ interface ImageUploaderProps {
   required?: boolean;
   multiple?: boolean;
   onImagesUpload?: (imageUrls: string[]) => void;
+  contentType?: string; // 'proyectos', 'noticias', 'acerca', etc.
 }
 
 export default function ImageUploader({ 
@@ -19,11 +21,13 @@ export default function ImageUploader({
   label, 
   required = false,
   multiple = false,
-  onImagesUpload
+  onImagesUpload,
+  contentType = 'proyectos'
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
+  const [showMediaSelector, setShowMediaSelector] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): boolean => {
@@ -53,6 +57,7 @@ export default function ImageUploader({
       const formData = new FormData();
       formData.append('image', file);
       formData.append('projectId', projectId);
+      formData.append('contentType', contentType);
       
       const response = await fetch('/api/upload-image', {
         method: 'POST',
@@ -86,6 +91,7 @@ export default function ImageUploader({
         const formData = new FormData();
         formData.append('image', file);
         formData.append('projectId', projectId);
+        formData.append('contentType', contentType);
         
         const response = await fetch('/api/upload-image', {
           method: 'POST',
@@ -148,6 +154,11 @@ export default function ImageUploader({
     fileInputRef.current?.click();
   };
 
+  const handleMediaSelect = (imageUrl: string) => {
+    onImageUpload(imageUrl);
+    setShowMediaSelector(false);
+  };
+
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">
@@ -163,6 +174,31 @@ export default function ImageUploader({
         onChange={handleFileInput}
         className="hidden"
       />
+      
+      {/* Botones de acción */}
+      <div className="flex gap-3 mb-3">
+        <button
+          type="button"
+          onClick={() => setShowMediaSelector(true)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm flex items-center space-x-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>Seleccionar del Media</span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={openFileDialog}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <span>Subir Nueva Imagen</span>
+        </button>
+      </div>
       
       {/* Área de drag & drop */}
       <div
@@ -201,28 +237,38 @@ export default function ImageUploader({
         )}
       </div>
       
-                        {/* Imagen actual */}
-                  {currentImage && (
-                    <div className="relative inline-block">
-                      <img
-                        src={currentImage}
-                        alt="Imagen actual"
-                        className="w-18 h-18 object-cover rounded-lg border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onImageUpload('')}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 z-10"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
+      {/* Imagen actual */}
+      {currentImage && (
+        <div className="relative inline-block">
+          <img
+            src={currentImage}
+            alt="Imagen actual"
+            className="w-18 h-18 object-cover rounded-lg border"
+          />
+          <button
+            type="button"
+            onClick={() => onImageUpload('')}
+            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 z-10"
+          >
+            ×
+          </button>
+        </div>
+      )}
       
       {/* Mensaje de error */}
       {error && (
         <p className="text-sm text-red-600">{error}</p>
       )}
+
+      {/* MediaSelector */}
+      <MediaSelector
+        isOpen={showMediaSelector}
+        onClose={() => setShowMediaSelector(false)}
+        onSelect={handleMediaSelect}
+        currentImage={currentImage}
+        title={`Seleccionar ${label}`}
+        contentType={contentType}
+      />
     </div>
   );
 }
