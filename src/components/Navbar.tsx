@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import LanguageSelector from '@/components/ui/LanguageSelector';
 import { NAVIGATION_ITEMS, SOCIAL_LINKS } from '@/constants/navigation';
 import { AiFillInstagram } from "react-icons/ai";
@@ -9,6 +10,7 @@ import { MdEmail } from "react-icons/md";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <nav className="fixed top-0 w-full bg-white z-50 shadow-sm" role="navigation" aria-label="Navegación principal">
@@ -27,16 +29,20 @@ export default function Navbar() {
         
         {/* Navigation items al centro */}
         <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
-          {NAVIGATION_ITEMS.map((item) => (
-            <Link 
-              key={item.href}
-              href={item.href} 
-              className="text-lg hover:text-gray-600 transition-colors duration-200  rounded-sm px-2 py-1"
-              
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAVIGATION_ITEMS.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Link 
+                key={item.href}
+                href={item.href} 
+                className="relative text-lg hover:text-gray-600 transition-colors duration-200 rounded-sm px-2 py-1 group"
+              >
+                {item.label}
+                {/* Animated underline */}
+                <div className={`absolute bottom-0 left-0 w-0 h-0.5 bg-black transition-all duration-300 ease-in-out group-hover:w-full ${isActive ? 'w-full' : ''}`}></div>
+              </Link>
+            );
+          })}
         </div>
         
         {/* Mobile menu button */}
@@ -87,18 +93,22 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200" role="menu" aria-label="Menú móvil">
           <div className="px-4 py-4 space-y-4">
-            {NAVIGATION_ITEMS.map((item) => (
-              <Link 
-                key={item.href}
-                href={item.href} 
-                className="block text-lg hover:text-gray-600 transition-colors duration-200  rounded-sm px-2 py-1"
-                
-                role="menuitem"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAVIGATION_ITEMS.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <Link 
+                  key={item.href}
+                  href={item.href} 
+                  className="relative block text-lg hover:text-gray-600 transition-colors duration-200 rounded-sm px-2 py-1 group"
+                  role="menuitem"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                  {/* Animated underline */}
+                  <div className={`absolute bottom-0 left-0 w-0 h-0.5 bg-black transition-all duration-300 ease-in-out group-hover:w-full ${isActive ? 'w-full' : ''}`}></div>
+                </Link>
+              );
+            })}
             <div className="pt-4 border-t border-gray-200">
               <LanguageSelector />
             </div>

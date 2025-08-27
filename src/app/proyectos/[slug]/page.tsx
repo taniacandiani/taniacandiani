@@ -147,7 +147,7 @@ export default function ProjectPage({ params }: Props) {
           <div className="w-64">
             {/* Título sticky */}
             <div className="sticky top-32 bg-white z-10 mb-8">
-              <h1 className="text-2xl font-bold text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px' }}>
+              <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
                 {project.title}
               </h1>
             </div>

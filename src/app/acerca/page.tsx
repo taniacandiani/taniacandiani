@@ -84,8 +84,8 @@ export default function AcercaPage() {
             {publications.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {publications.map((publication) => (
-                  <div key={publication.id} className="group">
-                    <div className="space-y-4">
+                  <div key={publication.id} className="group flex flex-col h-full">
+                    <div className="flex flex-col flex-1 space-y-4">
                       {/* Thumbnail */}
                       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
                         <Image
@@ -102,12 +102,12 @@ export default function AcercaPage() {
                       </h3>
                       
                       {/* Description */}
-                      <p className="text-gray-600 text-sm leading-relaxed">
+                      <p className="text-gray-600 text-sm leading-relaxed flex-1">
                         {publication.description}
                       </p>
                       
                       {/* Download Link */}
-                      <div className="pt-2">
+                      <div className="pt-2 mt-auto">
                         <Link
                           href={publication.downloadLink}
                           className="inline-flex items-center text-black hover:text-gray-700 font-medium text-sm transition-colors"
