@@ -7,18 +7,25 @@ export interface Slide {
 
 export interface NewsItem {
   id: string;
-  image: string;
   title: string;
   description: string;
-  link: string;
-  publishedAt?: string;
+  content?: string; // Full article content
+  image: string;
+  slug: string;
+  publishedAt: string;
   category?: string;
+  author?: string;
+  status?: 'published' | 'draft' | 'archived';
+  showInHome?: boolean; // Checkbox to show in home
+  tags?: string[];
+  featured?: boolean;
 }
 
 export interface Project {
   id: string;
   title: string;
-  image: string;
+  subtitle?: string;
+  image: string; // Main card image
   category: string;
   year: number;
   description: string;
@@ -26,6 +33,30 @@ export interface Project {
   tags?: string[];
   featured?: boolean;
   status?: 'published' | 'draft' | 'archived';
+  
+  // Extended fields for full project page
+  heroImages?: string[]; // Slider images for hero
+  projectDetails?: string; // Full project description (HTML)
+  technicalSheet?: string; // Technical sheet content (HTML)
+  downloadLink?: string; // PDF download link
+  additionalImage?: string; // Bottom image
+  
+  // Hero display options
+  showInHomeHero?: boolean; // Checkbox to show in home hero
+  heroDescription?: string; // Custom description for home hero
+  
+  // Additional project metadata
+  commissionedBy?: string;
+  curator?: string;
+  location?: string;
+  duration?: string;
+  projectInfo?: ProjectMetadata[];
+}
+
+export interface ProjectMetadata {
+  label: string;
+  value: string;
+  sublabel?: string;
 }
 
 export interface ProjectCategory {
@@ -33,6 +64,38 @@ export interface ProjectCategory {
   name: string;
   count: number;
   description?: string;
+}
+
+export interface NewsCategory {
+  id: string;
+  name: string;
+  count: number;
+  description?: string;
+}
+
+export interface Publication {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  downloadLink: string;
+  publishedAt: string;
+  status?: 'published' | 'draft';
+  featured?: boolean;
+}
+
+export interface AboutContent {
+  id: string;
+  title: string;
+  content: string;
+  lastUpdated: string;
+}
+
+export interface ContactContent {
+  id: string;
+  title: string;
+  description: string;
+  lastUpdated: string;
 }
 
 export interface ProjectInfo {

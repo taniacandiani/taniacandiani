@@ -16,7 +16,6 @@ const Footer: React.FC = () => {
             <DynamicNavigation 
               className="mx-auto" 
               area="footer"
-              fallback={true}
             />
           </div>
           

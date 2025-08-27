@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useSlider } from '@/hooks/useSlider';
 import { HeroProps } from '@/types';
 import { PROJECT_INFO } from '@/data/content';
+import { ProjectStorage } from '@/lib/projectStorage';
 
 const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 5000 }) => {
   const { currentSlide, fade, nextSlide, prevSlide } = useSlider({ 
@@ -21,6 +22,20 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
   const handleNextSlide = useCallback(() => {
     nextSlide();
   }, [nextSlide]);
+
+  // Find if current slide corresponds to a project
+  const getCurrentProjectLink = useCallback(() => {
+    if (slides.length === 0) return '#';
+    
+    const currentSlideData = slides[currentSlide];
+    const featuredProjects = ProjectStorage.getFeatured();
+    
+    const matchingProject = featuredProjects.find(project => 
+      project.title === currentSlideData.title
+    );
+    
+    return matchingProject ? `/proyectos/${matchingProject.slug}` : '#';
+  }, [slides, currentSlide]);
 
   if (slides.length === 0) {
     return (
@@ -97,7 +112,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
           
           <div className="hidden lg:flex items-center space-x-12">
             <a 
-              href="#" 
+              href={getCurrentProjectLink()} 
               className="bg-black text-white px-6 lg:px-10 py-2 rounded-[5px] hover:bg-gray-800 transition-colors text-sm lg:text-base "
             >
               Ver Proyecto
@@ -117,7 +132,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
           {/* Mobile CTA */}
           <div className="lg:hidden w-full">
             <a 
-              href="#" 
+              href={getCurrentProjectLink()} 
               className="block w-full text-center bg-black text-white px-6 py-3 rounded-[5px] hover:bg-gray-800 transition-colors text-sm "
             >
               Ver Proyecto

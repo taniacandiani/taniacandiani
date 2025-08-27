@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Project } from '@/types';
 
 interface ProjectCardProps {
@@ -8,7 +9,7 @@ interface ProjectCardProps {
 export default function ProjectCard({ project }: ProjectCardProps) {
 
   return (
-    <div className="group cursor-pointer">
+    <Link href={`/proyectos/${project.slug}`} className="group cursor-pointer block">
       <div className="relative aspect-[2/1] mb-4 overflow-hidden rounded-md">
         <Image
           src={project.image}
@@ -32,6 +33,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         <span>•</span>
         <span>{project.year}</span>
       </div>
-    </div>
+    </Link>
   );
 } 

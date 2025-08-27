@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Project, ProjectCategory, SortOption, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
 
@@ -10,6 +11,8 @@ interface ProjectsSectionProps {
 }
 
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [filterState, setFilterState] = useState<FilterState>({
     searchTerm: '',
     selectedCategory: null,
@@ -20,6 +23,20 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Initialize filters from URL params
+  useEffect(() => {
+    const category = searchParams.get('category');
+    const year = searchParams.get('year');
+    const search = searchParams.get('search');
+    
+    setFilterState(prev => ({
+      ...prev,
+      selectedCategory: category || null,
+      selectedYear: year ? parseInt(year) : null,
+      searchTerm: search || ''
+    }));
+  }, [searchParams]);
 
   // Manejar click fuera del dropdown
   useEffect(() => {
@@ -299,8 +316,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${project.image})`
                   }}
                   onClick={() => {
-                    // Aquí irá la funcionalidad de navegación
-                    console.log('Navegando al proyecto:', project.slug);
+                    router.push(`/proyectos/${project.slug}`);
                   }}
                 >
                   <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">

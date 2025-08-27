@@ -1,0 +1,241 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { NewsItem } from '@/types';
+import { NewsStorage } from '@/lib/newsStorage';
+import { SAMPLE_NEWS } from '@/data/content';
+
+export default function AdminNoticiasPage() {
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  useEffect(() => {
+    loadNews();
+  }, []);
+
+  const loadNews = () => {
+    const storedNews = NewsStorage.getAll();
+    if (storedNews.length === 0) {
+      NewsStorage.saveAll(SAMPLE_NEWS);
+      setNews(SAMPLE_NEWS);
+    } else {
+      setNews(storedNews);
+    }
+  };
+
+  useEffect(() => {
+    let filtered = news;
+
+    if (searchTerm) {
+      filtered = filtered.filter(n => 
+        n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        n.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(n => n.status === statusFilter);
+    }
+
+    setFilteredNews(filtered);
+  }, [searchTerm, statusFilter, news]);
+
+  const handleDelete = (id: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar esta noticia?')) {
+      NewsStorage.remove(id);
+      loadNews();
+    }
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newsItem = news.find(n => n.id === id);
+    if (newsItem) {
+      const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+      NewsStorage.save({ ...newsItem, status: newStatus as 'published' | 'draft' | 'archived' });
+      loadNews();
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      published: { label: 'Publicado', className: 'bg-green-100 text-green-800' },
+      draft: { label: 'Borrador', className: 'bg-yellow-100 text-yellow-800' },
+      archived: { label: 'Archivado', className: 'bg-gray-100 text-gray-800' }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
+    
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const homeNewsCount = news.filter(n => n.showInHome && n.status === 'published').length;
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Administrar Noticias</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Gestiona las noticias del sitio web. {homeNewsCount}/3 noticias seleccionadas para mostrar en el inicio.
+          </p>
+        </div>
+        <Link
+          href="/admin/noticias/nueva"
+          className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+        >
+          Nueva Noticia
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Buscar noticias..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="published">Publicado</option>
+              <option value="draft">Borrador</option>
+              <option value="archived">Archivado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-gray-900">{news.length}</div>
+          <div className="text-sm text-gray-600">Total noticias</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-green-600">
+            {news.filter(n => n.status === 'published').length}
+          </div>
+          <div className="text-sm text-gray-600">Publicadas</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-yellow-600">
+            {news.filter(n => n.status === 'draft').length}
+          </div>
+          <div className="text-sm text-gray-600">Borradores</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-blue-600">{homeNewsCount}</div>
+          <div className="text-sm text-gray-600">En inicio</div>
+        </div>
+      </div>
+
+      {/* News List */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        {filteredNews.length === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-gray-500">No se encontraron noticias.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Título</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Categoría</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Estado</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Fecha</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">En inicio</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredNews.map((newsItem) => (
+                  <tr key={newsItem.id} className="hover:bg-gray-50">
+                    <td className="py-4 px-6">
+                      <div>
+                        <div className="font-medium text-gray-900">{newsItem.title}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {newsItem.description}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900">
+                      {newsItem.category || '-'}
+                    </td>
+                    <td className="py-4 px-6">
+                      {getStatusBadge(newsItem.status || 'draft')}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900">
+                      {formatDate(newsItem.publishedAt)}
+                    </td>
+                    <td className="py-4 px-6">
+                      {newsItem.showInHome ? (
+                        <span className="text-green-600 text-sm">✓ Sí</span>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/noticias/editar/${newsItem.id}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          Editar
+                        </Link>
+                        <button
+                          onClick={() => handleToggleStatus(newsItem.id, newsItem.status || 'draft')}
+                          className="text-green-600 hover:text-green-800 text-sm"
+                        >
+                          {newsItem.status === 'published' ? 'Despublicar' : 'Publicar'}
+                        </button>
+                        <Link
+                          href={`/noticias/${newsItem.slug}`}
+                          target="_blank"
+                          className="text-gray-600 hover:text-gray-800 text-sm"
+                        >
+                          Ver
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(newsItem.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,21 +1,68 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import type { Metadata } from 'next';
 import Section from '@/components/Section';
 import Hero from '@/components/Hero';
 import NewsCard from '@/components/ui/NewsCard';
 import MainLayout from '@/components/MainLayout';
-import { HERO_SLIDES, NEWS_ITEMS } from '@/data/content';
-
-export const metadata: Metadata = {
-  title: 'Inicio',
-  description: 'Explora el trabajo de Tania Candiani, artista contemporánea especializada en sitio específico, arqueología de los medios y prácticas sociales.',
-  openGraph: {
-    title: 'Tania Candiani - Artista Contemporánea',
-    description: 'Explora el trabajo de Tania Candiani, artista contemporánea especializada en sitio específico.',
-    type: 'website',
-  },
-};
+import { HERO_SLIDES, NEWS_ITEMS, PROJECTS, SAMPLE_NEWS } from '@/data/content';
+import { ProjectStorage } from '@/lib/projectStorage';
+import { NewsStorage } from '@/lib/newsStorage';
+import { Slide, NewsItem } from '@/types';
 
 export default function Home() {
+  const [heroSlides, setHeroSlides] = useState<Slide[]>(HERO_SLIDES);
+  const [homeNews, setHomeNews] = useState<NewsItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    // Initialize with existing projects if localStorage is empty
+    const storedProjects = ProjectStorage.getAll();
+    if (storedProjects.length === 0 && !isInitialized) {
+      ProjectStorage.saveAll(PROJECTS);
+    }
+    
+    // Initialize with existing news if localStorage is empty
+    const storedNews = NewsStorage.getAll();
+    if (storedNews.length === 0 && !isInitialized) {
+      NewsStorage.saveAll(SAMPLE_NEWS);
+    }
+
+    // Get featured projects for hero
+    const featuredProjects = ProjectStorage.getFeatured();
+    
+    if (featuredProjects.length > 0) {
+      const projectSlides: Slide[] = featuredProjects.map(project => ({
+        image: project.heroImages?.[0] || project.image,
+        title: project.title,
+        text: project.heroDescription || project.description
+      }));
+      
+      // Combine original slides with project slides
+      setHeroSlides([...projectSlides, ...HERO_SLIDES]);
+    }
+
+    // Get news for home
+    const newsForHome = NewsStorage.getForHome();
+    setHomeNews(newsForHome);
+    
+    setIsInitialized(true);
+  }, [isInitialized]);
+
+  // Listen for news updates from admin
+  useEffect(() => {
+    const handleNewsUpdate = () => {
+      const newsForHome = NewsStorage.getForHome();
+      setHomeNews(newsForHome);
+    };
+
+    window.addEventListener('newsUpdated', handleNewsUpdate);
+    return () => {
+      window.removeEventListener('newsUpdated', handleNewsUpdate);
+    };
+  }, []);
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -47,16 +94,22 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <div>
-        <Hero slides={HERO_SLIDES} autoPlay={true} interval={6000} />
+        <Hero slides={heroSlides} autoPlay={true} interval={6000} />
 
         <Section as="main">
           <div className="main-section py-40">
             <h3 className="font-bold mb-12">Noticias</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {NEWS_ITEMS.map((news) => (
-                <NewsCard key={news.id} news={news} />
-              ))}
+              {homeNews.length > 0 ? (
+                homeNews.map((news) => (
+                  <NewsCard key={news.id} news={news} />
+                ))
+              ) : (
+                NEWS_ITEMS.map((news) => (
+                  <NewsCard key={news.id} news={news} />
+                ))
+              )}
             </div>
           </div>
         </Section>
