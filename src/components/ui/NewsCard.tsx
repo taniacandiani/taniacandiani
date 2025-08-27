@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { NewsItem } from '@/types';
+import { generateNewsExcerpt } from '@/lib/utils';
 
 interface NewsCardProps {
   news: NewsItem;
@@ -31,10 +32,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </h2>
         </header>
         <p className="text-gray-700 mb-4 flex-1" aria-describedby={`news-title-${news.id}`}>
-          {news.description}
+          {generateNewsExcerpt(news.content, 150)}
         </p>
         <Link 
-          href={news.slug ? `/noticias/${news.slug}` : (news.link || '#')} 
+          href={`/noticias/${news.slug}`}
           className="flex items-center text-2xl pt-5 text-black hover:underline rounded-sm p-1 -m-1 transition-colors mt-auto"
           aria-label={`Leer más sobre ${news.title}`}
         >

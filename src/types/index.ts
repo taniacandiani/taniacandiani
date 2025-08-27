@@ -8,17 +8,15 @@ export interface Slide {
 export interface NewsItem {
   id: string;
   title: string;
-  description: string;
-  content?: string; // Full article content
-  image: string;
+  content: string; // Full article content (required)
+  image: string; // Main card image
+  heroImages?: string[]; // Slider images for hero (like projects)
   slug: string;
   publishedAt: string;
-  category?: string;
+  categories?: string[]; // Changed from single category to array
   author?: string;
   status?: 'published' | 'draft' | 'archived';
-  showInHome?: boolean; // Checkbox to show in home
   tags?: string[];
-  featured?: boolean;
 }
 
 export interface Project {
@@ -26,7 +24,7 @@ export interface Project {
   title: string;
   subtitle?: string;
   image: string; // Main card image
-  category: string;
+  categories: string[]; // Changed from single category to array
   year: number;
   description: string;
   slug: string;

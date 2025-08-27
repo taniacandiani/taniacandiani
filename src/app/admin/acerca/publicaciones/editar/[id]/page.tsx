@@ -37,7 +37,10 @@ export default function EditPublicationPage() {
     setSaving(true);
     try {
       PublicationStorage.save(publication);
-      router.push('/admin/acerca/publicaciones');
+      
+      // Show success message without redirecting
+      alert('Publicación actualizada correctamente');
+      // Stay in the editor - don't redirect
     } catch (error) {
       console.error('Error al guardar:', error);
       alert('Error al guardar la publicación');

@@ -61,12 +61,59 @@ export class NewsStorage {
 
   static getForHome(): NewsItem[] {
     return this.getPublished()
-      .filter(n => n.showInHome === true)
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 3); // Maximum 3 for home
+      .slice(0, 3); // Maximum 3 for home - últimas 3 noticias publicadas
   }
 
-  static getFeatured(): NewsItem[] {
-    return this.getPublished().filter(n => n.featured === true);
+
+
+  // Migración: convertir categoría única a múltiples categorías
+  static migrateToMultipleCategories(): void {
+    try {
+      if (typeof window === 'undefined') return;
+      
+      const news = this.getAll();
+      let hasChanges = false;
+      
+      const migratedNews = news.map(newsItem => {
+        try {
+          // Si la noticia ya tiene categories, no hacer nada
+          if (newsItem.categories && Array.isArray(newsItem.categories)) {
+            return newsItem;
+          }
+          
+          // Si tiene category (string), convertir a categories (array)
+          if ('category' in newsItem && typeof (newsItem as any).category === 'string') {
+            hasChanges = true;
+            const { category, ...rest } = newsItem as any;
+            return {
+              ...rest,
+              categories: category ? [category] : []
+            };
+          }
+          
+          // Si no tiene ni category ni categories, asignar array vacío
+          if (!newsItem.categories) {
+            hasChanges = true;
+            return {
+              ...newsItem,
+              categories: []
+            };
+          }
+          
+          return newsItem;
+        } catch (error) {
+          console.error('Error procesando noticia durante migración:', error);
+          return newsItem;
+        }
+      });
+      
+      if (hasChanges) {
+        this.saveAll(migratedNews);
+        console.log('Migración de categorías de noticias completada');
+        }
+    } catch (error) {
+      console.error('Error durante migración de categorías de noticias:', error);
+    }
   }
 }

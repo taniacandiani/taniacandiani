@@ -45,7 +45,7 @@ export class NewsCategoryStorage {
     
     // Check if category is being used by any news
     const news = NewsStorage.getAll();
-    const newsUsingCategory = news.filter(n => n.category === category.name);
+    const newsUsingCategory = news.filter(n => n.categories?.includes(category.name));
     
     if (newsUsingCategory.length > 0) {
       return { 
@@ -77,7 +77,7 @@ export class NewsCategoryStorage {
     
     const updatedCategories = categories.map(cat => ({
       ...cat,
-      count: news.filter(n => n.category === cat.name).length
+      count: news.filter(n => n.categories?.includes(cat.name)).length
     }));
     
     this.saveAll(updatedCategories);

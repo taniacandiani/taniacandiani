@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     const news = NewsStorage.getAll();
     const publications = PublicationStorage.getAll();
     const publishedNews = news.filter(n => n.status === 'published');
-    const homeNews = news.filter(n => n.showInHome && n.status === 'published');
+    const homeNews = NewsStorage.getForHome(); // Obtiene las últimas 3 noticias publicadas
     const publishedPublications = publications.filter(p => p.status === 'published');
 
     setStats({

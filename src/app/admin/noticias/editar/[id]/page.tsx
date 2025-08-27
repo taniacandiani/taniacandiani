@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { NewsItem, NewsCategory } from '@/types';
 import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -19,15 +21,12 @@ export default function EditNewsPage({ params }: Props) {
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [formData, setFormData] = useState<Partial<NewsItem>>({
     title: '',
-    description: '',
     content: '',
     image: '/fondo1.jpg',
-    category: '',
+    categories: [],
     author: 'Tania Candiani',
     status: 'draft',
-    showInHome: false,
     tags: [],
-    featured: false
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +45,9 @@ export default function EditNewsPage({ params }: Props) {
 
       setFormData(newsItem);
 
+      // Migrar noticias existentes a múltiples categorías
+      NewsStorage.migrateToMultipleCategories();
+      
       // Initialize categories
       const storedCategories = NewsCategoryStorage.getAll();
       if (storedCategories.length === 0) {
@@ -55,8 +57,8 @@ export default function EditNewsPage({ params }: Props) {
         setCategories(storedCategories);
       }
 
-      if (!newsItem.category && storedCategories.length > 0) {
-        setFormData(prev => ({ ...prev, category: storedCategories[0].name }));
+      if (!newsItem.categories && storedCategories.length > 0) {
+        setFormData(prev => ({ ...prev, categories: [storedCategories[0].name] }));
       }
 
       setLoading(false);
@@ -65,13 +67,28 @@ export default function EditNewsPage({ params }: Props) {
     loadNews();
   }, [params, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     setSaving(true);
 
     try {
-      if (!formData.title || !formData.description) {
+      if (!formData.title || !formData.content) {
         alert('Por favor completa todos los campos requeridos');
+        setSaving(false);
+        return;
+      }
+
+      if (!formData.categories || formData.categories.length === 0) {
+        alert('Debes seleccionar al menos una categoría');
+        setSaving(false);
+        return;
+      }
+
+      // Validar que haya una imagen
+      if (!formData.image || formData.image.trim() === '') {
+        alert('Debes agregar una imagen para la noticia');
         setSaving(false);
         return;
       }
@@ -88,8 +105,12 @@ export default function EditNewsPage({ params }: Props) {
 
       NewsStorage.save(newsItem);
       
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('newsUpdated', { detail: newsItem }));
+      
+      // Show success message without redirecting
       alert('Noticia actualizada correctamente');
-      router.push('/admin/noticias');
+      // Stay in the editor - don't redirect
     } catch (error) {
       console.error('Error al actualizar la noticia:', error);
       alert('Error al actualizar la noticia');
@@ -122,6 +143,8 @@ export default function EditNewsPage({ params }: Props) {
     }
   };
 
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -132,19 +155,50 @@ export default function EditNewsPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Editar Noticia</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Editar Noticia</h1>
           <p className="text-sm text-gray-600 mt-1">
             Modifica los datos de la noticia seleccionada
           </p>
         </div>
-        <button
-          onClick={() => router.push('/admin/noticias')}
-          className="text-gray-600 hover:text-gray-800"
+      </div>
+
+      {/* Action Buttons - Top */}
+      <div className="flex justify-between items-center mb-8 pt-4 border-b border-gray-200 pb-4">
+        <Link
+          href={`/noticias/${formData.slug}`}
+          target="_blank"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
         >
-          ← Volver
-        </button>
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          Ver Noticia
+        </Link>
+        
+        <div className="flex gap-4">
+          <Link
+            href="/admin/noticias"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            Cancelar
+          </Link>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving}
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center"
+          >
+            {saving && (
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -163,24 +217,12 @@ export default function EditNewsPage({ params }: Props) {
             />
           </div>
 
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              required
-            />
-          </div>
+
 
           {/* Contenido completo */}
           <div>
             <RichTextEditor
-              label="Contenido completo"
+              label="Contenido completo *"
               value={formData.content || ''}
               onChange={(content) => setFormData({ ...formData, content })}
               placeholder="Escribe el contenido completo del artículo aquí..."
@@ -189,23 +231,40 @@ export default function EditNewsPage({ params }: Props) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Categoría */}
+            {/* Categorías */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoría
+                Categorías
               </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="">Seleccionar categoría</option>
+              <div className="space-y-2">
                 {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.name}
-                  </option>
+                  <label key={category.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.categories?.includes(category.name) || false}
+                      onChange={(e) => {
+                        const currentCategories = formData.categories || [];
+                        if (e.target.checked) {
+                          setFormData({ 
+                            ...formData, 
+                            categories: [...currentCategories, category.name]
+                          });
+                        } else {
+                          setFormData({ 
+                            ...formData, 
+                            categories: currentCategories.filter(c => c !== category.name)
+                          });
+                        }
+                      }}
+                      className="rounded focus:ring-black"
+                    />
+                    <span className="text-sm text-gray-700">{category.name}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
+              {(!formData.categories || formData.categories.length === 0) && (
+                <p className="text-sm text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
+              )}
             </div>
 
             {/* Estado */}
@@ -224,39 +283,23 @@ export default function EditNewsPage({ params }: Props) {
               </select>
             </div>
 
-            {/* Imagen */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Imagen
-              </label>
-              <select
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="/fondo1.jpg">Fondo 1</option>
-                <option value="/fondo2.jpg">Fondo 2</option>
-                <option value="/fondo3.jpg">Fondo 3</option>
-              </select>
-            </div>
+
           </div>
 
-          {/* Vista previa de imagen */}
-          {formData.image && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vista previa
-              </label>
-              <div className="relative w-48 h-24 rounded-md overflow-hidden border border-gray-300">
-                <Image
-                  src={formData.image}
-                  alt="Vista previa"
-                  fill
-                  className="object-cover"
-                />
-              </div>
+          {/* Imagen de la Noticia */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Imagen de la Noticia</h2>
+            
+            <div className="space-y-4">
+              <ImageUploader
+                label="Imagen Principal"
+                projectId={formData.id || 'news'}
+                currentImage={formData.image}
+                onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
+                required={true}
+              />
             </div>
-          )}
+          </div>
 
           {/* Tags */}
           <div>
@@ -303,34 +346,7 @@ export default function EditNewsPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Opciones de visualización */}
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="showInHome"
-                checked={formData.showInHome}
-                onChange={(e) => setFormData({ ...formData, showInHome: e.target.checked })}
-                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-              />
-              <label htmlFor="showInHome" className="ml-2 block text-sm text-gray-900">
-                Mostrar en página de inicio
-              </label>
-            </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={formData.featured}
-                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-              />
-              <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-                Noticia destacada
-              </label>
-            </div>
-          </div>
         </div>
 
         {/* Botones de acción */}
@@ -345,9 +361,15 @@ export default function EditNewsPage({ params }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center"
           >
-            {saving ? 'Guardando...' : 'Actualizar Noticia'}
+            {saving && (
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
         </div>
       </form>

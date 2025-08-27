@@ -9,20 +9,18 @@ import { NewsCategoryStorage, NewsCategory } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 export default function NewNewsPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [formData, setFormData] = useState<Partial<NewsItem>>({
     title: '',
-    description: '',
     content: '',
     image: '',
     slug: '',
-    category: '',
+    categories: [],
     status: 'draft',
-    showInHome: false,
-    featured: false,
     tags: [],
     publishedAt: new Date().toISOString()
   });
@@ -30,6 +28,9 @@ export default function NewNewsPage() {
   const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
+    // Migrar noticias existentes a múltiples categorías
+    NewsStorage.migrateToMultipleCategories();
+    
     // Initialize categories
     const storedCategories = NewsCategoryStorage.getAll();
     if (storedCategories.length === 0) {
@@ -39,11 +40,11 @@ export default function NewNewsPage() {
       setCategories(storedCategories);
     }
 
-    // Set default category if we don't have one
-    if (!formData.category && storedCategories.length > 0) {
-      setFormData(prev => ({ ...prev, category: storedCategories[0].name }));
+    // Set default categories if we don't have any
+    if (!formData.categories || formData.categories.length === 0) {
+      setFormData(prev => ({ ...prev, categories: [storedCategories[0]?.name].filter(Boolean) }));
     }
-  }, [formData.category]);
+  }, [formData.categories]);
 
 
 
@@ -73,39 +74,33 @@ export default function NewNewsPage() {
     });
   };
 
-  const validateHomeLimit = (showInHome: boolean) => {
-    if (!showInHome) return true;
-    
-    const currentHomeNews = NewsStorage.getForHome();
-    return currentHomeNews.length < 3;
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description || !formData.image) {
-      alert('Por favor completa al menos el título, descripción e imagen');
+    if (!formData.title || !formData.content || !formData.image) {
+      alert('Por favor completa al menos el título, contenido e imagen');
       return;
     }
 
-    if (formData.showInHome && !validateHomeLimit(true)) {
-      alert('Ya hay 3 noticias seleccionadas para mostrar en el inicio. Deselecciona alguna primero.');
+    if (!formData.categories || formData.categories.length === 0) {
+      alert('Debes seleccionar al menos una categoría');
       return;
     }
+
+
 
     const newsItem: NewsItem = {
       id: Date.now().toString(),
       title: formData.title!,
-      description: formData.description!,
-      content: formData.content || formData.description!,
+      content: formData.content!,
       image: formData.image!,
       slug: formData.slug || generateSlug(formData.title!),
       publishedAt: formData.publishedAt!,
-      category: formData.category,
+      categories: formData.categories || [],
       author: formData.author,
       status: formData.status as 'published' | 'draft' | 'archived',
-      showInHome: formData.showInHome,
-      featured: formData.featured,
       tags: formData.tags || []
     };
 
@@ -166,50 +161,47 @@ export default function NewNewsPage() {
               </p>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descripción *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required
-              />
-            </div>
+
+
+
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Imagen *
+                Categorías
               </label>
-              <input
-                type="text"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="/path/to/image.jpg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoría
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              >
+              <div className="space-y-2">
                 {categories.length === 0 ? (
-                  <option value="">Cargando categorías...</option>
+                  <div className="text-sm text-gray-500">Cargando categorías...</div>
                 ) : (
                   categories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    <label key={cat.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.categories?.includes(cat.name) || false}
+                        onChange={(e) => {
+                          const currentCategories = formData.categories || [];
+                          if (e.target.checked) {
+                            setFormData({ 
+                              ...formData, 
+                              categories: [...currentCategories, cat.name]
+                            });
+                          } else {
+                            setFormData({ 
+                              ...formData, 
+                              categories: currentCategories.filter(c => c !== cat.name)
+                            });
+                          }
+                        }}
+                        className="rounded focus:ring-black"
+                      />
+                      <span className="text-sm text-gray-700">{cat.name}</span>
+                    </label>
                   ))
                 )}
-              </select>
+              </div>
+              {(!formData.categories || formData.categories.length === 0) && (
+                <p className="text-sm text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 <Link 
                   href="/admin/noticias/categorias" 
@@ -237,57 +229,36 @@ export default function NewNewsPage() {
           </div>
         </div>
 
+        {/* Imagen de la Noticia */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Contenido</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Imagen de la Noticia</h2>
           
-          <div>
-            <RichTextEditor
-              label="Contenido completo"
-              value={formData.content || ''}
-              onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Escribe el contenido completo del artículo aquí... (opcional, se usará la descripción si está vacío)"
-              height={300}
+          <div className="space-y-4">
+            <ImageUploader
+              label="Imagen Principal"
+              projectId="new-news"
+              currentImage={formData.image}
+              onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
+              required={true}
             />
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Opciones de visualización</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Contenido</h2>
           
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="showInHome"
-                checked={formData.showInHome}
-                onChange={(e) => {
-                  if (e.target.checked && !validateHomeLimit(true)) {
-                    alert('Ya hay 3 noticias seleccionadas para mostrar en el inicio. Deselecciona alguna primero.');
-                    return;
-                  }
-                  setFormData({ ...formData, showInHome: e.target.checked });
-                }}
-                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-              />
-              <label htmlFor="showInHome" className="ml-2 text-sm text-gray-700">
-                Mostrar en la página de inicio (máximo 3)
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={formData.featured}
-                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-              />
-              <label htmlFor="featured" className="ml-2 text-sm text-gray-700">
-                Noticia destacada
-              </label>
-            </div>
+          <div>
+            <RichTextEditor
+              label="Contenido completo *"
+              value={formData.content || ''}
+              onChange={(content) => setFormData({ ...formData, content })}
+              placeholder="Escribe el contenido completo del artículo aquí..."
+              height={300}
+            />
           </div>
         </div>
+
+
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Etiquetas</h2>

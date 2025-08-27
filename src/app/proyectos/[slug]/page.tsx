@@ -24,7 +24,22 @@ export default function ProjectPage({ params }: Props) {
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
 
   // Always define slider images, even if project is null
-  const sliderImages = project?.heroImages || (project ? [project.image] : ['/fondo1.jpg']);
+  const sliderImages = (() => {
+    if (!project) return ['/fondo1.jpg'];
+    
+    // Use hero images if they exist and have content
+    if (project.heroImages && project.heroImages.length > 0) {
+      const validHeroImages = project.heroImages.filter(img => img && img.trim() !== '');
+      if (validHeroImages.length > 0) {
+        return validHeroImages;
+      }
+    }
+    
+    // Final fallback
+    return ['/fondo1.jpg'];
+  })();
+  
+
 
   // Get available years from all projects
   const availableYears = [...new Set(allProjects.map(p => p.year))].sort((a, b) => b - a);
@@ -109,11 +124,28 @@ export default function ProjectPage({ params }: Props) {
       setCategories(updatedCategories);
     };
 
+    const handleProjectsUpdate = async () => {
+      // Reload the current project to get updated images
+      try {
+        const { slug } = await params;
+        if (slug) {
+          const updatedProject = ProjectStorage.getBySlug(slug);
+                  if (updatedProject) {
+          setProject(updatedProject);
+        }
+        }
+      } catch (error) {
+        console.error('Error updating project:', error);
+      }
+    };
+
     window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
+    window.addEventListener('projectsUpdated', handleProjectsUpdate);
     return () => {
       window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
+      window.removeEventListener('projectsUpdated', handleProjectsUpdate);
     };
-  }, []);
+  }, [params]);
 
   // Auto-rotate del slider - always runs
   useEffect(() => {
@@ -225,7 +257,7 @@ export default function ProjectPage({ params }: Props) {
                       key={category.id}
                       href={`/proyectos?category=${encodeURIComponent(category.name)}`}
                       className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        project.category === category.name
+                        project.categories?.includes(category.name)
                           ? 'text-black'
                           : 'text-gray-500 hover:text-black'
                       }`}
@@ -339,13 +371,18 @@ export default function ProjectPage({ params }: Props) {
               
               <div className="flex items-center gap-4 text-base text-gray-600">
                 <span>
-                  Categoría: 
-                  <Link 
-                    href={`/proyectos?category=${encodeURIComponent(project.category)}`}
-                    className="font-medium hover:text-black transition-colors cursor-pointer ml-1"
-                  >
-                    {project.category}
-                  </Link>
+                  Categorías: 
+                  {project.categories?.map((category, index) => (
+                    <span key={category}>
+                      <Link 
+                        href={`/proyectos?category=${encodeURIComponent(category)}`}
+                        className="font-medium hover:text-black transition-colors cursor-pointer ml-1"
+                      >
+                        {category}
+                      </Link>
+                      {index < (project.categories?.length || 0) - 1 && <span className="mx-1">,</span>}
+                    </span>
+                  ))}
                 </span>
                 <span>
                   Año: 
@@ -425,13 +462,13 @@ export default function ProjectPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Imagen adicional */}
-            {project.additionalImage && (
+            {/* Imagen secundaria */}
+            {project.image && (
               <div className="mb-32">
                 <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
                   <Image
-                    src={project.additionalImage}
-                    alt={`${project.title} - Imagen adicional`}
+                    src={project.image}
+                    alt={`${project.title} - Imagen secundaria`}
                     fill
                     className="object-cover"
                   />

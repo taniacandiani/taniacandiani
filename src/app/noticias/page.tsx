@@ -7,10 +7,12 @@ import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
 import { NewsItem } from '@/types';
 import { NewsStorage } from '@/lib/newsStorage';
-import { NewsCategoryStorage, NewsCategory } from '@/lib/newsCategoryStorage';
+import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
+import { NewsCategory } from '@/types';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import { generateNewsExcerpt } from '@/lib/utils';
 
 export default function NoticiasPage() {
   const router = useRouter();
@@ -24,6 +26,9 @@ export default function NoticiasPage() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   useEffect(() => {
+    // Migrar noticias existentes a múltiples categorías
+    NewsStorage.migrateToMultipleCategories();
+    
     // Initialize with sample news if localStorage is empty
     const storedNews = NewsStorage.getAll();
     if (storedNews.length === 0) {
@@ -66,12 +71,12 @@ export default function NoticiasPage() {
     if (searchTerm) {
       filtered = filtered.filter(n => 
         n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.description.toLowerCase().includes(searchTerm.toLowerCase())
+        n.content.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (selectedCategory) {
-      filtered = filtered.filter(n => n.category === selectedCategory);
+      filtered = filtered.filter(n => n.categories?.includes(selectedCategory));
     }
 
     if (selectedYear) {
@@ -282,10 +287,10 @@ export default function NoticiasPage() {
                         <div className="space-y-3">
                           <div className="flex items-center gap-3 text-sm text-gray-500">
                             <time>{formatDate(newsItem.publishedAt)}</time>
-                            {newsItem.category && (
+                            {newsItem.categories && newsItem.categories.length > 0 && (
                               <>
                                 <span>•</span>
-                                <span>{newsItem.category}</span>
+                                <span>{newsItem.categories.join(', ')}</span>
                               </>
                             )}
                           </div>
@@ -294,8 +299,9 @@ export default function NoticiasPage() {
                           </h2>
                           <div 
                             className="text-black text-sm leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: newsItem.description }}
-                          />
+                          >
+                            {generateNewsExcerpt(newsItem.content, 150)}
+                          </div>
                           <div className="pt-2">
                             <span className="text-black text-sm group-hover:underline">
                               Leer más →

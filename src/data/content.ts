@@ -132,77 +132,62 @@ export const SAMPLE_NEWS: NewsItem[] = [
   {
     id: 'noticia-1',
     title: 'Nueva Exposición de Arte Digital Contemporáneo',
-    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
     content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
     image: '/fondo1.jpg',
     slug: 'nueva-exposicion-arte-digital',
     publishedAt: '2024-12-15T10:00:00Z',
-    category: 'Exposiciones',
+    categories: ['Exposiciones'],
     author: 'Tania Candiani',
     status: 'published',
-    showInHome: true,
-    tags: ['arte digital', 'exposición', 'contemporáneo'],
-    featured: true
+    tags: ['arte digital', 'exposición', 'contemporáneo']
   },
   {
     id: 'noticia-2',
     title: 'Conferencia Internacional de Medios Arqueológicos',
-    description: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
     content: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.',
     image: '/fondo2.jpg',
     slug: 'conferencia-medios-arqueologicos',
     publishedAt: '2024-12-10T14:30:00Z',
-    category: 'Conferencias',
+    categories: ['Conferencias'],
     author: 'Tania Candiani',
     status: 'published',
-    showInHome: true,
-    tags: ['conferencia', 'medios', 'arqueología'],
-    featured: false
+    tags: ['conferencia', 'medios', 'arqueología']
   },
   {
     id: 'noticia-3',
     title: 'Residencia Artística en México 2024',
-    description: 'Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.',
     content: 'Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.',
     image: '/fondo3.jpg',
     slug: 'residencia-artistica-mexico-2024',
     publishedAt: '2024-12-05T09:15:00Z',
-    category: 'Residencias',
+    categories: ['Residencias'],
     author: 'Tania Candiani',
     status: 'published',
-    showInHome: true,
-    tags: ['residencia', 'méxico', 'arte'],
-    featured: true
+    tags: ['residencia', 'méxico', 'arte']
   },
   {
     id: 'noticia-4',
     title: 'Taller de Prácticas Sociales en el Arte',
-    description: 'At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum.',
     content: 'At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.',
     image: '/fondo1.jpg',
     slug: 'taller-practicas-sociales-arte',
     publishedAt: '2024-11-28T16:45:00Z',
-    category: 'Talleres',
+    categories: ['Talleres'],
     author: 'Tania Candiani',
     status: 'published',
-    showInHome: false,
-    tags: ['taller', 'prácticas sociales', 'arte'],
-    featured: false
+    tags: ['taller', 'prácticas sociales', 'arte']
   },
   {
     id: 'noticia-5',
     title: 'Nuevo Proyecto de Sitio Específico',
-    description: 'Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis.',
     content: 'Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis.',
     image: '/fondo2.jpg',
     slug: 'nuevo-proyecto-sitio-especifico',
     publishedAt: '2024-11-20T11:20:00Z',
-    category: 'Proyectos',
+    categories: ['Proyectos'],
     author: 'Tania Candiani',
     status: 'published',
-    showInHome: false,
-    tags: ['proyecto', 'sitio específico', 'nuevo'],
-    featured: false
+    tags: ['proyecto', 'sitio específico', 'nuevo']
   }
 ];
 

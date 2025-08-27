@@ -15,6 +15,16 @@ export default function ProyectosPage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Solo ejecutar migración en el cliente
+    if (typeof window !== 'undefined') {
+      try {
+        // Migrar proyectos existentes a múltiples categorías
+        ProjectStorage.migrateToMultipleCategories();
+      } catch (error) {
+        console.error('Error durante migración:', error);
+      }
+    }
+    
     // Initialize with existing projects if localStorage is empty
     const storedProjects = ProjectStorage.getAll();
     if (storedProjects.length === 0 && !isInitialized) {
@@ -72,7 +82,7 @@ export default function ProyectosPage() {
         "description": project.description,
         "url": `https://taniacandiani.com/proyectos/${project.slug}`,
         "dateCreated": project.year.toString(),
-        "genre": project.category,
+        "genre": project.categories?.join(', ') || 'Sin categoría',
         "creator": {
           "@type": "Person",
           "name": "Tania Candiani"

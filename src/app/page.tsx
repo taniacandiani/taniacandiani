@@ -6,7 +6,7 @@ import Section from '@/components/Section';
 import Hero from '@/components/Hero';
 import NewsCard from '@/components/ui/NewsCard';
 import MainLayout from '@/components/MainLayout';
-import { HERO_SLIDES, NEWS_ITEMS, PROJECTS, SAMPLE_NEWS } from '@/data/content';
+import { HERO_SLIDES, PROJECTS, SAMPLE_NEWS } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { NewsStorage } from '@/lib/newsStorage';
 import { Slide, NewsItem } from '@/types';
@@ -125,9 +125,9 @@ export default function Home() {
                   <NewsCard key={news.id} news={news} />
                 ))
               ) : (
-                NEWS_ITEMS.map((news) => (
-                  <NewsCard key={news.id} news={news} />
-                ))
+                <div className="col-span-3 text-center py-12">
+                  <p className="text-gray-500">No hay noticias disponibles en este momento.</p>
+                </div>
               )}
             </div>
           </div>

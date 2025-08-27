@@ -26,10 +26,47 @@ export default function RichTextEditor({
   label
 }: RichTextEditorProps) {
   const [isClient, setIsClient] = useState(false);
+  const [currentHeight, setCurrentHeight] = useState(height);
+
+  // Función para limpiar HTML antes de enviarlo
+  const cleanHTML = (html: string): string => {
+    return html
+      // Eliminar párrafos vacíos
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>\s*<\/p>/g, '')
+      // Eliminar &nbsp; y espacios en blanco innecesarios
+      .replace(/&nbsp;/g, ' ')
+      // Limpiar espacios múltiples
+      .replace(/\s+/g, ' ')
+      // Limpiar espacios al inicio y final de párrafos
+      .replace(/<p>\s+/g, '<p>')
+      .replace(/\s+<\/p>/g, '</p>')
+      // Limpiar espacios al inicio y final del HTML
+      .trim();
+  };
+
+  // Función para obtener el contenido limpio del editor
+  const getCleanContent = (): string => {
+    if (!editor) return '';
+    return cleanHTML(editor.getHTML());
+  };
+
+  // Predefined height options
+  const heightOptions = [
+    { value: 200, label: 'Pequeño' },
+    { value: 300, label: 'Mediano' },
+    { value: 400, label: 'Grande' },
+    { value: 500, label: 'Extra Grande' },
+    { value: 600, label: 'Muy Grande' }
+  ];
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleHeightChange = (newHeight: number) => {
+    setCurrentHeight(newHeight);
+  };
 
   const editor = useEditor({
     extensions: [
@@ -62,29 +99,64 @@ export default function RichTextEditor({
         },
       }),
     ],
-    content: value,
+    content: value ? cleanHTML(value) : '',
     onUpdate: ({ editor }) => {
-      // Obtener el HTML del editor
-      let html = editor.getHTML();
-      
-      // Limpiar HTML innecesario
-      html = html.replace(/<p><\/p>/g, '');
-      html = html.replace(/<p>\s*<\/p>/g, '');
-      
+      // Obtener el HTML del editor y limpiarlo
+      const html = cleanHTML(editor.getHTML());
       onChange(html);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3',
+        class: 'prose prose-sm max-w-none focus:outline-none px-4 py-3',
         placeholder: placeholder,
       },
       handleKeyDown: (view, event) => {
         // Permitir que Enter funcione naturalmente
         return false;
       },
+      handlePaste: (view, event) => {
+        // Limpiar contenido pegado para evitar caracteres problemáticos
+        event.preventDefault();
+        const text = event.clipboardData?.getData('text/plain') || '';
+        const cleanText = cleanHTML(text);
+        view.dispatch(view.state.tr.insertText(cleanText));
+        return true;
+      },
     },
     immediatelyRender: false,
+    autofocus: false, // Desactivar autofocus automático
   });
+
+  // Enfocar el editor cuando esté listo y tenga contenido
+  useEffect(() => {
+    if (editor && isClient) {
+      // Pequeño delay para asegurar que el editor esté completamente montado
+      const timer = setTimeout(() => {
+        if (editor.isDestroyed) return;
+        
+        // Enfocar el editor y mover el cursor al final del contenido
+        editor.commands.focus('end');
+        
+        // Si no hay contenido, crear un párrafo vacío para mejor UX
+        if (!editor.getHTML() || editor.getHTML() === '<p></p>') {
+          editor.commands.setContent('<p><br></p>');
+          editor.commands.focus('end');
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [editor, isClient]);
+
+  // Limpiar contenido cuando cambie el valor desde las props
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      const cleanValue = cleanHTML(value || '');
+      if (cleanValue !== editor.getHTML()) {
+        editor.commands.setContent(cleanValue);
+      }
+    }
+  }, [value, editor]);
 
   if (!isClient || !editor) {
     return (
@@ -242,19 +314,84 @@ export default function RichTextEditor({
         >
           🧹
         </button>
+        
+        {/* Clean HTML button */}
+        <button
+          onClick={() => {
+            if (editor) {
+              const cleanContent = getCleanContent();
+              editor.commands.setContent(cleanContent);
+              editor.commands.focus('end');
+            }
+          }}
+          className="p-2 rounded hover:bg-gray-200"
+          title="Limpiar HTML y espacios"
+        >
+          🧽
+        </button>
       </div>
       
       {/* Editor content */}
-      <div className="border border-t-0 border-gray-300 rounded-b-md" style={{ height }}>
+      <div className="border border-t-0 border-gray-300 rounded-b-md relative" style={{ height: currentHeight }}>
         <EditorContent 
           editor={editor} 
-          className="min-h-full"
+          className="h-full overflow-y-auto focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+          tabIndex={0}
+          onClick={() => {
+            // Asegurar que el editor se enfoque cuando se hace clic en el área de contenido
+            if (editor && !editor.isDestroyed) {
+              editor.commands.focus('end');
+            }
+          }}
+          onKeyDown={(e) => {
+            // Si se presiona Tab, enfocar el editor
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              if (editor && !editor.isDestroyed) {
+                editor.commands.focus('end');
+              }
+            }
+          }}
         />
+        
+        {/* Resize button - bottom right corner */}
+        <div className="absolute bottom-2 right-2">
+          <div className="relative group">
+            <button
+              type="button"
+              className="bg-gray-600 hover:bg-gray-700 text-white rounded-md p-2 transition-colors duration-200 shadow-lg"
+              title="Cambiar tamaño del editor"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
+            
+            {/* Dropdown menu */}
+            <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-300 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
+              <div className="py-1">
+                {heightOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleHeightChange(option.value)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                      currentHeight === option.value ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {option.label} ({option.value}px)
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Instrucciones */}
       <div className="mt-2 text-xs text-gray-500">
-        <p>💡 <strong>Consejo:</strong> Presiona Enter para crear nuevos párrafos. Usa la barra de herramientas para formato adicional.</p>
+        <p>💡 <strong>Consejo:</strong> Presiona Enter para crear nuevos párrafos. Usa la barra de herramientas para formato adicional. 
+        <span className="ml-1">📏 <strong>Redimensionar:</strong> Usa el botón de la esquina inferior derecha para cambiar el tamaño del editor.</span></p>
       </div>
     </div>
   );

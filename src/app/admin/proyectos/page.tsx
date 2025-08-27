@@ -11,6 +11,16 @@ export default function AdminProjects() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Solo ejecutar migración en el cliente
+    if (typeof window !== 'undefined') {
+      try {
+        // Migrar proyectos existentes a múltiples categorías
+        ProjectStorage.migrateToMultipleCategories();
+      } catch (error) {
+        console.error('Error durante migración:', error);
+      }
+    }
+    
     // Initialize with existing projects if localStorage is empty
     const storedProjects = ProjectStorage.getAll();
     if (storedProjects.length === 0 && !isInitialized) {
@@ -142,7 +152,7 @@ export default function AdminProjects() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {project.category}
+                      {project.categories?.join(', ') || 'Sin categoría'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {project.year}

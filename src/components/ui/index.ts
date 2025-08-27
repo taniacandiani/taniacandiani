@@ -11,3 +11,4 @@ export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as GoToTopButton } from './GoToTopButton';
 export { default as RichTextEditor } from './RichTextEditor';
 export { default as RichContent } from './RichContent';
+export { default as ImageUploader } from './ImageUploader';

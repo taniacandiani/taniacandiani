@@ -81,4 +81,54 @@ export class ProjectStorage {
   static generateId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   }
+
+  // Migración: convertir categoría única a múltiples categorías
+  static migrateToMultipleCategories(): void {
+    try {
+      if (typeof window === 'undefined') return;
+      
+      const projects = this.getAll();
+      let hasChanges = false;
+      
+      const migratedProjects = projects.map(project => {
+        try {
+          // Si el proyecto ya tiene categories, no hacer nada
+          if (project.categories && Array.isArray(project.categories)) {
+            return project;
+          }
+          
+          // Si tiene category (string), convertir a categories (array)
+          if ('category' in project && typeof (project as any).category === 'string') {
+            hasChanges = true;
+            const { category, ...rest } = project as any;
+            return {
+              ...rest,
+              categories: category ? [category] : []
+            };
+          }
+          
+          // Si no tiene ni category ni categories, asignar array vacío
+          if (!project.categories) {
+            hasChanges = true;
+            return {
+              ...project,
+              categories: []
+            };
+          }
+          
+          return project;
+        } catch (error) {
+          console.error('Error procesando proyecto durante migración:', error);
+          return project;
+        }
+      });
+      
+      if (hasChanges) {
+        this.saveAll(migratedProjects);
+        console.log('Migración de categorías completada');
+      }
+    } catch (error) {
+      console.error('Error durante migración de categorías:', error);
+    }
+  }
 }

@@ -13,10 +13,15 @@ export default function AdminNoticiasPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
+    // Migrar noticias existentes a múltiples categorías
+    NewsStorage.migrateToMultipleCategories();
     loadNews();
   }, []);
 
   const loadNews = () => {
+    // Migrar noticias existentes a múltiples categorías
+    NewsStorage.migrateToMultipleCategories();
+    
     const storedNews = NewsStorage.getAll();
     if (storedNews.length === 0) {
       NewsStorage.saveAll(SAMPLE_NEWS);
@@ -83,7 +88,7 @@ export default function AdminNoticiasPage() {
     );
   };
 
-  const homeNewsCount = news.filter(n => n.showInHome && n.status === 'published').length;
+  const homeNewsCount = NewsStorage.getForHome().length;
 
   return (
     <div className="space-y-8">
@@ -92,7 +97,7 @@ export default function AdminNoticiasPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Administrar Noticias</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Gestiona las noticias del sitio web. {homeNewsCount}/3 noticias seleccionadas para mostrar en el inicio.
+            Gestiona las noticias del sitio web. Las últimas 3 noticias publicadas se muestran automáticamente en el inicio.
           </p>
         </div>
         <Link
@@ -194,7 +199,7 @@ export default function AdminNoticiasPage() {
                       {formatDate(newsItem.publishedAt)}
                     </td>
                     <td className="py-4 px-6">
-                      {newsItem.showInHome ? (
+                      {NewsStorage.getForHome().some(n => n.id === newsItem.id) ? (
                         <span className="text-green-600 text-sm">✓ Sí</span>
                       ) : (
                         <span className="text-gray-400 text-sm">No</span>

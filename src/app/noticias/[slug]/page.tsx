@@ -10,6 +10,7 @@ import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES, SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import { formatDate } from '@/lib/utils';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -17,7 +18,6 @@ interface Props {
 
 export default function NoticiaPage({ params }: Props) {
   const [newsItem, setNewsItem] = useState<NewsItem | null>(null);
-  const [relatedNews, setRelatedNews] = useState<NewsItem[]>([]);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,11 +59,7 @@ export default function NoticiaPage({ params }: Props) {
         
         setNewsItem(foundNews);
         
-        // Get related news (same category, excluding current)
-        const related = publishedNews
-          .filter(n => n.id !== foundNews.id && n.category === foundNews.category)
-          .slice(0, 3);
-        setRelatedNews(related);
+
         
       } catch (error) {
         console.error('Error loading news:', error);
@@ -92,6 +88,19 @@ export default function NoticiaPage({ params }: Props) {
   // Get available years
   const availableYears = [...new Set(allNews.map(n => new Date(n.publishedAt).getFullYear()))].sort((a, b) => b - a);
 
+  // Get previous and next news for navigation
+  const getNavigationNews = () => {
+    if (!newsItem || allNews.length === 0) return { previous: null, next: null };
+    
+    const currentIndex = allNews.findIndex(n => n.id === newsItem.id);
+    if (currentIndex === -1) return { previous: null, next: null };
+    
+    const previous = currentIndex > 0 ? allNews[currentIndex - 1] : null;
+    const next = currentIndex < allNews.length - 1 ? allNews[currentIndex + 1] : null;
+    
+    return { previous, next };
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -109,13 +118,7 @@ export default function NoticiaPage({ params }: Props) {
     return notFound();
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+
 
   return (
     <MainLayout>
@@ -160,7 +163,7 @@ export default function NoticiaPage({ params }: Props) {
                       key={category.id}
                       href={`/noticias?category=${encodeURIComponent(category.name)}`}
                       className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        newsItem?.category === category.name
+                        newsItem?.categories?.includes(category.name)
                           ? 'text-black'
                           : 'text-gray-500 hover:text-black'
                       }`}
@@ -234,10 +237,10 @@ export default function NoticiaPage({ params }: Props) {
               <header className="mb-8">
                 <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
                   <time>{formatDate(newsItem.publishedAt)}</time>
-                  {newsItem.category && (
+                  {newsItem.categories && newsItem.categories.length > 0 && (
                     <>
                       <span>•</span>
-                      <span>{newsItem.category}</span>
+                      <span>{newsItem.categories.join(', ')}</span>
                     </>
                   )}
                 </div>
@@ -249,7 +252,7 @@ export default function NoticiaPage({ params }: Props) {
               {/* Content - FOURTH */}
               <div className="prose prose-lg max-w-none mb-12">
                 <RichContent 
-                  content={newsItem.content || newsItem.description} 
+                  content={newsItem.content} 
                   className="text-black leading-relaxed"
                 />
               </div>
@@ -272,36 +275,62 @@ export default function NoticiaPage({ params }: Props) {
               )}
             </article>
 
-            {/* Related News */}
-            {relatedNews.length > 0 && (
-              <section className="mt-12">
-                <h2 className="text-2xl font-light text-black mb-6">Noticias relacionadas</h2>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {relatedNews.map((related) => (
-                    <Link key={related.id} href={`/noticias/${related.slug}`}>
-                      <article className="group">
-                        <div className="relative h-48 w-full mb-4 rounded-md overflow-hidden">
-                          <Image
-                            src={related.image}
-                            alt={related.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
+            {/* Navegación inferior */}
+            <div className="border-t border-gray-200">
+              <div className="grid grid-cols-2 pt-8">
+                {/* Noticia Anterior */}
+                {(() => {
+                  const { previous } = getNavigationNews();
+                  return previous ? (
+                    <Link
+                      href={`/noticias/${previous.slug}`}
+                      className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">
+                          arrow_back
+                        </span>
+                        <div>
+                          <div className="text-xs text-gray-400 mb-1">Noticia Anterior</div>
+                          <div className="font-medium">{previous.title}</div>
                         </div>
-                        <div className="space-y-2">
-                          <time className="text-sm text-gray-500">
-                            {formatDate(related.publishedAt)}
-                          </time>
-                          <h3 className="font-medium text-black group-hover:text-gray-700 transition-colors leading-tight">
-                            {related.title}
-                          </h3>
-                        </div>
-                      </article>
+                      </div>
                     </Link>
-                  ))}
-                </div>
-              </section>
-            )}
+                  ) : (
+                    <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
+                      <div className="text-xs text-gray-400 mb-1">Noticia Anterior</div>
+                      <div>No disponible</div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Siguiente Noticia */}
+                {(() => {
+                  const { next } = getNavigationNews();
+                  return next ? (
+                    <Link
+                      href={`/noticias/${next.slug}`}
+                      className="px-6 text-lg font-medium text-gray-600 hover:text-black text-right group"
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="text-right">
+                          <div className="text-xs text-gray-400 mb-1">Siguiente Noticia</div>
+                          <div className="font-medium">{next.title}</div>
+                        </div>
+                        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                          arrow_forward
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-6 text-lg font-medium text-gray-300 text-right">
+                      <div className="text-xs text-gray-400 mb-1">Siguiente Noticia</div>
+                      <div>No disponible</div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
 
             
           </div>

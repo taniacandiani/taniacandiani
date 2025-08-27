@@ -74,7 +74,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
       const searchLower = filterState.searchTerm.toLowerCase();
       filtered = filtered.filter(project =>
         project.title.toLowerCase().includes(searchLower) ||
-        project.category.toLowerCase().includes(searchLower) ||
+        project.categories?.some(cat => cat.toLowerCase().includes(searchLower)) ||
         project.description?.toLowerCase().includes(searchLower) ||
         project.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
@@ -82,7 +82,9 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
     // Filtrar por categoría
     if (filterState.selectedCategory) {
-      filtered = filtered.filter(project => project.category === filterState.selectedCategory);
+      filtered = filtered.filter(project => 
+        project.categories?.includes(filterState.selectedCategory!)
+      );
     }
 
     // Filtrar por año
@@ -95,7 +97,9 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
       if (filterState.sortBy === 'date') {
         return b.year - a.year;
       } else if (filterState.sortBy === 'category') {
-        return a.category.localeCompare(b.category);
+        const aFirstCat = a.categories?.[0] || '';
+        const bFirstCat = b.categories?.[0] || '';
+        return aFirstCat.localeCompare(bFirstCat);
       }
       return a.title.localeCompare(b.title);
     });

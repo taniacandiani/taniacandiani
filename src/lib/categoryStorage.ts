@@ -53,7 +53,7 @@ export class CategoryStorage {
 
     // Check if any projects use this category
     const projects = ProjectStorage.getAll();
-    const projectsUsingCategory = projects.filter(p => p.category === category.name);
+    const projectsUsingCategory = projects.filter(p => p.categories?.includes(category.name));
     
     if (projectsUsingCategory.length > 0) {
       return { 
@@ -82,7 +82,7 @@ export class CategoryStorage {
     
     const updatedCategories = categories.map(cat => ({
       ...cat,
-      count: projects.filter(p => p.category === cat.name && p.status === 'published').length
+      count: projects.filter(p => p.categories?.includes(cat.name) && p.status === 'published').length
     }));
     
     this.saveAll(updatedCategories);

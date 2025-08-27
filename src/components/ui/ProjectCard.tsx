@@ -12,7 +12,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     <Link href={`/proyectos/${project.slug}`} className="group cursor-pointer block">
       <div className="relative aspect-[2/1] mb-4 overflow-hidden rounded-md">
         <Image
-          src={project.image}
+          src={project.heroImages && project.heroImages[0] ? project.heroImages[0] : project.image}
           alt={`Imagen del proyecto ${project.title}`}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -29,7 +29,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       </h4>
       
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>{project.category}</span>
+        <span>{project.categories?.join(', ') || 'Sin categoría'}</span>
         <span>•</span>
         <span>{project.year}</span>
       </div>
