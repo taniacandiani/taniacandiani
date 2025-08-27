@@ -6,18 +6,21 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
+
   return (
     <div className="group cursor-pointer">
       <div className="relative aspect-[2/1] mb-4 overflow-hidden rounded-md">
         <Image
           src={project.image}
-          alt={project.title}
+          alt={`Imagen del proyecto ${project.title}`}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-md"
+          loading="lazy"
         />
+
       </div>
       
-      {/* Border debajo de la imagen */}
       <div className="border-b border-[#E6E0E0] mb-4"></div>
       
       <h4 className="projects-h4 text-xl font-normal text-gray-900 mb-2">

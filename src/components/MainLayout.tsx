@@ -1,5 +1,6 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,9 @@ export default function MainLayout({ children, hasNavbarOffset = true }: MainLay
     <>
       <Navbar />
       <main className={hasNavbarOffset ? 'pt-24' : ''}>
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
       <Footer />
     </>

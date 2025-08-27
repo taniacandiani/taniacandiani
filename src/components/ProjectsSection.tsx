@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Project, ProjectCategory } from '@/types';
+import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import { Project, ProjectCategory, SortOption, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
 
 interface ProjectsSectionProps {
@@ -9,14 +9,16 @@ interface ProjectsSectionProps {
   categories: ProjectCategory[];
 }
 
-export default function ProjectsSection({ projects, categories }: ProjectsSectionProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [sortBy, setSortBy] = useState<'date' | 'title'>('date');
+const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories }) => {
+  const [filterState, setFilterState] = useState<FilterState>({
+    searchTerm: '',
+    selectedCategory: null,
+    selectedYear: null,
+    sortBy: 'date'
+  });
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Manejar click fuera del dropdown
@@ -39,41 +41,53 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
     return years.sort((a, b) => b - a);
   }, [projects]);
 
+  // Filter update functions
+  const updateFilter = useCallback((updates: Partial<FilterState>) => {
+    setFilterState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+
+
   // Filtrar y ordenar proyectos
   const filteredAndSortedProjects = useMemo(() => {
     let filtered = projects;
 
     // Filtrar por término de búsqueda
-    if (searchTerm) {
+    if (filterState.searchTerm) {
+      const searchLower = filterState.searchTerm.toLowerCase();
       filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.category.toLowerCase().includes(searchTerm.toLowerCase())
+        project.title.toLowerCase().includes(searchLower) ||
+        project.category.toLowerCase().includes(searchLower) ||
+        project.description?.toLowerCase().includes(searchLower) ||
+        project.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
     }
 
     // Filtrar por categoría
-    if (selectedCategory) {
-      filtered = filtered.filter(project => project.category === selectedCategory);
+    if (filterState.selectedCategory) {
+      filtered = filtered.filter(project => project.category === filterState.selectedCategory);
     }
 
     // Filtrar por año
-    if (selectedYear) {
-      filtered = filtered.filter(project => project.year === selectedYear);
+    if (filterState.selectedYear) {
+      filtered = filtered.filter(project => project.year === filterState.selectedYear);
     }
 
     // Ordenar
     filtered = [...filtered].sort((a, b) => {
-      if (sortBy === 'date') {
+      if (filterState.sortBy === 'date') {
         return b.year - a.year;
+      } else if (filterState.sortBy === 'category') {
+        return a.category.localeCompare(b.category);
       }
       return a.title.localeCompare(b.title);
     });
 
     return filtered;
-  }, [projects, searchTerm, selectedCategory, selectedYear, sortBy]);
+  }, [projects, filterState]);
 
   return (
-    <div className="mx-8 py-8 pt-16">
+    <div className="container-mobile py-8 pt-16">
       {/* Header con Toggle Button y Título alineados */}
       <div className="mb-16 flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -95,7 +109,7 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
           {/* Botón de cambio de vista */}
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="flex items-center gap-2 text-sm cursor-pointer focus:outline-none hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
+            className="flex items-center gap-2 text-sm cursor-pointer  hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
           >
             <span 
               className="material-symbols-outlined transition-all duration-300 ease-in-out" 
@@ -109,9 +123,13 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 text-sm cursor-pointer focus:outline-none"
+              className="flex items-center gap-2 text-sm cursor-pointer "
             >
-              <span>{sortBy === 'date' ? 'Orden por fecha' : 'Orden por nombre'}</span>
+              <span>
+                {filterState.sortBy === 'date' && 'Orden por fecha'}
+                {filterState.sortBy === 'title' && 'Orden por nombre'} 
+                {filterState.sortBy === 'category' && 'Orden por categoría'}
+              </span>
               <svg 
                 width="12" 
                 height="8" 
@@ -133,25 +151,36 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
               <div className="absolute right-0 top-full mt-2 bg-black text-white rounded-sm shadow-lg z-50 min-w-[160px]">
                 <button
                   onClick={() => {
-                    setSortBy('date');
+                    updateFilter({ sortBy: 'date' });
                     setDropdownOpen(false);
                   }}
                   className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
-                    sortBy === 'date' ? 'bg-gray-800' : ''
+                    filterState.sortBy === 'date' ? 'bg-gray-800' : ''
                   }`}
                 >
                   Orden por fecha
                 </button>
                 <button
                   onClick={() => {
-                    setSortBy('title');
+                    updateFilter({ sortBy: 'title' });
                     setDropdownOpen(false);
                   }}
                   className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
-                    sortBy === 'title' ? 'bg-gray-800' : ''
+                    filterState.sortBy === 'title' ? 'bg-gray-800' : ''
                   }`}
                 >
                   Orden por nombre
+                </button>
+                <button
+                  onClick={() => {
+                    updateFilter({ sortBy: 'category' });
+                    setDropdownOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
+                    filterState.sortBy === 'category' ? 'bg-gray-800' : ''
+                  }`}
+                >
+                  Orden por categoría
                 </button>
               </div>
             )}
@@ -172,9 +201,10 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
               <input
                 type="text"
                 placeholder="Buscar proyectos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border-0 border-b border-gray-300 px-0 py-2 text-base focus:outline-none focus:border-gray-500 bg-transparent"
+                value={filterState.searchTerm}
+                onChange={(e) => updateFilter({ searchTerm: e.target.value })}
+                className="w-full border-0 border-b border-gray-300 px-0 py-2 text-base   bg-transparent"
+                aria-label="Buscar proyectos por título, categoría o descripción"
               />
             </div>
 
@@ -183,26 +213,28 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
             <h4 className="projects-h4 text-lg font-normal mb-4">Categorías</h4>
             <div className="space-y-2">
               <button
-                onClick={() => setSelectedCategory(null)}
+                onClick={() => updateFilter({ selectedCategory: null })}
                 className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                  selectedCategory === null
+                  filterState.selectedCategory === null
                     ? 'text-black'
                     : 'text-gray-500 hover:text-black'
                 }`}
+                aria-pressed={filterState.selectedCategory === null}
               >
                 Todas las categorías
               </button>
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => setSelectedCategory(category.name)}
+                  onClick={() => updateFilter({ selectedCategory: category.name })}
                   className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                    selectedCategory === category.name
+                    filterState.selectedCategory === category.name
                       ? 'text-black'
                       : 'text-gray-500 hover:text-black'
                   }`}
+                  aria-pressed={filterState.selectedCategory === category.name}
                 >
-                  {category.name}
+                  {category.name} ({category.count})
                 </button>
               ))}
             </div>
@@ -213,24 +245,26 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
             <h4 className="projects-h4 text-lg font-normal mb-4">Año</h4>
             <div className="space-y-2">
               <button
-                onClick={() => setSelectedYear(null)}
+                onClick={() => updateFilter({ selectedYear: null })}
                 className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                  selectedYear === null
+                  filterState.selectedYear === null
                     ? 'text-black'
                     : 'text-gray-500 hover:text-black'
                 }`}
+                aria-pressed={filterState.selectedYear === null}
               >
                 Todos los años
               </button>
               {availableYears.map((year) => (
                 <button
                   key={year}
-                  onClick={() => setSelectedYear(year)}
+                  onClick={() => updateFilter({ selectedYear: year })}
                   className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                    selectedYear === year
+                    filterState.selectedYear === year
                       ? 'text-black'
                       : 'text-gray-500 hover:text-black'
                   }`}
+                  aria-pressed={filterState.selectedYear === year}
                 >
                   {year}
                 </button>
@@ -274,7 +308,7 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
                       <h2 className="text-4xl font-bold mb-4">{project.title}</h2>
                       <div className="max-w-2xl">
                         <p className="text-lg leading-relaxed">
-                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                          {project.description}
                         </p>
                       </div>
                     </div>
@@ -287,4 +321,6 @@ export default function ProjectsSection({ projects, categories }: ProjectsSectio
       </div>
     </div>
   );
-} 
+};
+
+export default memo(ProjectsSection); 

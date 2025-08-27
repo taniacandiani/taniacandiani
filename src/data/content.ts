@@ -60,110 +60,146 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = [
 export const PROJECTS: Project[] = [
   {
     id: '1',
-    title: 'Lorem Ipsum',
+    title: 'Desminar - Fragmentos de Memoria',
     image: '/fondo1.jpg',
     category: 'Arqueología de los Medios',
     year: 2024,
-    description: 'Proyecto contemporáneo que explora la intersección entre tecnología y memoria',
-    slug: 'lorem-ipsum-1'
+    description: 'Proyecto contemporáneo que explora la intersección entre tecnología y memoria a través de las placas de metal que conforman Fragmentos, Espacio de Arte y Memoria.',
+    slug: 'desminar-fragmentos-memoria',
+    tags: ['memoria', 'violencia', 'reconstrucción'],
+    featured: true,
+    status: 'published'
   },
   {
     id: '2',
-    title: 'Lorem Ipsum',
+    title: 'Intervención Urbana',
     image: '/fondo2.jpg',
     category: 'Sitio Específico',
     year: 2024,
-    description: 'Intervención artística en espacio público',
-    slug: 'lorem-ipsum-2'
+    description: 'Intervención artística en espacio público que dialoga con la arquitectura y la memoria colectiva urbana.',
+    slug: 'intervencion-urbana',
+    tags: ['espacio público', 'arquitectura'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '3',
-    title: 'Lorem Ipsum',
+    title: 'Diálogos Comunitarios',
     image: '/fondo3.jpg',
     category: 'Prácticas Sociales',
     year: 2023,
-    description: 'Práctica colaborativa con comunidades locales',
-    slug: 'lorem-ipsum-3'
+    description: 'Práctica colaborativa con comunidades locales enfocada en la preservación de tradiciones orales.',
+    slug: 'dialogos-comunitarios',
+    tags: ['comunidad', 'tradición oral', 'colaboración'],
+    featured: true,
+    status: 'published'
   },
   {
     id: '4',
-    title: 'Lorem Ipsum',
+    title: 'Arqueología Digital',
     image: '/fondo1.jpg',
     category: 'Arqueología de los Medios',
     year: 2023,
-    description: 'Exploración de medios abandonados y su reactivación',
-    slug: 'lorem-ipsum-4'
+    description: 'Exploración de medios abandonados y su reactivación a través de nuevas tecnologías.',
+    slug: 'arqueologia-digital',
+    tags: ['tecnología', 'obsolescencia', 'reactivación'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '5',
-    title: 'Lorem Ipsum',
+    title: 'Monumento Temporal',
     image: '/fondo2.jpg',
     category: 'Sitio Específico',
     year: 2022,
-    description: 'Instalación permanente en espacio urbano',
-    slug: 'lorem-ipsum-5'
+    description: 'Instalación permanente en espacio urbano que cuestiona los conceptos de permanencia y memoria.',
+    slug: 'monumento-temporal',
+    tags: ['monumento', 'permanencia', 'memoria'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '6',
-    title: 'Lorem Ipsum',
+    title: 'Talleres de Memoria',
     image: '/fondo3.jpg',
     category: 'Prácticas Sociales',
     year: 2022,
-    description: 'Taller comunitario y creación colectiva',
-    slug: 'lorem-ipsum-6'
+    description: 'Taller comunitario y creación colectiva enfocado en la recuperación de memorias locales.',
+    slug: 'talleres-memoria',
+    tags: ['taller', 'memoria local', 'creación colectiva'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '7',
-    title: 'Lorem Ipsum',
+    title: 'Laboratorio Experimental',
     image: '/fondo1.jpg',
-    category: 'Lorem Ipsum',
+    category: 'Arqueología de los Medios',
     year: 2021,
-    description: 'Proyecto experimental con nuevas tecnologías',
-    slug: 'lorem-ipsum-7'
+    description: 'Proyecto experimental con nuevas tecnologías para la preservación y activación de archivos sonoros.',
+    slug: 'laboratorio-experimental',
+    tags: ['experimental', 'archivo sonoro', 'tecnología'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '8',
-    title: 'Lorem Ipsum',
+    title: 'Intervenciones Conceptuales',
     image: '/fondo2.jpg',
-    category: 'Lorem Lorem',
+    category: 'Sitio Específico',
     year: 2021,
-    description: 'Serie de intervenciones conceptuales',
-    slug: 'lorem-ipsum-8'
+    description: 'Serie de intervenciones conceptuales que exploran la relación entre espacio y tiempo.',
+    slug: 'intervenciones-conceptuales',
+    tags: ['conceptual', 'espacio-tiempo'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '9',
-    title: 'Lorem Ipsum',
+    title: 'Obsolescencia Programada',
     image: '/fondo3.jpg',
     category: 'Arqueología de los Medios',
     year: 2020,
-    description: 'Investigación sobre obsolescencia tecnológica',
-    slug: 'lorem-ipsum-9'
+    description: 'Investigación sobre obsolescencia tecnológica y su impacto en la preservación cultural.',
+    slug: 'obsolescencia-programada',
+    tags: ['obsolescencia', 'preservación cultural'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '10',
-    title: 'Lorem Ipsum',
+    title: 'Arquitectura Efímera',
     image: '/fondo1.jpg',
     category: 'Sitio Específico',
     year: 2020,
-    description: 'Intervención arquitectónica temporal',
-    slug: 'lorem-ipsum-10'
+    description: 'Intervención arquitectónica temporal que cuestiona la permanencia de las estructuras urbanas.',
+    slug: 'arquitectura-efimera',
+    tags: ['arquitectura', 'efímero', 'urbano'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '11',
-    title: 'Lorem Ipsum',
+    title: 'Colaboración Artística',
     image: '/fondo2.jpg',
     category: 'Prácticas Sociales',
     year: 2019,
-    description: 'Colaboración con artistas locales',
-    slug: 'lorem-ipsum-11'
+    description: 'Colaboración con artistas locales para la creación de una obra colectiva sobre identidad.',
+    slug: 'colaboracion-artistica',
+    tags: ['colaboración', 'identidad', 'artistas locales'],
+    featured: false,
+    status: 'published'
   },
   {
     id: '12',
-    title: 'Lorem Ipsum',
+    title: 'Proyecto Rural',
     image: '/fondo3.jpg',
-    category: 'Lorem Lorem',
+    category: 'Prácticas Sociales',
     year: 2018,
-    description: 'Proyecto de larga duración en comunidad rural',
-    slug: 'lorem-ipsum-12'
+    description: 'Proyecto de larga duración en comunidad rural enfocado en la sostenibilidad y tradición.',
+    slug: 'proyecto-rural',
+    tags: ['rural', 'sostenibilidad', 'tradición', 'larga duración'],
+    featured: false,
+    status: 'published'
   }
 ]; 

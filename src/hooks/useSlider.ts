@@ -1,43 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseSliderProps {
   itemCount: number;
   autoSlideInterval?: number;
+  autoPlay?: boolean;
+  interval?: number;
 }
 
-export const useSlider = ({ itemCount, autoSlideInterval = 6000 }: UseSliderProps) => {
+export const useSlider = ({ 
+  itemCount, 
+  autoSlideInterval = 6000, 
+  autoPlay = true, 
+  interval = 5000 
+}: UseSliderProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fade, setFade] = useState(true);
 
   useEffect(() => {
-    if (itemCount <= 1) return;
+    if (itemCount <= 1 || !autoPlay) return;
 
-    const interval = setInterval(() => {
+    const slideInterval = setInterval(() => {
       setFade(false);
       setTimeout(() => {
         setCurrentSlide((prev) => (prev + 1) % itemCount);
         setFade(true);
       }, 300);
-    }, autoSlideInterval);
+    }, interval || autoSlideInterval);
 
-    return () => clearInterval(interval);
-  }, [itemCount, autoSlideInterval]);
+    return () => clearInterval(slideInterval);
+  }, [itemCount, autoSlideInterval, autoPlay, interval]);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % itemCount);
-  };
+  }, [itemCount]);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + itemCount) % itemCount);
-  };
+  }, [itemCount]);
 
-  const goToSlide = (index: number) => {
+  const goToSlide = useCallback((index: number) => {
     if (index >= 0 && index < itemCount) {
       setCurrentSlide(index);
     }
-  };
+  }, [itemCount]);
 
   return {
     currentSlide,

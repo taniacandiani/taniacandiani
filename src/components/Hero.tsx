@@ -1,28 +1,40 @@
 "use client";
 
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import Image from 'next/image';
 import Section from '@/components/Section';
 import { useSlider } from '@/hooks/useSlider';
-import { Slide } from '@/types';
+import { HeroProps } from '@/types';
 import { PROJECT_INFO } from '@/data/content';
 
-interface HeroProps {
-  slides?: Slide[];
-}
-
-const Hero: React.FC<HeroProps> = ({ slides = [] }) => {
+const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 5000 }) => {
   const { currentSlide, fade, nextSlide, prevSlide } = useSlider({ 
-    itemCount: slides.length 
+    itemCount: slides.length,
+    autoPlay,
+    interval
   });
 
+  const handlePrevSlide = useCallback(() => {
+    prevSlide();
+  }, [prevSlide]);
+
+  const handleNextSlide = useCallback(() => {
+    nextSlide();
+  }, [nextSlide]);
+
   if (slides.length === 0) {
-    return <div>No slides available</div>;
+    return (
+      <Section fullWidth>
+        <div className="relative overflow-hidden mt-16 h-[85vh] bg-gray-100 flex items-center justify-center">
+          <p className="text-gray-500">No hay contenido disponible</p>
+        </div>
+      </Section>
+    );
   }
 
   return (
     <Section fullWidth>
-      <div className="relative overflow-hidden mt-16">
+      <div className="hero-section relative overflow-hidden mt-16">
         <div className="slider transition-opacity duration-500 ease-in-out">
           <Image
             src={slides[currentSlide].image}
@@ -35,50 +47,81 @@ const Hero: React.FC<HeroProps> = ({ slides = [] }) => {
           <div className="absolute inset-0 bg-black opacity-50"></div>
         </div>
         
-        <div className="absolute bottom-44 left-20 p-4 text-left text-white max-w-2xl">
-          <h2 className="text-5xl font-bold mb-4">{slides[currentSlide].title}</h2>
+        <div className="absolute bottom-32 sm:bottom-44 left-4 sm:left-8 lg:left-20 p-4 text-left text-white max-w-xs sm:max-w-2xl">
+          <h2 className="font-bold mb-4">{slides[currentSlide].title}</h2>
           <p className="mt-1 text-justify">{slides[currentSlide].text}</p>
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 bg-white h-25 flex items-center justify-between px-4 border-b border-gray-300">
-          <div className="flex items-center space-x-20">
-            <button onClick={prevSlide} aria-label="Previous slide">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="absolute bottom-0 left-0 right-0 bg-white min-h-[100px] flex flex-col lg:flex-row items-center justify-between px-2 sm:px-4 py-4 border-b border-gray-300">
+          <div className="flex items-center space-x-4 lg:space-x-12 w-full lg:w-auto justify-between lg:justify-start mb-4 lg:mb-0">
+            <button 
+              onClick={handlePrevSlide} 
+              aria-label="Diapositiva anterior"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors order-1 lg:order-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 lg:h-8 lg:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             
-            <div className="flex flex-col pl-10">
-              <span className="font-black">Comissionado por</span>
-              <span>{PROJECT_INFO.commissionedBy}</span>
+            <div className="hidden sm:flex flex-col lg:pl-6 order-2 lg:order-none">
+              <span className="font-black text-xs lg:text-sm">Comissionado por</span>
+              <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">{PROJECT_INFO.commissionedBy}</span>
             </div>
             
-            <div className="flex flex-col">
-              <span className="font-black">Curadora</span>
-              <span>{PROJECT_INFO.curator}</span>
+            <div className="hidden md:flex flex-col order-3 lg:order-none">
+              <span className="font-black text-xs lg:text-sm">Curadora</span>
+              <span className="text-xs lg:text-sm">{PROJECT_INFO.curator}</span>
             </div>
             
-            <div className="flex flex-col">
-              <span className="font-black">Año</span>
-              <span>{PROJECT_INFO.year}</span>
+            <div className="flex flex-col order-4 lg:order-none">
+              <span className="font-black text-xs lg:text-sm">Año</span>
+              <span className="text-xs lg:text-sm">{PROJECT_INFO.year}</span>
             </div>
             
-            <div className="flex flex-col">
-              <span className="font-black">Categoría</span>
-              <span>{PROJECT_INFO.category}</span>
+            <div className="flex flex-col order-5 lg:order-none">
+              <span className="font-black text-xs lg:text-sm">Categoría</span>
+              <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">{PROJECT_INFO.category}</span>
             </div>
+
+            <button 
+              onClick={handleNextSlide} 
+              aria-label="Siguiente diapositiva"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors order-6 lg:order-none lg:hidden"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
           
-          <div className="flex items-center space-x-20">
-            <a href="#" className="bg-black text-white px-10 py-2 rounded-[5px] hover:bg-gray-800">
+          <div className="hidden lg:flex items-center space-x-12">
+            <a 
+              href="#" 
+              className="bg-black text-white px-6 lg:px-10 py-2 rounded-[5px] hover:bg-gray-800 transition-colors text-sm lg:text-base "
+            >
               Ver Proyecto
             </a>
             
-            <button onClick={nextSlide} aria-label="Next slide">
+            <button 
+              onClick={handleNextSlide} 
+              aria-label="Siguiente diapositiva"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
+          </div>
+
+          {/* Mobile CTA */}
+          <div className="lg:hidden w-full">
+            <a 
+              href="#" 
+              className="block w-full text-center bg-black text-white px-6 py-3 rounded-[5px] hover:bg-gray-800 transition-colors text-sm "
+            >
+              Ver Proyecto
+            </a>
           </div>
         </div>
       </div>
@@ -86,4 +129,4 @@ const Hero: React.FC<HeroProps> = ({ slides = [] }) => {
   );
 };
 
-export default Hero; 
+export default memo(Hero); 

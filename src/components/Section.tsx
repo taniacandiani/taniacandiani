@@ -1,28 +1,23 @@
-import React from 'react';
-
-interface SectionProps {
-  fullWidth?: boolean;
-  indented?: boolean;
-  className?: string;
-  children: React.ReactNode;
-}
+import React, { memo } from 'react';
+import { SectionProps } from '@/types';
 
 const Section: React.FC<SectionProps> = ({ 
   fullWidth = false, 
   indented = false, 
   className = '',
-  children 
+  children,
+  as: Element = 'section'
 }) => {
   const paddingClass = indented ? 'px-4 sm:px-6 lg:px-8' : '';
   const containerClass = fullWidth ? '' : 'max-w-7xl mx-auto';
   
   return (
-    <section className={`w-full ${paddingClass} ${className}`}>
+    <Element className={`w-full ${paddingClass} ${className}`.trim()}>
       <div className={containerClass}>
         {children}
       </div>
-    </section>
+    </Element>
   );
 };
 
-export default Section; 
+export default memo(Section); 
