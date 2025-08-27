@@ -20,7 +20,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
         onClick={() => handleLanguageChange('en')}
         className="hover:text-gray-600 transition-colors duration-200"
       >
-        English
+        EN
       </button>
     </div>
   );

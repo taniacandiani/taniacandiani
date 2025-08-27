@@ -28,6 +28,19 @@ export default function ProjectPage({ params }: Props) {
   // Get available years from all projects
   const availableYears = [...new Set(allProjects.map(p => p.year))].sort((a, b) => b - a);
 
+  // Get previous and next projects for navigation
+  const getNavigationProjects = () => {
+    if (!project || allProjects.length === 0) return { previous: null, next: null };
+    
+    const currentIndex = allProjects.findIndex(p => p.id === project.id);
+    if (currentIndex === -1) return { previous: null, next: null };
+    
+    const previous = currentIndex > 0 ? allProjects[currentIndex - 1] : null;
+    const next = currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : null;
+    
+    return { previous, next };
+  };
+
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
   };
@@ -171,6 +184,31 @@ export default function ProjectPage({ params }: Props) {
                 </div>
               )}
 
+              {/* Información adicional */}
+              {(project.commissionedBy || project.curator || project.location) && (
+                <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
+                  <h4 className="projects-h4 text-lg font-normal mb-4">Información</h4>
+                  {project.commissionedBy && (
+                    <div className="text-base text-gray-600 py-1">
+                      <span className="font-medium">Comisionado por:</span><br />
+                      {project.commissionedBy}
+                    </div>
+                  )}
+                  {project.curator && (
+                    <div className="text-base text-gray-600 py-1">
+                      <span className="font-medium">Curador/a:</span><br />
+                      {project.curator}
+                    </div>
+                  )}
+                  {project.location && (
+                    <div className="text-base text-gray-600 py-1">
+                      <span className="font-medium">Ubicación:</span><br />
+                      {project.location}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Categorías */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
                 <h4 className="projects-h4 text-lg font-normal mb-4">Categorías</h4>
@@ -222,31 +260,6 @@ export default function ProjectPage({ params }: Props) {
                   ))}
                 </div>
               </div>
-
-              {/* Información adicional */}
-              {(project.commissionedBy || project.curator || project.location) && (
-                <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                  <h4 className="projects-h4 text-lg font-normal mb-4">Información</h4>
-                  {project.commissionedBy && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Comisionado por:</span><br />
-                      {project.commissionedBy}
-                    </div>
-                  )}
-                  {project.curator && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Curador/a:</span><br />
-                      {project.curator}
-                    </div>
-                  )}
-                  {project.location && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Ubicación:</span><br />
-                      {project.location}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -304,9 +317,25 @@ export default function ProjectPage({ params }: Props) {
               )}
             </div>
 
+            {/* Breadcrumb */}
+            <div className="mb-6 pb-4 border-b border-gray-200">
+              <nav className="text-sm">
+                <Link href="/" className="text-gray-500 hover:text-black">
+                  Inicio
+                </Link>
+                <span className="mx-2 text-gray-400">/</span>
+                <Link href="/proyectos" className="text-gray-500 hover:text-black">
+                  Proyectos
+                </Link>
+                <span className="mx-2 text-gray-400">/</span>
+                <span className="text-black">{project.title}</span>
+              </nav>
+            </div>
+
             {/* Título del proyecto */}
             <div className="mb-8">
-              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem' }}>{project.title}</h1>
+              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>{project.title}</h1>
+              
               <div className="flex items-center gap-4 text-base text-gray-600">
                 <span>
                   Categoría: 
@@ -379,7 +408,7 @@ export default function ProjectPage({ params }: Props) {
                     {project.projectDetails ? (
                       <div dangerouslySetInnerHTML={{ __html: project.projectDetails }} />
                     ) : (
-                      <p>{project.description}</p>
+                      <p>Detalles del proyecto no disponibles.</p>
                     )}
                   </div>
                 )}
@@ -412,14 +441,37 @@ export default function ProjectPage({ params }: Props) {
             {/* Navegación inferior */}
             <div className="border-t border-gray-200">
               <div className="grid grid-cols-3 pt-8">
-                <button className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left">
-                  Proyecto Anterior
-                </button>
+                {/* Proyecto Anterior */}
+                {(() => {
+                  const { previous } = getNavigationProjects();
+                  return previous ? (
+                    <Link
+                      href={`/proyectos/${previous.slug}`}
+                      className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">
+                          arrow_back
+                        </span>
+                        <div>
+                          <div className="text-xs text-gray-400 mb-1">Proyecto Anterior</div>
+                          <div className="font-medium">{previous.title}</div>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
+                      <div className="text-xs text-gray-400 mb-1">Proyecto Anterior</div>
+                      <div>No disponible</div>
+                    </div>
+                  );
+                })()}
                 
+                {/* Descargar (Centro) */}
                 {project.downloadLink ? (
                   <a
                     href={project.downloadLink}
-                    className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 flex items-center justify-center gap-2"
+                    className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
                   >
                     <span>Descargar</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
@@ -435,9 +487,31 @@ export default function ProjectPage({ params }: Props) {
                   </div>
                 )}
                 
-                <button className="px-6 text-lg font-medium text-gray-600 hover:text-black text-right">
-                  Siguiente Proyecto
-                </button>
+                {/* Siguiente Proyecto */}
+                {(() => {
+                  const { next } = getNavigationProjects();
+                  return next ? (
+                    <Link
+                      href={`/proyectos/${next.slug}`}
+                      className="px-6 text-lg font-medium text-gray-600 hover:text-black text-right group"
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="text-right">
+                          <div className="text-xs text-gray-400 mb-1">Siguiente Proyecto</div>
+                          <div className="font-medium">{next.title}</div>
+                        </div>
+                        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                          arrow_forward
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-6 text-lg font-medium text-gray-300 text-right">
+                      <div className="text-xs text-gray-400 mb-1">Siguiente Proyecto</div>
+                      <div>No disponible</div>
+                    </div>
+                    );
+                })()}
               </div>
             </div>
           </div>

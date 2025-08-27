@@ -39,8 +39,11 @@ export default function Home() {
         text: project.heroDescription || project.description
       }));
       
-      // Combine original slides with project slides
-      setHeroSlides([...projectSlides, ...HERO_SLIDES]);
+      // Only show featured projects, no static slides
+      setHeroSlides(projectSlides);
+    } else {
+      // Fallback to static slides if no projects are featured
+      setHeroSlides(HERO_SLIDES);
     }
 
     // Get news for home
@@ -57,9 +60,25 @@ export default function Home() {
       setHomeNews(newsForHome);
     };
 
+    const handleProjectsUpdate = () => {
+      const featuredProjects = ProjectStorage.getFeatured();
+      if (featuredProjects.length > 0) {
+        const projectSlides: Slide[] = featuredProjects.map(project => ({
+          image: project.heroImages?.[0] || project.image,
+          title: project.title,
+          text: project.heroDescription || project.description
+        }));
+        setHeroSlides(projectSlides);
+      } else {
+        setHeroSlides(HERO_SLIDES);
+      }
+    };
+
     window.addEventListener('newsUpdated', handleNewsUpdate);
+    window.addEventListener('projectsUpdated', handleProjectsUpdate);
     return () => {
       window.removeEventListener('newsUpdated', handleNewsUpdate);
+      window.removeEventListener('projectsUpdated', handleProjectsUpdate);
     };
   }, []);
 

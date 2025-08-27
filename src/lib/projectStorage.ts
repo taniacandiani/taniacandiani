@@ -40,6 +40,9 @@ export class ProjectStorage {
     }
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('projectsUpdated', { detail: projects }));
   }
 
   static delete(id: string): void {
@@ -52,6 +55,9 @@ export class ProjectStorage {
   static saveAll(projects: Project[]): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('projectsUpdated', { detail: projects }));
   }
 
   static getFeatured(): Project[] {

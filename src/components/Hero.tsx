@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Section from '@/components/Section';
 import { useSlider } from '@/hooks/useSlider';
@@ -9,6 +9,8 @@ import { PROJECT_INFO } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 
 const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 5000 }) => {
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+  
   const { currentSlide, fade, nextSlide, prevSlide } = useSlider({ 
     itemCount: slides.length,
     autoPlay,
@@ -37,6 +39,32 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
     return matchingProject ? `/proyectos/${matchingProject.slug}` : '#';
   }, [slides, currentSlide]);
 
+  // Get current project info for metadata display
+  const getCurrentProjectInfo = useCallback(() => {
+    if (slides.length === 0) return null;
+    
+    const currentSlideData = slides[currentSlide];
+    const featuredProjects = ProjectStorage.getFeatured();
+    
+    const matchingProject = featuredProjects.find(project => 
+      project.title === currentSlideData.title
+    );
+    
+    return matchingProject;
+  }, [slides, currentSlide, updateTrigger]);
+
+  // Listen for project updates to refresh metadata
+  useEffect(() => {
+    const handleProjectsUpdate = () => {
+      setUpdateTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('projectsUpdated', handleProjectsUpdate);
+    return () => {
+      window.removeEventListener('projectsUpdated', handleProjectsUpdate);
+    };
+  }, []);
+
   if (slides.length === 0) {
     return (
       <Section fullWidth>
@@ -63,7 +91,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
         </div>
         
         <div className="absolute bottom-32 sm:bottom-44 left-4 sm:left-8 lg:left-20 p-4 text-left text-white max-w-xs sm:max-w-2xl">
-          <h2 className="font-bold mb-4">{slides[currentSlide].title}</h2>
+          <h2 className="font-bold mb-4 leading-none">{slides[currentSlide].title}</h2>
           <p className="mt-1 text-justify">{slides[currentSlide].text}</p>
         </div>
         
@@ -80,23 +108,31 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
             </button>
             
             <div className="hidden sm:flex flex-col lg:pl-6 order-2 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Comissionado por</span>
-              <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">{PROJECT_INFO.commissionedBy}</span>
+              <span className="font-black text-xs lg:text-sm">Comisionado por</span>
+              <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
+                {getCurrentProjectInfo()?.commissionedBy || 'No disponible'}
+              </span>
             </div>
             
             <div className="hidden md:flex flex-col order-3 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Curadora</span>
-              <span className="text-xs lg:text-sm">{PROJECT_INFO.curator}</span>
+              <span className="font-black text-xs lg:text-sm">Ubicación</span>
+              <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
+                {getCurrentProjectInfo()?.location || 'No disponible'}
+              </span>
             </div>
             
             <div className="flex flex-col order-4 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Año</span>
-              <span className="text-xs lg:text-sm">{PROJECT_INFO.year}</span>
+              <span className="text-xs lg:text-sm">
+                {getCurrentProjectInfo()?.year || 'No disponible'}
+              </span>
             </div>
             
             <div className="flex flex-col order-5 lg:order-none">
               <span className="font-black text-xs lg:text-sm">Categoría</span>
-              <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">{PROJECT_INFO.category}</span>
+              <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">
+                {getCurrentProjectInfo()?.category || 'No disponible'}
+              </span>
             </div>
 
             <button 
@@ -144,4 +180,22 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
   );
 };
 
-export default memo(Hero); 
+export default memo(Hero);
+
+// Custom CSS for hero section
+const heroStyles = `
+  .hero-section h2 {
+    line-height: 1 !important;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleId = 'hero-custom-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = heroStyles;
+    document.head.appendChild(style);
+  }
+} 

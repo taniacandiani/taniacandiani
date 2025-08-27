@@ -14,12 +14,11 @@ export default function NewProjectPage() {
   const [formData, setFormData] = useState<Partial<Project>>({
     title: '',
     subtitle: '',
-    description: '',
     category: '',
     year: new Date().getFullYear(),
     image: '',
     heroImages: [''],
-    projectDetails: '',
+    projectData: '',
     technicalSheet: '',
     downloadLink: '',
     additionalImage: '',
@@ -49,8 +48,8 @@ export default function NewProjectPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description) {
-      alert('Por favor completa al menos el título y la descripción');
+    if (!formData.title) {
+      alert('Por favor completa al menos el título');
       return;
     }
     
@@ -173,17 +172,7 @@ export default function NewProjectPage() {
             </div>
           </div>
 
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
-              required
-            />
-          </div>
+
         </div>
 
         {/* Imágenes */}

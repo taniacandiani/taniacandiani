@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import GoToTopButton from '@/components/ui/GoToTopButton';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export default function MainLayout({ children, hasNavbarOffset = true }: MainLay
         </ErrorBoundary>
       </main>
       <Footer />
+      <GoToTopButton />
     </>
   );
 } 

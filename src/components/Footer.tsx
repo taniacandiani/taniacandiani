@@ -1,7 +1,6 @@
 import React from 'react';
 import Section from '@/components/Section';
 import DynamicNavigation from '@/components/ui/DynamicNavigation';
-import LanguageSelector from '@/components/ui/LanguageSelector';
 
 const Footer: React.FC = () => {
   return (
@@ -19,9 +18,7 @@ const Footer: React.FC = () => {
             />
           </div>
           
-          <div>
-            <LanguageSelector />
-          </div>
+          <div className="w-48"></div>
         </div>
       </Section>
     </footer>
