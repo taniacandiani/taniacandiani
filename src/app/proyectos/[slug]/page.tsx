@@ -218,39 +218,36 @@ export default function ProjectPage({ params }: Props) {
         <div className="flex gap-8">
           {/* Sidebar Izquierdo */}
           <div className="w-64">
-            {/* Título sticky */}
-            <div className="sticky top-32 bg-white z-10 mb-8">
+            {/* Título y tabs sticky */}
+            <div className={`sticky top-32 z-10 ${project.tabs && project.tabs.length > 0 ? 'mb-8' : 'mb-8'}`}>
               <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
                 {getLocalizedContent('title')}
               </h1>
-            </div>
 
-            {/* Resto del contenido */}
-            <div>
-              {/* Tabs del proyecto */}
+              {/* Tabs del proyecto - ahora dentro del sticky */}
               {project.tabs && project.tabs.length > 0 && (
-                <div className="mb-8">
+                <div className="mt-6">
                   <div className="border-b border-gray-300 mb-4"></div>
                   <div className="space-y-2">
                     <button
                       onClick={() => setActiveProjectTab(-1)}
-                      className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded ${
+                      className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
                         activeProjectTab === -1
                           ? 'bg-black text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                       }`}
                       style={{ fontWeight: 600 }}
                     >
-                      {language === 'en' ? 'Main' : 'Principal'}
+                      {getLocalizedContent('title')}
                     </button>
                     {project.tabs.map((tab, index) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveProjectTab(index)}
-                        className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded ${
+                        className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
                           activeProjectTab === index
                             ? 'bg-black text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                         }`}
                         style={{ fontWeight: 600 }}
                       >
@@ -260,6 +257,10 @@ export default function ProjectPage({ params }: Props) {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Resto del contenido */}
+            <div>
 
               {/* Datos del proyecto */}
               {project.projectInfo && project.projectInfo.length > 0 && (
@@ -481,7 +482,15 @@ export default function ProjectPage({ params }: Props) {
             {/* Título del proyecto */}
             <div className="mb-8">
               <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>
-                {getLocalizedContent('title')}
+                {(() => {
+                  // Si hay un tab seleccionado, mostrar el título del tab
+                  if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                    const tab = project.tabs[activeProjectTab];
+                    return language === 'en' ? (tab.title_en || tab.title) : tab.title;
+                  }
+                  // Si no hay tab seleccionado, mostrar el título principal
+                  return getLocalizedContent('title');
+                })()}
               </h1>
 
               <div className="flex items-center gap-4 text-base text-gray-600">
@@ -610,18 +619,43 @@ export default function ProjectPage({ params }: Props) {
             </div>
 
             {/* Imagen secundaria */}
-            {project.additionalImage && (
-              <div className="mb-32">
-                <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
-                  <Image
-                    src={project.additionalImage}
-                    alt={`${project.title} - Imagen secundaria`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            )}
+            {(() => {
+              // Si hay un tab seleccionado, mostrar la imagen secundaria del tab
+              if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                const tab = project.tabs[activeProjectTab];
+                if (tab.additionalImage) {
+                  return (
+                    <div className="mb-32">
+                      <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
+                        <Image
+                          src={tab.additionalImage}
+                          alt={`${language === 'en' ? (tab.title_en || tab.title) : tab.title} - Imagen secundaria`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                return null; // No mostrar imagen secundaria si el tab no tiene una
+              }
+              // Si no hay tab seleccionado, mostrar la imagen secundaria principal
+              if (project.additionalImage) {
+                return (
+                  <div className="mb-32">
+                    <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
+                      <Image
+                        src={project.additionalImage}
+                        alt={`${project.title} - Imagen secundaria`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Navegación inferior */}
             <div className="border-t border-gray-200">
