@@ -93,19 +93,18 @@ export class NewsCategoryStorage {
 
   static async updateCounts(): Promise<NewsCategory[]> {
     try {
+      // Call the API to update counts in the database
+      const response = await fetch('/api/news-categories/update-counts', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update news category counts');
+      }
+
+      // Fetch updated categories
       const categories = await this.getAll();
-      const news = await NewsStorage.getPublished();
-      
-      const updatedCategories = categories.map(cat => ({
-        ...cat,
-        count: news.filter(n => n.categories?.includes(cat.name)).length
-      }));
-      
-      // For now, just log since we don't have a categories API yet
-      console.log('NewsCategoryStorage.updateCounts() - API not implemented yet');
-      console.log('Updated categories with counts:', updatedCategories);
-      
-      return updatedCategories;
+      return categories;
     } catch (error) {
       console.error('Error updating news category counts:', error);
       return [];

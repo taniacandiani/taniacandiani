@@ -104,19 +104,18 @@ export class CategoryStorage {
 
   static async updateCounts(): Promise<ProjectCategory[]> {
     try {
+      // Call the API to update counts in the database
+      const response = await fetch('/api/categories/update-counts', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update category counts');
+      }
+
+      // Fetch updated categories
       const categories = await this.getAll();
-      const projects = await ProjectStorage.getAll();
-      
-      const updatedCategories = categories.map(cat => ({
-        ...cat,
-        count: projects.filter(p => p.categories?.includes(cat.name) && p.status === 'published').length
-      }));
-      
-      // For now, just log since we don't have a categories API yet
-      console.log('CategoryStorage.updateCounts() - API not implemented yet');
-      console.log('Updated categories with counts:', updatedCategories);
-      
-      return updatedCategories;
+      return categories;
     } catch (error) {
       console.error('Error updating category counts:', error);
       return [];
