@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { NewsStorage } from '@/lib/newsStorage';
 import { PublicationStorage } from '@/lib/publicationStorage';
 import { PROJECTS, SAMPLE_NEWS, SAMPLE_PUBLICATIONS } from '@/data/content';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalProjects: 0,
     publishedProjects: 0,
@@ -130,11 +132,29 @@ export default function AdminDashboard() {
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/admin/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">Resumen del contenido de tu sitio web</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">Resumen del contenido de tu sitio web</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          Cerrar Sesión
+        </button>
       </div>
 
       {/* Estadísticas */}

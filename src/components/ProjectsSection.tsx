@@ -311,8 +311,8 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">
-              {filteredAndSortedProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+              {filteredAndSortedProjects.map((project, index) => (
+                <ProjectCard key={project.id} project={project} priority={index === 0} />
               ))}
             </div>
           ) : (

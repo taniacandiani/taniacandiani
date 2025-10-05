@@ -7,9 +7,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProjectCardProps {
   project: Project;
+  priority?: boolean;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, priority = false }: ProjectCardProps) {
   const { language } = useLanguage();
 
   // Get the title and subtitle based on current language
@@ -25,7 +26,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-md"
-          loading="lazy"
+          priority={priority}
         />
 
       </div>
