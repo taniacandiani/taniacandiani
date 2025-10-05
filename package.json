@@ -21,6 +21,7 @@
     "@tiptap/pm": "^3.3.0",
     "@tiptap/react": "^3.3.0",
     "@tiptap/starter-kit": "^3.3.0",
+    "cloudinary": "^2.7.0",
     "drizzle-orm": "^0.44.6",
     "next": "15.2.4",
     "react": "^19.0.0",
