@@ -10,8 +10,10 @@ import { HERO_SLIDES, PROJECTS, SAMPLE_NEWS } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { NewsStorage } from '@/lib/newsStorage';
 import { Slide, NewsItem } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Home() {
+  const { language } = useLanguage();
   const [heroSlides, setHeroSlides] = useState<Slide[]>(HERO_SLIDES);
   const [homeNews, setHomeNews] = useState<NewsItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -141,7 +143,7 @@ export default function Home() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando...</p>
+            <p className="text-gray-600">{language === 'en' ? 'Loading...' : 'Cargando...'}</p>
           </div>
         </div>
       </MainLayout>
@@ -159,8 +161,8 @@ export default function Home() {
 
         <Section as="main">
           <div className="main-section py-40">
-            <h3 className="font-medium text-black mb-12">NOTICIAS</h3>
-            
+            <h3 className="font-medium text-black mb-12">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h3>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {homeNews.length > 0 ? (
                 homeNews.map((news) => (
@@ -168,7 +170,7 @@ export default function Home() {
                 ))
               ) : (
                 <div className="col-span-3 text-center py-12">
-                  <p className="text-gray-500">No hay noticias disponibles en este momento.</p>
+                  <p className="text-gray-500">{language === 'en' ? 'No news available at this time.' : 'No hay noticias disponibles en este momento.'}</p>
                 </div>
               )}
             </div>

@@ -43,17 +43,17 @@ export async function POST(request: NextRequest) {
           fit: 'inside',
           withoutEnlargement: true
         })
-        .webp({ quality: 85 })
+        .webp({ quality: 90 })
         .toBuffer();
       mimeType = 'image/webp';
     } else if (extension === 'jpg' || extension === 'jpeg') {
-      // Optimizar JPEG
+      // Optimizar JPEG con alta calidad (90% - ideal para portfolios de arte)
       processedBuffer = await sharp(buffer)
         .resize(2000, 2000, {
           fit: 'inside',
           withoutEnlargement: true
         })
-        .jpeg({ quality: 85, progressive: true })
+        .jpeg({ quality: 90, progressive: true })
         .toBuffer();
       mimeType = 'image/jpeg';
     } else if (extension === 'png') {

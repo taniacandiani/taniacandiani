@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { ContactContent } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
+import RichContent from '@/components/ui/RichContent';
 
 export default function ContactPage() {
+  const { language } = useLanguage();
   const [contactContent, setContactContent] = useState<ContactContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -90,7 +93,7 @@ export default function ContactPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando contenido...</p>
+            <p className="text-gray-600">{language === 'en' ? 'Loading content...' : 'Cargando contenido...'}</p>
           </div>
         </div>
       </MainLayout>
@@ -103,7 +106,7 @@ export default function ContactPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="text-gray-400 text-6xl mb-4">📧</div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-2">No hay contenido</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-2">{language === 'en' ? 'No content available' : 'No hay contenido'}</h1>
           </div>
         </div>
       </MainLayout>
@@ -117,11 +120,14 @@ export default function ContactPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-3">
-              {contactContent.title}
+              {language === 'en' && contactContent.title_en ? contactContent.title_en : contactContent.title}
             </h1>
-            <p className="text-lg text-black max-w-2xl">
-              {contactContent.description}
-            </p>
+            <div className="text-lg text-black max-w-2xl">
+              <RichContent
+                content={language === 'en' && contactContent.description_en ? contactContent.description_en : contactContent.description}
+                className="text-black leading-relaxed"
+              />
+            </div>
           </div>
 
           {/* Contact Form */}
@@ -129,15 +135,15 @@ export default function ContactPage() {
             {submitStatus === 'success' ? (
               <div className="text-center py-8">
                 <div className="text-green-500 text-6xl mb-4">✓</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">¡Mensaje enviado!</h3>
-                <p className="text-gray-600">Gracias por contactarnos. Te responderemos pronto.</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{language === 'en' ? 'Message sent!' : '¡Mensaje enviado!'}</h3>
+                <p className="text-gray-600">{language === 'en' ? 'Thank you for contacting us. We will respond soon.' : 'Gracias por contactarnos. Te responderemos pronto.'}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre *
+                      {language === 'en' ? 'Name *' : 'Nombre *'}
                     </label>
                     <input
                       type="text"
@@ -147,10 +153,10 @@ export default function ContactPage() {
                       value={formData.name}
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
-                      placeholder="Tu nombre completo"
+                      placeholder={language === 'en' ? 'Your full name' : 'Tu nombre completo'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                       Email *
@@ -163,14 +169,14 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
-                      placeholder="tu@email.com"
+                      placeholder={language === 'en' ? 'your@email.com' : 'tu@email.com'}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                    Asunto *
+                    {language === 'en' ? 'Subject *' : 'Asunto *'}
                   </label>
                   <input
                     type="text"
@@ -180,13 +186,13 @@ export default function ContactPage() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
-                    placeholder="¿En qué podemos ayudarte?"
+                    placeholder={language === 'en' ? 'How can we help you?' : '¿En qué podemos ayudarte?'}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                    Mensaje *
+                    {language === 'en' ? 'Message *' : 'Mensaje *'}
                   </label>
                   <textarea
                     id="message"
@@ -196,7 +202,7 @@ export default function ContactPage() {
                     value={formData.message}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent transition-colors resize-none"
-                    placeholder="Escribe tu mensaje aquí..."
+                    placeholder={language === 'en' ? 'Write your message here...' : 'Escribe tu mensaje aquí...'}
                   />
                 </div>
 
@@ -206,7 +212,9 @@ export default function ContactPage() {
                     disabled={isSubmitting}
                     className="bg-black text-white px-8 py-3 rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                   >
-                    {isSubmitting ? 'Enviando...' : 'Enviar Mensaje'}
+                    {isSubmitting
+                      ? (language === 'en' ? 'Sending...' : 'Enviando...')
+                      : (language === 'en' ? 'Send Message' : 'Enviar Mensaje')}
                   </button>
                 </div>
               </form>

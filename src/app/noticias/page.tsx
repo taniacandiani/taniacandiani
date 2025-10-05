@@ -13,8 +13,10 @@ import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import { generateNewsExcerpt } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function NoticiasContent() {
+  const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -187,7 +189,7 @@ function NoticiasContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -201,7 +203,7 @@ function NoticiasContent() {
           <div className="flex items-center justify-center min-h-[50vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando noticias...</p>
+              <p className="text-gray-600">{language === 'en' ? 'Loading news...' : 'Cargando noticias...'}</p>
             </div>
           </div>
         </div>
@@ -227,7 +229,7 @@ function NoticiasContent() {
                 thumbnail_bar
               </span>
             </button>
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">NOTICIAS</h1>
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h1>
           </div>
         </div>
 
@@ -240,20 +242,20 @@ function NoticiasContent() {
               
               {/* Búsqueda */}
               <div className="mb-8">
-                <h4 className="projects-h4 text-lg font-normal mb-4">Búsqueda</h4>
+                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Search' : 'Búsqueda'}</h4>
                 <input
                   type="text"
-                  placeholder="Buscar noticias..."
+                  placeholder={language === 'en' ? 'Search news...' : 'Buscar noticias...'}
                   value={searchTerm}
                   onChange={(e) => updateFilter({ search: e.target.value })}
                   className="w-full border-0 border-b border-gray-300 px-0 py-2 text-base bg-transparent"
-                  aria-label="Buscar noticias por título, categoría o descripción"
+                  aria-label={language === 'en' ? 'Search news by title, category or description' : 'Buscar noticias por título, categoría o descripción'}
                 />
               </div>
 
               {/* Categorías */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">Categorías</h4>
+                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
                 <div className="space-y-2">
                   <button
                     onClick={() => updateFilter({ category: null })}
@@ -264,7 +266,7 @@ function NoticiasContent() {
                     }`}
                     aria-pressed={selectedCategory === null}
                   >
-                    Todas las categorías
+                    {language === 'en' ? 'All categories' : 'Todas las categorías'}
                   </button>
                   {categories.map((category) => (
                     <button
@@ -285,7 +287,7 @@ function NoticiasContent() {
 
               {/* Años */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">Año</h4>
+                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
                 <div className="space-y-2">
                   <button
                     onClick={() => updateFilter({ year: null })}
@@ -296,7 +298,7 @@ function NoticiasContent() {
                     }`}
                     aria-pressed={selectedYear === null}
                   >
-                    Todos los años
+                    {language === 'en' ? 'All years' : 'Todos los años'}
                   </button>
                   {availableYears.map((year) => (
                     <button
@@ -324,7 +326,7 @@ function NoticiasContent() {
             
             {filteredNews.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">No se encontraron noticias.</p>
+                <p className="text-gray-500">{language === 'en' ? 'No news found.' : 'No se encontraron noticias.'}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -360,7 +362,7 @@ function NoticiasContent() {
                           </div>
                           <div className="pt-2">
                             <span className="text-black text-sm group-hover:underline">
-                              Leer más →
+                              {language === 'en' ? 'Read more →' : 'Leer más →'}
                             </span>
                           </div>
                         </div>
@@ -377,20 +379,25 @@ function NoticiasContent() {
   );
 }
 
-export default function NoticiasPage() {
+function NoticiasPageFallback() {
+  const { language } = useLanguage();
   return (
-    <Suspense fallback={
-      <MainLayout>
-        <div className="container-mobile py-8 pt-16">
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando...</p>
-            </div>
+    <MainLayout>
+      <div className="container-mobile py-8 pt-16">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">{language === 'en' ? 'Loading...' : 'Cargando...'}</p>
           </div>
         </div>
-      </MainLayout>
-    }>
+      </div>
+    </MainLayout>
+  );
+}
+
+export default function NoticiasPage() {
+  return (
+    <Suspense fallback={<NoticiasPageFallback />}>
       <NoticiasContent />
     </Suspense>
   );

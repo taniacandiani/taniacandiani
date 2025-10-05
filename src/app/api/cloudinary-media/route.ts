@@ -39,12 +39,23 @@ function formatFileSize(bytes: number): string {
 function organizeByFolders(resources: CloudinaryResource[]): MediaFolder[] {
   const folderMap = new Map<string, MediaFolder>();
 
+  console.log('=== organizeByFolders ===');
+  console.log('Total resources:', resources.length);
+
   // Crear estructura de carpetas
   resources.forEach(resource => {
     const parts = resource.public_id.split('/');
     const fileName = parts.pop() || resource.public_id;
     const folderPath = parts.length > 0 ? parts.join('/') : 'root';
-    const folderName = parts[parts.length - 1] || 'Imágenes';
+    const folderName = parts[parts.length - 1] || 'root';
+
+    console.log('Processing:', {
+      public_id: resource.public_id,
+      parts,
+      fileName,
+      folderPath,
+      folderName
+    });
 
     if (!folderMap.has(folderPath)) {
       folderMap.set(folderPath, {
@@ -67,20 +78,46 @@ function organizeByFolders(resources: CloudinaryResource[]): MediaFolder[] {
     });
   });
 
+  console.log('FolderMap keys:', Array.from(folderMap.keys()));
+
   // Organizar carpetas en jerarquía
   const rootFolders: MediaFolder[] = [];
-  folderMap.forEach((folder, path) => {
+
+  // First pass: identify all root-level folders (folders with only one level)
+  const allPaths = Array.from(folderMap.keys()).sort();
+
+  console.log('All paths sorted:', allPaths);
+
+  // Build hierarchy from bottom up
+  allPaths.forEach(path => {
     const parts = path.split('/');
-    if (parts.length === 1 || path === 'root') {
+    const folder = folderMap.get(path)!;
+
+    if (parts.length === 1) {
+      // This is a top-level folder
       rootFolders.push(folder);
+      console.log('Added to root:', path);
     } else {
+      // This is a nested folder - find its parent
       const parentPath = parts.slice(0, -1).join('/');
       const parentFolder = folderMap.get(parentPath);
+
       if (parentFolder) {
-        parentFolder.subfolders.push(folder);
+        // Check if not already added
+        if (!parentFolder.subfolders.find(sf => sf.path === folder.path)) {
+          parentFolder.subfolders.push(folder);
+          console.log('Added to parent:', path, '-> parent:', parentPath);
+        }
+      } else {
+        // Parent doesn't exist, this might be orphaned - add to root
+        console.log('No parent found for:', path, '- adding to root');
+        rootFolders.push(folder);
       }
     }
   });
+
+  console.log('Root folders count:', rootFolders.length);
+  console.log('Root folders:', rootFolders.map(f => ({ name: f.name, path: f.path, filesCount: f.files.length, subfoldersCount: f.subfolders.length })));
 
   return rootFolders;
 }

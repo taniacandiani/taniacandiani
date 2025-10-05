@@ -114,6 +114,8 @@ export interface AboutContent {
   id: string;
   title: string;
   content: string;
+  title_en?: string;
+  content_en?: string;
   lastUpdated: string;
 }
 
@@ -121,6 +123,8 @@ export interface ContactContent {
   id: string;
   title: string;
   description: string;
+  title_en?: string;
+  description_en?: string;
   lastUpdated: string;
 }
 
@@ -137,6 +141,7 @@ export interface ProjectInfo {
 export interface NavigationItem {
   href: string;
   label: string;
+  label_en?: string;
   external?: boolean;
   children?: NavigationItem[];
 }

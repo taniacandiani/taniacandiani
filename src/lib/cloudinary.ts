@@ -30,10 +30,9 @@ export async function uploadToCloudinary(
       typeof file === 'string' ? file : `data:image/png;base64,${file.toString('base64')}`,
       {
         folder,
-        resource_type: 'image',
-        transformation: [
-          { quality: 'auto', fetch_format: 'auto' }
-        ]
+        resource_type: 'image'
+        // Sin transformaciones - Sharp ya optimizó la imagen con calidad 90%
+        // Cloudinary solo almacena, no comprime adicionalente
       }
     );
 
@@ -60,6 +59,72 @@ export async function deleteFromCloudinary(publicId: string): Promise<void> {
   } catch (error) {
     console.error('Error deleting from Cloudinary:', error);
     throw new Error('Failed to delete image from Cloudinary');
+  }
+}
+
+/**
+ * Rename/move an image in Cloudinary from one folder to another
+ * @param fromPublicId - Current public ID (e.g., "proyectos/temp-123/image")
+ * @param toPublicId - New public ID (e.g., "proyectos/my-project/image")
+ * @returns New secure URL
+ */
+export async function renameInCloudinary(fromPublicId: string, toPublicId: string): Promise<string> {
+  try {
+    const result = await cloudinary.uploader.rename(fromPublicId, toPublicId, {
+      overwrite: false,
+      invalidate: true
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.error('Error renaming in Cloudinary:', error);
+    throw new Error(`Failed to rename ${fromPublicId} to ${toPublicId}`);
+  }
+}
+
+/**
+ * Move all images from a temporary folder to a permanent folder
+ * @param tempFolder - Temporary folder path (e.g., "proyectos/temp-123")
+ * @param permanentFolder - Permanent folder path (e.g., "proyectos/my-project-slug")
+ * @returns Object mapping old URLs to new URLs
+ */
+export async function moveFolderInCloudinary(
+  tempFolder: string,
+  permanentFolder: string
+): Promise<{ [oldUrl: string]: string }> {
+  try {
+    // Get all resources in the temp folder
+    const result = await cloudinary.api.resources({
+      type: 'upload',
+      resource_type: 'image',
+      prefix: tempFolder,
+      max_results: 500
+    });
+
+    const urlMap: { [oldUrl: string]: string } = {};
+
+    // Rename each resource
+    for (const resource of result.resources) {
+      const oldPublicId = resource.public_id;
+      const oldUrl = resource.secure_url;
+
+      // Extract the filename from the public_id
+      const fileName = oldPublicId.split('/').pop();
+      const newPublicId = `${permanentFolder}/${fileName}`;
+
+      try {
+        const newUrl = await renameInCloudinary(oldPublicId, newPublicId);
+        urlMap[oldUrl] = newUrl;
+        console.log(`Renamed: ${oldPublicId} -> ${newPublicId}`);
+      } catch (error) {
+        console.error(`Failed to rename ${oldPublicId}:`, error);
+        // Continue with other images even if one fails
+      }
+    }
+
+    return urlMap;
+  } catch (error) {
+    console.error('Error moving folder in Cloudinary:', error);
+    throw new Error(`Failed to move folder from ${tempFolder} to ${permanentFolder}`);
   }
 }
 

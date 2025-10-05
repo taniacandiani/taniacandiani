@@ -5,12 +5,14 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import LanguageSelector from '@/components/ui/LanguageSelector';
 import { NAVIGATION_ITEMS, SOCIAL_LINKS } from '@/constants/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AiFillInstagram } from "react-icons/ai";
 import { MdEmail } from "react-icons/md";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { language } = useLanguage();
 
   return (
     <nav className="fixed top-0 w-full bg-white z-50 shadow-sm" role="navigation" aria-label="Navegación principal">
@@ -32,12 +34,12 @@ export default function Navbar() {
           {NAVIGATION_ITEMS.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
-              <Link 
+              <Link
                 key={item.href}
-                href={item.href} 
+                href={item.href}
                 className="relative text-lg hover:text-gray-600 transition-colors duration-200 rounded-sm px-2 py-1 group"
               >
-                {item.label}
+                {language === 'en' && item.label_en ? item.label_en : item.label}
                 {/* Animated underline */}
                 <div className={`absolute bottom-0 left-0 w-0 h-0.5 bg-black transition-all duration-300 ease-in-out group-hover:w-full ${isActive ? 'w-full' : ''}`}></div>
               </Link>
@@ -96,14 +98,14 @@ export default function Navbar() {
             {NAVIGATION_ITEMS.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
-                <Link 
+                <Link
                   key={item.href}
-                  href={item.href} 
+                  href={item.href}
                   className="relative block text-lg hover:text-gray-600 transition-colors duration-200 rounded-sm px-2 py-1 group"
                   role="menuitem"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.label}
+                  {language === 'en' && item.label_en ? item.label_en : item.label}
                   {/* Animated underline */}
                   <div className={`absolute bottom-0 left-0 w-0 h-0.5 bg-black transition-all duration-300 ease-in-out group-hover:w-full ${isActive ? 'w-full' : ''}`}></div>
                 </Link>

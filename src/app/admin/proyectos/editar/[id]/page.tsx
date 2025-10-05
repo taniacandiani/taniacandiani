@@ -165,13 +165,13 @@ export default function EditProjectPage() {
 
   const handleMediaSelection = (imageUrl: string) => {
     if (!project || !mediaSelectorType) return;
-    
+
     if (mediaSelectorType === 'hero') {
       const newHeroImages = [...(project.heroImages || [''])];
       newHeroImages[mediaSelectorIndex] = imageUrl;
       setProject({ ...project, heroImages: newHeroImages });
     } else if (mediaSelectorType === 'secondary') {
-      setProject({ ...project, image: imageUrl });
+      setProject({ ...project, additionalImage: imageUrl });
     }
   };
 
@@ -652,11 +652,11 @@ export default function EditProjectPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Imagen Secundaria
                   </label>
-                  
-                  {project.image ? (
+
+                  {project.additionalImage ? (
                     <div className="space-y-3">
                       <img
-                        src={project.image}
+                        src={project.additionalImage}
                         alt="Imagen secundaria"
                         className="w-32 h-32 object-cover rounded-lg border"
                       />
@@ -670,7 +670,7 @@ export default function EditProjectPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setProject({ ...project, image: '' })}
+                          onClick={() => setProject({ ...project, additionalImage: '' })}
                           className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
                         >
                           Eliminar

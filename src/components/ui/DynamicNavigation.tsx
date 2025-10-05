@@ -1,8 +1,12 @@
+'use client';
+
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface NavigationLink {
   id: string
   label: string
+  label_en: string
   url: string
   openInNewTab: boolean
   order: number
@@ -15,18 +19,20 @@ interface DynamicNavigationProps {
   area?: 'footer' | 'header' | 'sidebar'
 }
 
-const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ 
-  className = '', 
+const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
+  className = '',
   itemClassName = '',
   orientation = 'horizontal',
   area = 'footer'
 }) => {
+  const { language } = useLanguage();
+
   // Static navigation items
   const navigationItems = [
-    { id: 'nav-1', label: 'Proyectos', url: '/proyectos', openInNewTab: false, order: 1 },
-    { id: 'nav-2', label: 'Noticias', url: '/noticias', openInNewTab: false, order: 2 },
-    { id: 'nav-3', label: 'Acerca', url: '/acerca', openInNewTab: false, order: 3 },
-    { id: 'nav-4', label: 'Contacto', url: '/contacto', openInNewTab: false, order: 4 },
+    { id: 'nav-1', label: 'Proyectos', label_en: 'Projects', url: '/proyectos', openInNewTab: false, order: 1 },
+    { id: 'nav-2', label: 'Noticias', label_en: 'News', url: '/noticias', openInNewTab: false, order: 2 },
+    { id: 'nav-3', label: 'Acerca', label_en: 'About', url: '/acerca', openInNewTab: false, order: 3 },
+    { id: 'nav-4', label: 'Contacto', label_en: 'Contact', url: '/contacto', openInNewTab: false, order: 4 },
   ]
 
   const containerClass = orientation === 'horizontal' ? 'flex space-x-8' : 'flex flex-col gap-8'
@@ -43,18 +49,18 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
       <ul className={containerClass}>
         {sortedLinks.map((link) => (
           <li key={link.id}>
-            <Link 
+            <Link
               href={link.url}
               target={link.openInNewTab ? '_blank' : undefined}
               rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
               className={`hover:underline ${itemClassName}`}
             >
-              {link.label}
+              {language === 'en' ? link.label_en : link.label}
             </Link>
           </li>
         ))}
       </ul>
-      
+
 
     </nav>
   )

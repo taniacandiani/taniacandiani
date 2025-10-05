@@ -9,8 +9,10 @@ import { AboutContent, Publication } from '@/types';
 import { PublicationStorage } from '@/lib/publicationStorage';
 import { SAMPLE_PUBLICATIONS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AcercaPage() {
+  const { language } = useLanguage();
   const [aboutContent, setAboutContent] = useState<AboutContent | null>(null);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,14 +96,14 @@ export default function AcercaPage() {
             {/* Title */}
             <div className="mb-6">
               <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
-                {aboutContent.title}
+                {language === 'en' && aboutContent.title_en ? aboutContent.title_en : aboutContent.title}
               </h1>
             </div>
 
             {/* About Content */}
             <div className="prose prose-lg max-w-3xl mb-20">
-              <RichContent 
-                content={aboutContent.content}
+              <RichContent
+                content={language === 'en' && aboutContent.content_en ? aboutContent.content_en : aboutContent.content}
                 className="text-black leading-relaxed"
               />
             </div>
@@ -111,13 +113,13 @@ export default function AcercaPage() {
         {/* Publications Section */}
         <div className="mt-20">
             <h2 className="text-2xl md:text-4xl font-medium tracking-widest text-black mb-12">
-              PUBLICACIONES
+              {language === 'en' ? 'PUBLICATIONS' : 'PUBLICACIONES'}
             </h2>
             
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-                <p className="text-gray-600">Cargando publicaciones...</p>
+                <p className="text-gray-600">{language === 'en' ? 'Loading publications...' : 'Cargando publicaciones...'}</p>
               </div>
             ) : publications.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -152,7 +154,7 @@ export default function AcercaPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <span>Descargar PDF</span>
+                          <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
                           <svg 
                             className="ml-2 w-4 h-4" 
                             fill="none" 
@@ -174,7 +176,7 @@ export default function AcercaPage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No hay publicaciones disponibles.</p>
+                <p className="text-gray-500">{language === 'en' ? 'No publications available.' : 'No hay publicaciones disponibles.'}</p>
               </div>
             )}
           </div>

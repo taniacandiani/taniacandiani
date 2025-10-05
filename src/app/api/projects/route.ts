@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/db/projectService';
+import { moveFolderInCloudinary } from '@/lib/cloudinary';
 
 export async function GET() {
   try {
@@ -44,6 +45,84 @@ export async function POST(request: NextRequest) {
     // Remove id if provided (create generates its own)
     const { id, ...projectDataWithoutId } = projectData;
 
+    // Move temporary folders to permanent folders in Cloudinary
+    // Check if any image URLs contain temp folders
+    const tempFolderPattern = /proyectos\/temp-\d+/;
+    let tempFolder: string | null = null;
+
+    // Helper function to update URLs in an object
+    const updateUrls = (obj: any, urlMap: { [oldUrl: string]: string }) => {
+      if (!obj) return obj;
+
+      if (typeof obj === 'string') {
+        // If it's a URL string, replace it
+        return urlMap[obj] || obj;
+      }
+
+      if (Array.isArray(obj)) {
+        // If it's an array, recursively update each item
+        return obj.map(item => updateUrls(item, urlMap));
+      }
+
+      if (typeof obj === 'object') {
+        // If it's an object, recursively update each property
+        const updated: any = {};
+        for (const key in obj) {
+          updated[key] = updateUrls(obj[key], urlMap);
+        }
+        return updated;
+      }
+
+      return obj;
+    };
+
+    // Detect temp folder from any image URL
+    const detectTempFolder = (value: any): void => {
+      if (typeof value === 'string' && tempFolderPattern.test(value)) {
+        const match = value.match(tempFolderPattern);
+        if (match && !tempFolder) {
+          tempFolder = match[0];
+        }
+      } else if (Array.isArray(value)) {
+        value.forEach(detectTempFolder);
+      } else if (typeof value === 'object' && value !== null) {
+        Object.values(value).forEach(detectTempFolder);
+      }
+    };
+
+    detectTempFolder(projectDataWithoutId);
+
+    // If temp folder found, move images to permanent folder
+    if (tempFolder) {
+      console.log(`Detected temp folder: ${tempFolder}`);
+      const permanentFolder = `proyectos/${projectDataWithoutId.slug}`;
+      console.log(`Moving to permanent folder: ${permanentFolder}`);
+
+      try {
+        const urlMap = await moveFolderInCloudinary(tempFolder, permanentFolder);
+        console.log(`Moved ${Object.keys(urlMap).length} images`);
+
+        // Update all URLs in the project data
+        projectDataWithoutId.heroImages = updateUrls(projectDataWithoutId.heroImages, urlMap);
+        projectDataWithoutId.image = updateUrls(projectDataWithoutId.image, urlMap);
+        projectDataWithoutId.additionalImage = updateUrls(projectDataWithoutId.additionalImage, urlMap);
+
+        // Update URLs in tabs if they exist
+        if (projectDataWithoutId.tabs && Array.isArray(projectDataWithoutId.tabs)) {
+          projectDataWithoutId.tabs = projectDataWithoutId.tabs.map((tab: any) => ({
+            ...tab,
+            heroImages: updateUrls(tab.heroImages, urlMap),
+            additionalImage: updateUrls(tab.additionalImage, urlMap)
+          }));
+        }
+
+        console.log('Updated project data with new URLs');
+      } catch (error) {
+        console.error('Error moving folder in Cloudinary:', error);
+        // Continue anyway - images are still accessible from temp folder
+      }
+    }
+
     console.log('About to call ProjectService.create with:', {
       title: projectDataWithoutId.title,
       categoriesCount: projectDataWithoutId.categories?.length,
@@ -68,6 +147,80 @@ export async function PUT(request: NextRequest) {
 
     if (!projectData.id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    // Move temporary folders to permanent folders in Cloudinary (for edits)
+    const tempFolderPattern = /proyectos\/temp-\d+/;
+    let tempFolder: string | null = null;
+
+    // Helper function to update URLs in an object
+    const updateUrls = (obj: any, urlMap: { [oldUrl: string]: string }) => {
+      if (!obj) return obj;
+
+      if (typeof obj === 'string') {
+        return urlMap[obj] || obj;
+      }
+
+      if (Array.isArray(obj)) {
+        return obj.map(item => updateUrls(item, urlMap));
+      }
+
+      if (typeof obj === 'object') {
+        const updated: any = {};
+        for (const key in obj) {
+          updated[key] = updateUrls(obj[key], urlMap);
+        }
+        return updated;
+      }
+
+      return obj;
+    };
+
+    // Detect temp folder from any image URL
+    const detectTempFolder = (value: any): void => {
+      if (typeof value === 'string' && tempFolderPattern.test(value)) {
+        const match = value.match(tempFolderPattern);
+        if (match && !tempFolder) {
+          tempFolder = match[0];
+        }
+      } else if (Array.isArray(value)) {
+        value.forEach(detectTempFolder);
+      } else if (typeof value === 'object' && value !== null) {
+        Object.values(value).forEach(detectTempFolder);
+      }
+    };
+
+    detectTempFolder(projectData);
+
+    // If temp folder found, move images to permanent folder
+    if (tempFolder && projectData.slug) {
+      console.log(`[UPDATE] Detected temp folder: ${tempFolder}`);
+      const permanentFolder = `proyectos/${projectData.slug}`;
+      console.log(`[UPDATE] Moving to permanent folder: ${permanentFolder}`);
+
+      try {
+        const urlMap = await moveFolderInCloudinary(tempFolder, permanentFolder);
+        console.log(`[UPDATE] Moved ${Object.keys(urlMap).length} images`);
+
+        // Update all URLs in the project data
+        projectData.heroImages = updateUrls(projectData.heroImages, urlMap);
+        projectData.image = updateUrls(projectData.image, urlMap);
+        projectData.additionalImage = updateUrls(projectData.additionalImage, urlMap);
+
+        // Update URLs in tabs if they exist
+        if (projectData.tabs && Array.isArray(projectData.tabs)) {
+          projectData.tabs = projectData.tabs.map((tab: any) => ({
+            ...tab,
+            heroImages: updateUrls(tab.heroImages, urlMap),
+            additionalImage: updateUrls(tab.additionalImage, urlMap)
+          }));
+        }
+
+        console.log('[UPDATE] Updated project data with new URLs');
+      } catch (error) {
+        console.error('[UPDATE] Error moving folder in Cloudinary:', error);
+        // Continue anyway - images are still accessible from temp folder
+      }
     }
 
     const project = await ProjectService.update(projectData.id, projectData);

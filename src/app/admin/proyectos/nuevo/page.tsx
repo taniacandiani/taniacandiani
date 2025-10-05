@@ -17,8 +17,22 @@ export default function NewProjectPage() {
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
 
-  // Generate temporary folder once for this session
-  const tempFolder = useMemo(() => `proyectos/temp-${Date.now()}`, []);
+  // Generate folder based on project title (slug)
+  const getProjectFolder = () => {
+    if (!formData.title || formData.title.trim() === '') {
+      return null; // No folder if no title
+    }
+
+    const slug = formData.title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+
+    return `proyectos/${slug}`;
+  };
 
   const [formData, setFormData] = useState<Partial<Project>>({
     title: '',
@@ -468,36 +482,69 @@ export default function NewProjectPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
 
               <div className="space-y-6">
+                {/* Advertencia si no hay título */}
+                {!formData.title && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-yellow-600 mt-0.5">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-yellow-800">
+                        <p className="font-medium">Título requerido para subir imágenes</p>
+                        <p className="mt-1">
+                          Por favor ingresa un título para el proyecto antes de subir imágenes. El título se usará para organizar las imágenes en Cloudinary.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Imágenes del Hero */}
                 <div>
-                  <ImageUploader
-                    label={editingLanguage === 'es' ? 'Imagen del Hero *' : 'Hero Image *'}
-                    projectId={tempFolder.split('/').pop() || 'temp'}
-                    currentImage=""
-                    onImageUpload={(imageUrl) => {
-                      if (imageUrl) {
-                        const newHeroImages = [...(formData.heroImages || [''])];
-                        if (newHeroImages.length === 0 || newHeroImages[0] === '') {
-                          newHeroImages[0] = imageUrl;
-                        } else {
-                          newHeroImages.push(imageUrl);
+                  {!formData.title ? (
+                    <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="mt-4 text-sm font-medium text-gray-600">
+                        {editingLanguage === 'es' ? 'Imagen del Hero *' : 'Hero Image *'}
+                      </p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Ingresa un título para el proyecto arriba para poder subir imágenes
+                      </p>
+                    </div>
+                  ) : (
+                    <ImageUploader
+                      label={editingLanguage === 'es' ? 'Imagen del Hero *' : 'Hero Image *'}
+                      projectId={getProjectFolder()?.split('/').pop() || 'proyecto'}
+                      currentImage=""
+                      onImageUpload={(imageUrl) => {
+                        if (imageUrl) {
+                          const newHeroImages = [...(formData.heroImages || [''])];
+                          if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                            newHeroImages[0] = imageUrl;
+                          } else {
+                            newHeroImages.push(imageUrl);
+                          }
+                          setFormData({ ...formData, heroImages: newHeroImages });
                         }
-                        setFormData({ ...formData, heroImages: newHeroImages });
-                      }
-                    }}
-                    required={false}
-                    contentType={tempFolder}
-                    multiple={true}
-                    onImagesUpload={(imageUrls) => {
-                      if (imageUrls.length > 0) {
-                        const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
-                        setFormData({
-                          ...formData,
-                          heroImages: [...currentImages, ...imageUrls]
-                        });
-                      }
-                    }}
-                  />
+                      }}
+                      required={false}
+                      contentType={getProjectFolder() || 'proyectos'}
+                      multiple={true}
+                      onImagesUpload={(imageUrls) => {
+                        if (imageUrls.length > 0) {
+                          const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
+                          setFormData({
+                            ...formData,
+                            heroImages: [...currentImages, ...imageUrls]
+                          });
+                        }
+                      }}
+                    />
+                  )}
 
                   {/* Mostrar imágenes del hero cargadas */}
                   {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
@@ -565,14 +612,28 @@ export default function NewProjectPage() {
 
                 {/* Imagen Secundaria */}
                 <div>
-                  <ImageUploader
-                    label={editingLanguage === 'es' ? 'Imagen Secundaria' : 'Secondary Image'}
-                    projectId={tempFolder.split('/').pop() || 'temp'}
-                    currentImage={formData.additionalImage}
-                    onImageUpload={(imageUrl) => setFormData({ ...formData, additionalImage: imageUrl || '' })}
-                    required={false}
-                    contentType={tempFolder}
-                  />
+                  {!formData.title ? (
+                    <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="mt-4 text-sm font-medium text-gray-600">
+                        {editingLanguage === 'es' ? 'Imagen Secundaria' : 'Secondary Image'}
+                      </p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Ingresa un título para el proyecto arriba para poder subir imágenes
+                      </p>
+                    </div>
+                  ) : (
+                    <ImageUploader
+                      label={editingLanguage === 'es' ? 'Imagen Secundaria' : 'Secondary Image'}
+                      projectId={getProjectFolder()?.split('/').pop() || 'proyecto'}
+                      currentImage={formData.additionalImage}
+                      onImageUpload={(imageUrl) => setFormData({ ...formData, additionalImage: imageUrl || '' })}
+                      required={false}
+                      contentType={getProjectFolder() || 'proyectos'}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -781,56 +842,109 @@ export default function NewProjectPage() {
                       />
                     </div>
 
+                    {/* Advertencia si no hay título del proyecto o del tab */}
+                    {(!formData.title || !tab.title) && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="text-yellow-600 mt-0.5">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          </div>
+                          <div className="text-sm text-yellow-800">
+                            <p className="font-medium">Título requerido para subir imágenes</p>
+                            <p className="mt-1">
+                              {!formData.title && !tab.title
+                                ? 'Por favor ingresa un título para el proyecto Y para este tab antes de subir imágenes.'
+                                : !formData.title
+                                ? 'Por favor ingresa un título para el proyecto antes de subir imágenes.'
+                                : 'Por favor ingresa un título para este tab antes de subir imágenes.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Imágenes del Hero del Tab */}
                     <div>
-                      <ImageUploader
-                        label={editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
-                        projectId={tempFolder.split('/').pop() || 'temp'}
-                        currentImage=""
-                        onImageUpload={(imageUrl) => {
-                          if (imageUrl) {
-                            const newTabs = [...(formData.tabs || [])];
-                            const currentTab = newTabs[activeTabIndex];
-                            const newHeroImages = [...(currentTab.heroImages || [''])];
-                            if (newHeroImages.length === 0 || newHeroImages[0] === '') {
-                              newHeroImages[0] = imageUrl;
-                            } else {
-                              newHeroImages.push(imageUrl);
-                            }
-                            currentTab.heroImages = newHeroImages;
-                            setFormData({ ...formData, tabs: newTabs });
-                          }
-                        }}
-                        required={false}
-                        contentType={tempFolder}
-                        multiple={true}
-                        onImagesUpload={(imageUrls) => {
-                          if (imageUrls.length > 0) {
-                            const newTabs = [...(formData.tabs || [])];
-                            const currentTab = newTabs[activeTabIndex];
-                            const currentImages = (currentTab.heroImages || []).filter(img => img && img.trim() !== '');
-                            const newHeroImages = [...currentImages, ...imageUrls];
+                      {(!formData.title || !tab.title) ? (
+                        <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="mt-4 text-sm font-medium text-gray-600">
+                            {editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
+                          </p>
+                          <p className="mt-2 text-xs text-gray-500">
+                            {!formData.title
+                              ? 'Ingresa un título para el proyecto arriba'
+                              : 'Ingresa un título para este tab arriba'}
+                          </p>
+                        </div>
+                      ) : (
+                        (() => {
+                          // Generate tab folder: proyectos/{project-slug}/{tab-slug}
+                          const tabSlug = tab.title
+                            .toLowerCase()
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[^a-z0-9\s]/g, '')
+                            .trim()
+                            .replace(/\s+/g, '-');
+                          const tabFolder = `${getProjectFolder()}/${tabSlug}`;
 
-                            // Actualizar descripciones
-                            const currentDescriptions = currentTab.heroImageDescriptions || [];
-                            const currentDescriptionsEn = currentTab.heroImageDescriptions_en || [];
-                            const newDescriptions = [...currentDescriptions];
-                            const newDescriptionsEn = [...currentDescriptionsEn];
+                          return (
+                            <ImageUploader
+                              label={editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
+                              projectId={tabSlug}
+                              currentImage=""
+                              onImageUpload={(imageUrl) => {
+                                if (imageUrl) {
+                                  const newTabs = [...(formData.tabs || [])];
+                                  const currentTab = newTabs[activeTabIndex];
+                                  const newHeroImages = [...(currentTab.heroImages || [''])];
+                                  if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                                    newHeroImages[0] = imageUrl;
+                                  } else {
+                                    newHeroImages.push(imageUrl);
+                                  }
+                                  currentTab.heroImages = newHeroImages;
+                                  setFormData({ ...formData, tabs: newTabs });
+                                }
+                              }}
+                              required={false}
+                              contentType={tabFolder}
+                              multiple={true}
+                              onImagesUpload={(imageUrls) => {
+                                if (imageUrls.length > 0) {
+                                  const newTabs = [...(formData.tabs || [])];
+                                  const currentTab = newTabs[activeTabIndex];
+                                  const currentImages = (currentTab.heroImages || []).filter(img => img && img.trim() !== '');
+                                  const newHeroImages = [...currentImages, ...imageUrls];
 
-                            while (newDescriptions.length < newHeroImages.length) {
-                              newDescriptions.push('');
-                            }
-                            while (newDescriptionsEn.length < newHeroImages.length) {
-                              newDescriptionsEn.push('');
-                            }
+                                  // Actualizar descripciones
+                                  const currentDescriptions = currentTab.heroImageDescriptions || [];
+                                  const currentDescriptionsEn = currentTab.heroImageDescriptions_en || [];
+                                  const newDescriptions = [...currentDescriptions];
+                                  const newDescriptionsEn = [...currentDescriptionsEn];
 
-                            currentTab.heroImages = newHeroImages;
-                            currentTab.heroImageDescriptions = newDescriptions;
-                            currentTab.heroImageDescriptions_en = newDescriptionsEn;
-                            setFormData({ ...formData, tabs: newTabs });
-                          }
-                        }}
-                      />
+                                  while (newDescriptions.length < newHeroImages.length) {
+                                    newDescriptions.push('');
+                                  }
+                                  while (newDescriptionsEn.length < newHeroImages.length) {
+                                    newDescriptionsEn.push('');
+                                  }
+
+                                  currentTab.heroImages = newHeroImages;
+                                  currentTab.heroImageDescriptions = newDescriptions;
+                                  currentTab.heroImageDescriptions_en = newDescriptionsEn;
+                                  setFormData({ ...formData, tabs: newTabs });
+                                }
+                              }}
+                            />
+                          );
+                        })()
+                      )}
 
                       {/* Mostrar imágenes del hero del tab */}
                       {tab.heroImages && tab.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
@@ -891,14 +1005,44 @@ export default function NewProjectPage() {
 
                     {/* Imagen Secundaria del Tab */}
                     <div>
-                      <ImageUploader
-                        label={editingLanguage === 'es' ? 'Imagen Secundaria del Tab' : 'Tab Secondary Image'}
-                        projectId={tempFolder.split('/').pop() || 'temp'}
-                        currentImage={tab.additionalImage}
-                        onImageUpload={(imageUrl) => updateTab(activeTabIndex, 'additionalImage', imageUrl)}
-                        required={false}
-                        contentType={tempFolder}
-                      />
+                      {(!formData.title || !tab.title) ? (
+                        <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="mt-4 text-sm font-medium text-gray-600">
+                            {editingLanguage === 'es' ? 'Imagen Secundaria del Tab' : 'Tab Secondary Image'}
+                          </p>
+                          <p className="mt-2 text-xs text-gray-500">
+                            {!formData.title
+                              ? 'Ingresa un título para el proyecto arriba'
+                              : 'Ingresa un título para este tab arriba'}
+                          </p>
+                        </div>
+                      ) : (
+                        (() => {
+                          // Generate tab folder: proyectos/{project-slug}/{tab-slug}
+                          const tabSlug = tab.title
+                            .toLowerCase()
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[^a-z0-9\s]/g, '')
+                            .trim()
+                            .replace(/\s+/g, '-');
+                          const tabFolder = `${getProjectFolder()}/${tabSlug}`;
+
+                          return (
+                            <ImageUploader
+                              label={editingLanguage === 'es' ? 'Imagen Secundaria del Tab' : 'Tab Secondary Image'}
+                              projectId={tabSlug}
+                              currentImage={tab.additionalImage}
+                              onImageUpload={(imageUrl) => updateTab(activeTabIndex, 'additionalImage', imageUrl)}
+                              required={false}
+                              contentType={tabFolder}
+                            />
+                          );
+                        })()
+                      )}
                     </div>
 
                     {/* Detalles del Proyecto del Tab */}

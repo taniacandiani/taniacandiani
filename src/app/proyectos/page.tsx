@@ -8,8 +8,10 @@ import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { Project, ProjectCategory } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ProyectosPage() {
+  const { language } = useLanguage();
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -105,7 +107,7 @@ export default function ProyectosPage() {
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando proyectos...</p>
+            <p className="text-gray-600">{language === 'en' ? 'Loading projects...' : 'Cargando proyectos...'}</p>
           </div>
         </div>
       </MainLayout>

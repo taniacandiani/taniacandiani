@@ -3,12 +3,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { NewsItem } from '@/types';
 import { generateNewsExcerpt } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NewsCardProps {
   news: NewsItem;
 }
 
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
+  const { language } = useLanguage();
   return (
     <article className="flex flex-col h-full" role="article" aria-labelledby={`news-title-${news.id}`}>
       <div className="border-b border-gray-200 pb-12 h-[300px]">
@@ -34,12 +36,12 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         <p className="text-gray-700 mb-4 flex-1" aria-describedby={`news-title-${news.id}`}>
           {generateNewsExcerpt(news.content, 150)}
         </p>
-        <Link 
+        <Link
           href={`/noticias/${news.slug}`}
           className="flex items-center text-2xl pt-5 text-black hover:underline rounded-sm p-1 -m-1 transition-colors mt-auto"
-          aria-label={`Leer más sobre ${news.title}`}
+          aria-label={language === 'en' ? `Read more about ${news.title}` : `Leer más sobre ${news.title}`}
         >
-          Leer Más 
+          {language === 'en' ? 'Read More' : 'Leer Más'} 
           <svg 
             className="w-4 h-4 ml-2" 
             fill="none" 

@@ -122,6 +122,8 @@ export const aboutContent = pgTable('about_content', {
   id: varchar('id', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 500 }),
   content: text('content'),
+  title_en: varchar('title_en', { length: 500 }),
+  content_en: text('content_en'),
   lastUpdated: timestamp('last_updated').defaultNow(),
 });
 
@@ -130,6 +132,8 @@ export const contactContent = pgTable('contact_content', {
   id: varchar('id', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 500 }),
   description: text('description'),
+  title_en: varchar('title_en', { length: 500 }),
+  description_en: text('description_en'),
   lastUpdated: timestamp('last_updated').defaultNow(),
 });
 

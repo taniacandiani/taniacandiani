@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Project, ProjectCategory, SortOption, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProjectsSectionProps {
   projects: Project[];
@@ -11,6 +12,7 @@ interface ProjectsSectionProps {
 }
 
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories }) => {
+  const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filterState, setFilterState] = useState<FilterState>({
@@ -129,7 +131,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               thumbnail_bar
             </span>
           </button>
-          <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">PROYECTOS</h1>
+          <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'PROJECTS' : 'PROYECTOS'}</h1>
         </div>
         <div className="flex items-center gap-4">
           {/* Botón de cambio de vista */}
@@ -152,9 +154,9 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               className="flex items-center gap-2 text-sm cursor-pointer "
             >
               <span>
-                {filterState.sortBy === 'date' && 'Orden por fecha'}
-                {filterState.sortBy === 'title' && 'Orden por nombre'} 
-                {filterState.sortBy === 'category' && 'Orden por categoría'}
+                {filterState.sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                {filterState.sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                {filterState.sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
               </span>
               <svg 
                 width="12" 
@@ -184,7 +186,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     filterState.sortBy === 'date' ? 'bg-gray-800' : ''
                   }`}
                 >
-                  Orden por fecha
+                  {language === 'en' ? 'Order by date' : 'Orden por fecha'}
                 </button>
                 <button
                   onClick={() => {
@@ -195,7 +197,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     filterState.sortBy === 'title' ? 'bg-gray-800' : ''
                   }`}
                 >
-                  Orden por nombre
+                  {language === 'en' ? 'Order by name' : 'Orden por nombre'}
                 </button>
                 <button
                   onClick={() => {
@@ -206,7 +208,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     filterState.sortBy === 'category' ? 'bg-gray-800' : ''
                   }`}
                 >
-                  Orden por categoría
+                  {language === 'en' ? 'Order by category' : 'Orden por categoría'}
                 </button>
               </div>
             )}
@@ -223,20 +225,20 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             
             {/* Búsqueda */}
             <div className="mb-8">
-              <h4 className="projects-h4 text-lg font-normal mb-4">Búsqueda</h4>
+              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Search' : 'Búsqueda'}</h4>
               <input
                 type="text"
-                placeholder="Buscar proyectos..."
+                placeholder={language === 'en' ? 'Search projects...' : 'Buscar proyectos...'}
                 value={filterState.searchTerm}
                 onChange={(e) => updateFilter({ searchTerm: e.target.value })}
                 className="w-full border-0 border-b border-gray-300 px-0 py-2 text-base   bg-transparent"
-                aria-label="Buscar proyectos por título, categoría o descripción"
+                aria-label={language === 'en' ? 'Search projects by title, category or description' : 'Buscar proyectos por título, categoría o descripción'}
               />
             </div>
 
           {/* Categorías */}
           <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-            <h4 className="projects-h4 text-lg font-normal mb-4">Categorías</h4>
+            <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
             <div className="space-y-2">
               <button
                 onClick={() => updateFilter({ selectedCategory: null })}
@@ -247,7 +249,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 }`}
                 aria-pressed={filterState.selectedCategory === null}
               >
-                Todas las categorías
+                {language === 'en' ? 'All categories' : 'Todas las categorías'}
               </button>
               {categories.map((category) => (
                 <button
@@ -268,7 +270,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
           {/* Años */}
           <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-            <h4 className="projects-h4 text-lg font-normal mb-4">Año</h4>
+            <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
             <div className="space-y-2">
               <button
                 onClick={() => updateFilter({ selectedYear: null })}
@@ -279,7 +281,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 }`}
                 aria-pressed={filterState.selectedYear === null}
               >
-                Todos los años
+                {language === 'en' ? 'All years' : 'Todos los años'}
               </button>
               {availableYears.map((year) => (
                 <button
@@ -307,7 +309,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           
           {filteredAndSortedProjects.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No se encontraron proyectos que coincidan con los filtros seleccionados.</p>
+              <p className="text-gray-500">{language === 'en' ? 'No projects found matching the selected filters.' : 'No se encontraron proyectos que coincidan con los filtros seleccionados.'}</p>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">

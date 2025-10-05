@@ -1,10 +1,10 @@
 import { NavigationItem } from '@/types';
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
-  { href: '/proyectos', label: 'Proyectos' },
-  { href: '/noticias', label: 'Noticias' },
-  { href: '/acerca', label: 'Acerca' },
-  { href: '/contacto', label: 'Contacto' },
+  { href: '/proyectos', label: 'Proyectos', label_en: 'Projects' },
+  { href: '/noticias', label: 'Noticias', label_en: 'News' },
+  { href: '/acerca', label: 'Acerca', label_en: 'About' },
+  { href: '/contacto', label: 'Contacto', label_en: 'Contact' },
 ];
 
 export const SOCIAL_LINKS = {
