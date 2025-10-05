@@ -396,7 +396,11 @@ export default function EditProjectPage() {
                       <div className="text-center">
                         <button
                           type="button"
-                          onClick={addHeroImage}
+                          onClick={() => {
+                            const currentHeroImages = project.heroImages || [''];
+                            const lastIndex = currentHeroImages.filter(img => img && img.trim() !== '').length;
+                            openMediaSelector('hero', lastIndex);
+                          }}
                           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
                         >
                           + Agregar otra imagen del Hero
@@ -406,55 +410,89 @@ export default function EditProjectPage() {
                     
                     {/* Mostrar miniaturas de las imágenes cargadas */}
                     {project.heroImages && project.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-3">
-                          {project.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                            <div key={index} className="relative inline-block">
-                              <img
-                                src={image}
-                                alt={`Imagen del hero ${index + 1}`}
-                                className="w-16 h-16 object-cover rounded-lg border"
-                              />
-                              <div className="absolute -top-2 -right-2 flex space-x-1">
-                                <button
-                                  type="button"
-                                  onClick={() => openMediaSelector('hero', index)}
-                                  className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-blue-600"
-                                  title="Cambiar imagen"
-                                >
-                                  ↻
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const currentHeroImages = project.heroImages || [''];
-                                    const newHeroImages = [...currentHeroImages];
-                                    newHeroImages[index] = '';
-                                    setProject({ ...project, heroImages: newHeroImages });
+                      <div className="space-y-4">
+                        {project.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex gap-4 items-start">
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={image}
+                                  alt={`Imagen del hero ${index + 1}`}
+                                  className="w-32 h-32 object-cover rounded-lg border"
+                                />
+                                <div className="absolute -top-2 -right-2 flex space-x-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => openMediaSelector('hero', index)}
+                                    className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-blue-600"
+                                    title="Cambiar imagen"
+                                  >
+                                    ↻
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentHeroImages = project.heroImages || [''];
+                                      const newHeroImages = [...currentHeroImages];
+                                      const newDescriptions = [...(project.heroImageDescriptions || [])];
+                                      const newDescriptions_en = [...(project.heroImageDescriptions_en || [])];
+
+                                      newHeroImages.splice(index, 1);
+                                      newDescriptions.splice(index, 1);
+                                      newDescriptions_en.splice(index, 1);
+
+                                      setProject({
+                                        ...project,
+                                        heroImages: newHeroImages,
+                                        heroImageDescriptions: newDescriptions,
+                                        heroImageDescriptions_en: newDescriptions_en
+                                      });
+                                    }}
+                                    className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                                    title="Eliminar imagen"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  {editingLanguage === 'es' ? `Descripción imagen ${index + 1} (opcional)` : `Image ${index + 1} description (optional)`}
+                                </label>
+                                <textarea
+                                  value={
+                                    editingLanguage === 'es'
+                                      ? (project.heroImageDescriptions?.[index] || '')
+                                      : (project.heroImageDescriptions_en?.[index] || '')
+                                  }
+                                  onChange={(e) => {
+                                    const newDescriptions = editingLanguage === 'es'
+                                      ? [...(project.heroImageDescriptions || [])]
+                                      : [...(project.heroImageDescriptions_en || [])];
+
+                                    // Asegurar que el array tenga el tamaño correcto
+                                    while (newDescriptions.length <= index) {
+                                      newDescriptions.push('');
+                                    }
+
+                                    newDescriptions[index] = e.target.value;
+
+                                    setProject({
+                                      ...project,
+                                      [editingLanguage === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en']: newDescriptions
+                                    });
                                   }}
-                                  className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                                  title="Eliminar imagen"
-                                >
-                                  ×
-                                </button>
+                                  className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                  placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el slider del proyecto...' : 'Description that will appear in the project slider...'}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {editingLanguage === 'es' ? 'Esta descripción se mostrará en el slider del proyecto' : 'This description will be shown in the project slider'}
+                                </p>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                        
-                        <div className="text-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const currentHeroImages = project.heroImages || [''];
-                              const lastIndex = currentHeroImages.filter(img => img && img.trim() !== '').length;
-                              openMediaSelector('hero', lastIndex);
-                            }}
-                            className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                          >
-                            + Agregar imagen
-                          </button>
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -705,7 +743,7 @@ export default function EditProjectPage() {
         onClose={() => setShowMediaSelector(false)}
         onSelect={handleMediaSelection}
         title={mediaSelectorType === 'hero' ? 'Seleccionar Imagen del Hero' : 'Seleccionar Imagen Secundaria'}
-        contentType="proyectos"
+        contentType={`proyectos/${project.slug}`}
       />
       
       {/* Notification Component */}

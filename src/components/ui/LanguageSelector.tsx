@@ -15,8 +15,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
         onClick={toggleLanguage}
         className={`text-sm font-medium transition-colors duration-200 ${
           language === 'es'
-            ? 'text-gray-400 hover:text-gray-600'
-            : 'text-black hover:text-gray-800'
+            ? 'text-black hover:text-gray-800'
+            : 'text-gray-400 hover:text-gray-600'
         }`}
       >
         ES
@@ -26,8 +26,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
         onClick={toggleLanguage}
         className={`text-sm font-medium transition-colors duration-200 ${
           language === 'en'
-            ? 'text-gray-400 hover:text-gray-600'
-            : 'text-black hover:text-gray-800'
+            ? 'text-black hover:text-gray-800'
+            : 'text-gray-400 hover:text-gray-600'
         }`}
       >
         EN

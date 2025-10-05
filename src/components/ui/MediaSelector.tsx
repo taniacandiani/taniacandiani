@@ -37,7 +37,7 @@ export default function MediaSelector({
 }: MediaSelectorProps) {
   const [mediaStructure, setMediaStructure] = useState<MediaFolder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPath, setCurrentPath] = useState('/uploads');
+  const [currentPath, setCurrentPath] = useState('root');
   const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,12 +53,22 @@ export default function MediaSelector({
   const loadMediaStructure = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/media');
-      if (!response.ok) {
+      // Intentar cargar desde Cloudinary primero
+      const cloudinaryResponse = await fetch('/api/cloudinary-media');
+      if (cloudinaryResponse.ok) {
+        const data = await cloudinaryResponse.json();
+        setMediaStructure(data.structure || []);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback a archivos locales si Cloudinary falla
+      const localResponse = await fetch('/api/media');
+      if (!localResponse.ok) {
         throw new Error('Error al cargar la estructura de archivos');
       }
-      
-      const data = await response.json();
+
+      const data = await localResponse.json();
       setMediaStructure(data.structure || []);
     } catch (error) {
       console.error('Error loading media structure:', error);
@@ -68,10 +78,16 @@ export default function MediaSelector({
   };
 
   const getCurrentFolder = (): MediaFolder | null => {
-    if (currentPath === '/uploads') {
-      return mediaStructure.length > 0 ? mediaStructure[0] : null;
+    if (currentPath === '/uploads' || currentPath === 'root') {
+      // Retornar una carpeta virtual que contenga todas las carpetas raíz
+      return {
+        name: 'Imágenes',
+        path: currentPath,
+        files: mediaStructure.flatMap(f => f.files),
+        subfolders: mediaStructure
+      };
     }
-    
+
     const findFolder = (folders: MediaFolder[], targetPath: string): MediaFolder | null => {
       for (const folder of folders) {
         if (folder.path === targetPath) return folder;
@@ -80,7 +96,7 @@ export default function MediaSelector({
       }
       return null;
     };
-    
+
     return findFolder(mediaStructure, currentPath);
   };
 
@@ -155,9 +171,9 @@ export default function MediaSelector({
   const filteredFiles = () => {
     const currentFolder = getCurrentFolder();
     if (!currentFolder) return [];
-    
+
     let allFiles: MediaFile[] = [];
-    
+
     // Recursivamente obtener todos los archivos
     const getAllFiles = (folder: MediaFolder): MediaFile[] => {
       let files = [...folder.files];
@@ -166,23 +182,23 @@ export default function MediaSelector({
       });
       return files;
     };
-    
-    if (currentPath === '/uploads') {
+
+    if (currentPath === 'root' || currentPath === '/uploads') {
       mediaStructure.forEach(folder => {
         allFiles = allFiles.concat(getAllFiles(folder));
       });
     } else {
       allFiles = getAllFiles(currentFolder);
     }
-    
+
     // Filtrar por término de búsqueda
     if (searchTerm) {
-      allFiles = allFiles.filter(file => 
+      allFiles = allFiles.filter(file =>
         file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         file.path.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     return allFiles.filter(file => file.type === 'image');
   };
 
@@ -231,17 +247,17 @@ export default function MediaSelector({
             {/* Breadcrumb */}
             <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
               <button
-                onClick={() => setCurrentPath('/uploads')}
+                onClick={() => setCurrentPath('root')}
                 className="hover:text-gray-700 transition-colors"
               >
-                Media
+                Cloudinary Media
               </button>
-              {currentPath !== '/uploads' && (
+              {currentPath !== 'root' && currentPath !== '/uploads' && (
                 <>
                   <span>/</span>
                   <button
                     onClick={() => {
-                      const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/uploads';
+                      const parentPath = currentPath.split('/').slice(0, -1).join('/') || 'root';
                       setCurrentPath(parentPath);
                     }}
                     className="hover:text-gray-700 transition-colors"

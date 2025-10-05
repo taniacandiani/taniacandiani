@@ -7,13 +7,15 @@ import { useSlider } from '@/hooks/useSlider';
 import { HeroProps, Project } from '@/types';
 import { PROJECT_INFO } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 5000 }) => {
   const [updateTrigger, setUpdateTrigger] = useState(0);
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const { currentSlide, fade, nextSlide, prevSlide } = useSlider({ 
+  const { language } = useLanguage();
+
+  const { currentSlide, fade, nextSlide, prevSlide } = useSlider({
     itemCount: slides.length,
     autoPlay,
     interval
@@ -85,7 +87,9 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
     return (
       <Section fullWidth>
         <div className="relative overflow-hidden mt-16 h-[85vh] bg-gray-100 flex items-center justify-center">
-          <p className="text-gray-500">No hay contenido disponible</p>
+          <p className="text-gray-500">
+            {language === 'en' ? 'No content available' : 'No hay contenido disponible'}
+          </p>
         </div>
       </Section>
     );
@@ -107,8 +111,16 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
         </div>
         
         <div className="absolute bottom-32 sm:bottom-44 left-4 sm:left-8 lg:left-20 p-4 text-left text-white max-w-xs sm:max-w-2xl">
-          <h2 className="font-bold mb-4 leading-none">{slides[currentSlide].title}</h2>
-          <p className="mt-1 text-justify">{slides[currentSlide].text}</p>
+          <h2 className="font-bold mb-4 leading-none">
+            {language === 'en' && getCurrentProjectInfo()?.title_en
+              ? getCurrentProjectInfo()?.title_en
+              : slides[currentSlide].title}
+          </h2>
+          <p className="mt-1 text-justify">
+            {language === 'en' && getCurrentProjectInfo()?.heroDescription_en
+              ? getCurrentProjectInfo()?.heroDescription_en
+              : slides[currentSlide].text}
+          </p>
         </div>
         
         <div className="absolute bottom-0 left-0 right-0 bg-white min-h-[100px] flex flex-col lg:flex-row items-center justify-between px-2 sm:px-4 py-4 border-b border-gray-300">
@@ -124,30 +136,46 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
             </button>
             
             <div className="hidden sm:flex flex-col lg:pl-6 order-2 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Comisionado por</span>
+              <span className="font-black text-xs lg:text-sm">
+                {language === 'en' ? 'Commissioned by' : 'Comisionado por'}
+              </span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
-                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.commissionedBy || 'No disponible')}
+                {loading
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
+                  : (language === 'en' && getCurrentProjectInfo()?.commissionedBy_en
+                    ? getCurrentProjectInfo()?.commissionedBy_en
+                    : getCurrentProjectInfo()?.commissionedBy || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
-            
+
             <div className="hidden md:flex flex-col order-3 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Ubicación</span>
+              <span className="font-black text-xs lg:text-sm">
+                {language === 'en' ? 'Location' : 'Ubicación'}
+              </span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
-                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.location || 'No disponible')}
+                {loading
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
+                  : (language === 'en' && getCurrentProjectInfo()?.location_en
+                    ? getCurrentProjectInfo()?.location_en
+                    : getCurrentProjectInfo()?.location || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
-            
+
             <div className="flex flex-col order-4 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Año</span>
+              <span className="font-black text-xs lg:text-sm">
+                {language === 'en' ? 'Year' : 'Año'}
+              </span>
               <span className="text-xs lg:text-sm">
-                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.year || 'No disponible')}
+                {loading ? (language === 'en' ? 'Loading...' : 'Cargando...') : (getCurrentProjectInfo()?.year || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
-            
+
             <div className="flex flex-col order-5 lg:order-none">
-              <span className="font-black text-xs lg:text-sm">Categoría</span>
+              <span className="font-black text-xs lg:text-sm">
+                {language === 'en' ? 'Category' : 'Categoría'}
+              </span>
               <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">
-                {loading ? 'Cargando...' : (getCurrentProjectInfo()?.category || 'No disponible')}
+                {loading ? (language === 'en' ? 'Loading...' : 'Cargando...') : (getCurrentProjectInfo()?.category || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
 
@@ -163,11 +191,11 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
           </div>
           
           <div className="hidden lg:flex items-center space-x-12">
-            <a 
-              href={getCurrentProjectLink()} 
+            <a
+              href={getCurrentProjectLink()}
               className="bg-black text-white px-6 lg:px-10 py-2 rounded-[5px] hover:bg-gray-800 transition-colors text-sm lg:text-base "
             >
-              Ver Proyecto
+              {language === 'en' ? 'View Project' : 'Ver Proyecto'}
             </a>
             
             <button 
@@ -183,11 +211,11 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
 
           {/* Mobile CTA */}
           <div className="lg:hidden w-full">
-            <a 
-              href={getCurrentProjectLink()} 
+            <a
+              href={getCurrentProjectLink()}
               className="block w-full text-center bg-black text-white px-6 py-3 rounded-[5px] hover:bg-gray-800 transition-colors text-sm "
             >
-              Ver Proyecto
+              {language === 'en' ? 'View Project' : 'Ver Proyecto'}
             </a>
           </div>
         </div>

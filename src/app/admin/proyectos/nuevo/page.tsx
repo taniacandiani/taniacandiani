@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Project, ProjectCategory } from '@/types';
@@ -16,6 +16,10 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
+
+  // Generate temporary folder once for this session
+  const tempFolder = useMemo(() => `proyectos/temp-${Date.now()}`, []);
+
   const [formData, setFormData] = useState<Partial<Project>>({
     title: '',
     subtitle: '',
@@ -23,6 +27,8 @@ export default function NewProjectPage() {
     year: new Date().getFullYear(),
     image: '',
     heroImages: [''],
+    heroImageDescriptions: [''],
+    heroImageDescriptions_en: [''],
     projectDetails: '',
     technicalSheet: '',
     downloadLink: '',
@@ -86,34 +92,74 @@ export default function NewProjectPage() {
       showError('Error de Validación', 'Por favor completa al menos el título');
       return;
     }
-    
+
     const cleanHeroImages = getCleanHeroImages();
-    
+
     // Validar que haya al menos una imagen del hero
     if (!cleanHeroImages || cleanHeroImages.length === 0 || cleanHeroImages[0] === '') {
       showError('Error de Validación', 'Debes agregar al menos una imagen del hero');
       return;
     }
-    
-    const newProject: Project = {
-      ...formData as Project,
-      id: ProjectStorage.generateId(),
-      slug: ProjectStorage.generateSlug(formData.title!),
-      status: 'published',
-      heroImages: cleanHeroImages,
-      // Mantener la imagen secundaria separada del hero
-      image: formData.image || ''
-    };
 
     try {
+      // Generate final folder name based on project title
+      const projectSlug = ProjectStorage.generateSlug(formData.title!);
+      const finalFolder = `proyectos/${projectSlug}`;
+
+      // Combine all images to move
+      const allImagesToMove = [...cleanHeroImages];
+      if (formData.image) {
+        allImagesToMove.push(formData.image);
+      }
+
+      // Move images from temp folder to final folder using API
+      const moveResponse = await fetch('/api/move-images', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrls: allImagesToMove,
+          tempFolder,
+          finalFolder
+        })
+      });
+
+      if (!moveResponse.ok) {
+        throw new Error('Error al mover las imágenes');
+      }
+
+      const { newUrls } = await moveResponse.json();
+
+      // Split back into hero images and secondary image
+      const movedHeroImages = newUrls.slice(0, cleanHeroImages.length);
+      const movedSecondaryImage = formData.image && newUrls.length > cleanHeroImages.length
+        ? newUrls[cleanHeroImages.length]
+        : '';
+
+      const newProject: Project = {
+        ...formData as Project,
+        id: ProjectStorage.generateId(),
+        slug: projectSlug,
+        status: 'published',
+        heroImages: movedHeroImages,
+        image: movedSecondaryImage || ''
+      };
+
+      console.log('Guardando proyecto con descripciones:', {
+        heroImages: newProject.heroImages,
+        heroImageDescriptions: newProject.heroImageDescriptions,
+        heroImageDescriptions_en: newProject.heroImageDescriptions_en
+      });
+
       await ProjectStorage.save(newProject);
-      
+
       // Dispatch event to notify other components about the update
       window.dispatchEvent(new CustomEvent('projectsUpdated'));
-      
+
       // Mostrar mensaje de éxito y limpiar el formulario
       showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente');
-      
+
       // Limpiar el formulario para crear otro proyecto
       setFormData({
         title: '',
@@ -122,6 +168,8 @@ export default function NewProjectPage() {
         year: new Date().getFullYear(),
         image: '',
         heroImages: [''],
+        heroImageDescriptions: [''],
+        heroImageDescriptions_en: [''],
         projectDetails: '',
         technicalSheet: '',
         downloadLink: '',
@@ -132,6 +180,15 @@ export default function NewProjectPage() {
         curator: '',
         location: '',
         tags: [],
+        // English fields
+        title_en: '',
+        subtitle_en: '',
+        projectDetails_en: '',
+        technicalSheet_en: '',
+        heroDescription_en: '',
+        commissionedBy_en: '',
+        curator_en: '',
+        location_en: '',
       });
     } catch (error) {
       console.error('Error saving project:', error);
@@ -318,7 +375,7 @@ export default function NewProjectPage() {
               {/* Usar ImageUploader para las imágenes del hero */}
               <ImageUploader
                   label=""
-                  projectId="new"
+                  projectId={tempFolder.split('/').pop() || 'temp'}
                   currentImage=""
                   onImageUpload={(imageUrl) => {
                     if (imageUrl) {
@@ -332,7 +389,7 @@ export default function NewProjectPage() {
                     }
                   }}
                   required={true}
-                  contentType="proyectos"
+                  contentType={tempFolder}
                   multiple={true}
                   onImagesUpload={(imageUrls) => {
                     if (imageUrls.length > 0) {
@@ -340,7 +397,27 @@ export default function NewProjectPage() {
                       const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
                       // Agregar las nuevas imágenes
                       const newHeroImages = [...currentImages, ...imageUrls];
-                      setFormData({ ...formData, heroImages: newHeroImages });
+
+                      // Agregar espacios vacíos para descripciones de nuevas imágenes
+                      const currentDescriptions = formData.heroImageDescriptions || [];
+                      const currentDescriptions_en = formData.heroImageDescriptions_en || [];
+                      const newDescriptions = [...currentDescriptions];
+                      const newDescriptions_en = [...currentDescriptions_en];
+
+                      // Asegurar que hay un slot de descripción por cada imagen
+                      while (newDescriptions.length < newHeroImages.length) {
+                        newDescriptions.push('');
+                      }
+                      while (newDescriptions_en.length < newHeroImages.length) {
+                        newDescriptions_en.push('');
+                      }
+
+                      setFormData({
+                        ...formData,
+                        heroImages: newHeroImages,
+                        heroImageDescriptions: newDescriptions,
+                        heroImageDescriptions_en: newDescriptions_en
+                      });
                     }
                   }}
                 />
@@ -349,25 +426,70 @@ export default function NewProjectPage() {
               {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm text-gray-600 font-medium mb-3">Imágenes del Hero cargadas:</p>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="space-y-4">
                     {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                      <div key={index} className="relative inline-block">
-                        <img
-                          src={image}
-                          alt={`Imagen del hero ${index + 1}`}
-                          className="w-32 h-32 object-cover rounded-lg border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newHeroImages = [...(formData.heroImages || [])];
-                            newHeroImages.splice(index, 1);
-                            setFormData({ ...formData, heroImages: newHeroImages.length > 0 ? newHeroImages : [''] });
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                        >
-                          ×
-                        </button>
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex gap-4 items-start">
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={image}
+                              alt={`Imagen del hero ${index + 1}`}
+                              className="w-32 h-32 object-cover rounded-lg border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newHeroImages = [...(formData.heroImages || [])];
+                                const newDescriptions = [...(formData.heroImageDescriptions || [])];
+                                const newDescriptions_en = [...(formData.heroImageDescriptions_en || [])];
+
+                                newHeroImages.splice(index, 1);
+                                newDescriptions.splice(index, 1);
+                                newDescriptions_en.splice(index, 1);
+
+                                setFormData({
+                                  ...formData,
+                                  heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                                  heroImageDescriptions: newDescriptions,
+                                  heroImageDescriptions_en: newDescriptions_en
+                                });
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {editingLanguage === 'es' ? `Descripción imagen ${index + 1} (opcional)` : `Image ${index + 1} description (optional)`}
+                            </label>
+                            <textarea
+                              value={
+                                editingLanguage === 'es'
+                                  ? (formData.heroImageDescriptions?.[index] || '')
+                                  : (formData.heroImageDescriptions_en?.[index] || '')
+                              }
+                              onChange={(e) => {
+                                const newDescriptions = editingLanguage === 'es'
+                                  ? [...(formData.heroImageDescriptions || [])]
+                                  : [...(formData.heroImageDescriptions_en || [])];
+
+                                newDescriptions[index] = e.target.value;
+
+                                setFormData({
+                                  ...formData,
+                                  [editingLanguage === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en']: newDescriptions
+                                });
+                              }}
+                              className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                              placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el slider del proyecto...' : 'Description that will appear in the project slider...'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {editingLanguage === 'es' ? 'Esta descripción se mostrará en el slider del proyecto' : 'This description will be shown in the project slider'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -378,11 +500,11 @@ export default function NewProjectPage() {
             <div>
               <ImageUploader
                 label="Imagen Secundaria"
-                projectId="new"
+                projectId={tempFolder.split('/').pop() || 'temp'}
                 currentImage={formData.image}
                 onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
                 required={false}
-                contentType="proyectos"
+                contentType={tempFolder}
               />
             </div>
           </div>

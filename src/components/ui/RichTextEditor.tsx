@@ -152,8 +152,11 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editor && !isUpdatingFromEditor.current && value !== editor.getHTML()) {
       const cleanValue = cleanHTML(value || '');
-      if (cleanValue !== editor.getHTML()) {
-        editor.commands.setContent(cleanValue);
+      const currentContent = editor.getHTML();
+
+      // Solo actualizar si hay un cambio REAL y el editor NO tiene foco
+      if (cleanValue !== currentContent && !editor.isFocused) {
+        editor.commands.setContent(cleanValue, false); // false = no emitir update event
       }
     }
   }, [value, editor]);

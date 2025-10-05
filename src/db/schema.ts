@@ -16,6 +16,8 @@ export const projects = pgTable('projects', {
 
   // Hero
   heroImages: jsonb('hero_images').$type<string[]>(),
+  heroImageDescriptions: jsonb('hero_image_descriptions').$type<string[]>(),
+  heroImageDescriptionsEn: jsonb('hero_image_descriptions_en').$type<string[]>(),
   showInHomeHero: boolean('show_in_home_hero').default(false),
   heroDescription: text('hero_description'),
 

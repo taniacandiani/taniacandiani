@@ -34,6 +34,8 @@ export interface Project {
 
   // Extended fields for full project page
   heroImages?: string[]; // Slider images for hero
+  heroImageDescriptions?: string[]; // Descriptions for each hero image (for project slider)
+  heroImageDescriptions_en?: string[]; // English descriptions for hero images
   projectDetails?: string; // Full project description (HTML)
   technicalSheet?: string; // Technical sheet content (HTML)
   downloadLink?: string; // PDF download link
@@ -41,7 +43,7 @@ export interface Project {
 
   // Hero display options
   showInHomeHero?: boolean; // Checkbox to show in home hero
-  heroDescription?: string; // Custom description for home hero
+  heroDescription?: string; // Custom description for home hero (HOME page only)
 
   // Additional project metadata
   commissionedBy?: string;
