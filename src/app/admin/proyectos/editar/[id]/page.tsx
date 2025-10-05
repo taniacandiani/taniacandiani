@@ -101,6 +101,8 @@ export default function EditProjectPage() {
         status: project.status || 'draft',
         categories: project.categories || [],
         heroImages: cleanHeroImages,
+        heroImageDescriptions: project.heroImageDescriptions || [],
+        heroImageDescriptions_en: project.heroImageDescriptions_en || [],
         image: project.image || '',
         // Campos opcionales con valores por defecto
         description: project.description || '',
@@ -114,7 +116,17 @@ export default function EditProjectPage() {
         heroDescription: project.heroDescription || '',
         commissionedBy: project.commissionedBy || '',
         curator: project.curator || '',
-        location: project.location || ''
+        location: project.location || '',
+        // Campos en inglés
+        title_en: project.title_en || '',
+        subtitle_en: project.subtitle_en || '',
+        description_en: project.description_en || '',
+        projectDetails_en: project.projectDetails_en || '',
+        technicalSheet_en: project.technicalSheet_en || '',
+        heroDescription_en: project.heroDescription_en || '',
+        commissionedBy_en: project.commissionedBy_en || '',
+        curator_en: project.curator_en || '',
+        location_en: project.location_en || ''
       };
 
       console.log('Proyecto a actualizar:', updatedProject);
