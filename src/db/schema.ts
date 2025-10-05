@@ -4,7 +4,6 @@ import { pgTable, varchar, text, integer, boolean, timestamp, jsonb } from 'driz
 export const projects = pgTable('projects', {
   id: varchar('id', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 500 }).notNull(),
-  subtitle: varchar('subtitle', { length: 500 }),
   image: text('image'),
   year: integer('year'),
   description: text('description'),
@@ -34,7 +33,6 @@ export const projects = pgTable('projects', {
 
   // English translations
   titleEn: varchar('title_en', { length: 500 }),
-  subtitleEn: varchar('subtitle_en', { length: 500 }),
   descriptionEn: text('description_en'),
   projectDetailsEn: text('project_details_en'),
   technicalSheetEn: text('technical_sheet_en'),
@@ -42,6 +40,30 @@ export const projects = pgTable('projects', {
   commissionedByEn: varchar('commissioned_by_en', { length: 255 }),
   curatorEn: varchar('curator_en', { length: 255 }),
   locationEn: varchar('location_en', { length: 255 }),
+
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Project Tabs Table
+export const projectTabs = pgTable('project_tabs', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  projectId: varchar('project_id', { length: 255 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  tabOrder: integer('tab_order').notNull(),
+
+  // Tab content
+  title: varchar('title', { length: 500 }).notNull(),
+  heroImages: jsonb('hero_images').$type<string[]>(),
+  heroImageDescriptions: jsonb('hero_image_descriptions').$type<string[]>(),
+  heroImageDescriptionsEn: jsonb('hero_image_descriptions_en').$type<string[]>(),
+  additionalImage: text('additional_image'),
+  projectDetails: text('project_details'),
+  technicalSheet: text('technical_sheet'),
+
+  // English translations
+  titleEn: varchar('title_en', { length: 500 }),
+  projectDetailsEn: text('project_details_en'),
+  technicalSheetEn: text('technical_sheet_en'),
 
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -114,6 +136,8 @@ export const contactContent = pgTable('contact_content', {
 // Export types
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type ProjectTab = typeof projectTabs.$inferSelect;
+export type NewProjectTab = typeof projectTabs.$inferInsert;
 export type News = typeof news.$inferSelect;
 export type NewNews = typeof news.$inferInsert;
 export type ProjectCategory = typeof projectCategories.$inferSelect;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiFolder, FiFile, FiImage, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiFolder, FiFile, FiImage, FiTrash2, FiEye, FiExternalLink } from 'react-icons/fi';
 
 interface MediaFile {
   name: string;
@@ -22,30 +22,35 @@ export default function MediaPage() {
   const [mediaStructure, setMediaStructure] = useState<MediaFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
-  const [currentPath, setCurrentPath] = useState('/uploads');
+  const [currentPath, setCurrentPath] = useState('root');
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Simular la carga de la estructura de archivos
-    // En un caso real, esto vendría de una API
     loadMediaStructure();
   }, []);
 
   const loadMediaStructure = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/media');
-      if (!response.ok) {
-        throw new Error('Error al cargar la estructura de archivos');
+      // Cargar desde Cloudinary
+      const cloudinaryResponse = await fetch('/api/cloudinary-media');
+      if (cloudinaryResponse.ok) {
+        const data = await cloudinaryResponse.json();
+        console.log('Cloudinary media structure loaded:', data.structure);
+        setMediaStructure(data.structure || []);
+      } else {
+        // Fallback a archivos locales si Cloudinary falla
+        const localResponse = await fetch('/api/media');
+        if (localResponse.ok) {
+          const data = await localResponse.json();
+          setMediaStructure(data.structure || []);
+        }
       }
-      
-      const data = await response.json();
-      console.log('Media structure loaded:', data.structure);
-      setMediaStructure(data.structure || []);
     } catch (error) {
       console.error('Error loading media structure:', error);
     } finally {
@@ -80,32 +85,7 @@ export default function MediaPage() {
   };
 
   const handleDeleteFile = async (file: MediaFile) => {
-    if (confirm(`¿Estás seguro de que quieres eliminar ${file.name}?`)) {
-      try {
-        const response = await fetch('/api/media/delete', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ filePath: file.path.substring(1) }) // Remover el slash inicial
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al eliminar el archivo');
-        }
-
-        // Recargar la estructura después de eliminar
-        await loadMediaStructure();
-        
-        // Si el archivo seleccionado era el eliminado, limpiar la selección
-        if (selectedFile?.path === file.path) {
-          setSelectedFile(null);
-        }
-      } catch (error) {
-        console.error('Error deleting file:', error);
-        alert('Error al eliminar el archivo. Intenta de nuevo.');
-      }
-    }
+    alert('Para eliminar imágenes de Cloudinary, por favor utiliza el panel de control de Cloudinary directamente.');
   };
 
   const renderMediaItem = (item: MediaFile | MediaFolder, isFolder = false) => (
@@ -157,21 +137,21 @@ export default function MediaPage() {
   );
 
   const renderBreadcrumb = () => {
-    const paths = currentPath.split('/').filter(Boolean);
+    const paths = currentPath === 'root' ? [] : currentPath.split('/').filter(Boolean);
     return (
       <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
         <button
-          onClick={() => setCurrentPath('/uploads')}
+          onClick={() => setCurrentPath('root')}
           className="hover:text-gray-700 transition-colors"
         >
-          Media
+          Cloudinary Media
         </button>
         {paths.map((path, index) => (
           <div key={index} className="flex items-center space-x-2">
             <span>/</span>
             <button
               onClick={() => {
-                const newPath = '/' + paths.slice(0, index + 1).join('/');
+                const newPath = paths.slice(0, index + 1).join('/') || 'root';
                 setCurrentPath(newPath);
               }}
               className="hover:text-gray-700 transition-colors"
@@ -185,11 +165,16 @@ export default function MediaPage() {
   };
 
   const getCurrentFolder = (): MediaFolder | null => {
-    if (currentPath === '/uploads') {
-      // Para la vista raíz, devolver la carpeta uploads principal
-      return mediaStructure.length > 0 ? mediaStructure[0] : null;
+    if (currentPath === 'root' || currentPath === '/uploads') {
+      // Retornar una carpeta virtual que contenga todas las carpetas raíz
+      return {
+        name: 'Cloudinary Media',
+        path: currentPath,
+        files: mediaStructure.flatMap(f => f.files),
+        subfolders: mediaStructure
+      };
     }
-    
+
     const findFolder = (folders: MediaFolder[], targetPath: string): MediaFolder | null => {
       for (const folder of folders) {
         if (folder.path === targetPath) return folder;
@@ -198,12 +183,46 @@ export default function MediaPage() {
       }
       return null;
     };
-    
+
     return findFolder(mediaStructure, currentPath);
   };
 
+  const filteredFiles = () => {
+    const currentFolder = getCurrentFolder();
+    if (!currentFolder) return [];
+
+    let allFiles: MediaFile[] = [];
+
+    // Recursivamente obtener todos los archivos
+    const getAllFiles = (folder: MediaFolder): MediaFile[] => {
+      let files = [...folder.files];
+      folder.subfolders.forEach(subfolder => {
+        files = files.concat(getAllFiles(subfolder));
+      });
+      return files;
+    };
+
+    if (currentPath === 'root' || currentPath === '/uploads') {
+      mediaStructure.forEach(folder => {
+        allFiles = allFiles.concat(getAllFiles(folder));
+      });
+    } else {
+      allFiles = getAllFiles(currentFolder);
+    }
+
+    // Filtrar por término de búsqueda
+    if (searchTerm) {
+      allFiles = allFiles.filter(file =>
+        file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        file.path.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return allFiles.filter(file => file.type === 'image');
+  };
+
   const currentFolder = getCurrentFolder();
-  
+
   // Debug: mostrar la estructura actual
   console.log('Current path:', currentPath);
   console.log('Media structure:', mediaStructure);
@@ -221,8 +240,8 @@ export default function MediaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Media</h1>
-          <p className="text-gray-600">Gestiona todos los archivos subidos a tu sitio web</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Media - Cloudinary</h1>
+          <p className="text-gray-600">Gestiona todas las imágenes almacenadas en Cloudinary</p>
         </div>
         <div className="flex space-x-3">
           <button
@@ -240,36 +259,6 @@ export default function MediaPage() {
               )}
             </div>
             <span>Recargar</span>
-          </button>
-          
-          <button
-            onClick={async () => {
-              if (confirm('¿Quieres migrar las imágenes de noticias a la carpeta correcta? Esto moverá las carpetas "new-news" y "noticia-1" de proyectos a noticias.')) {
-                try {
-                  const response = await fetch('/api/media/migrate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'migrate-news-images' })
-                  });
-                  
-                  if (response.ok) {
-                    const result = await response.json();
-                    alert(`Migración completada. ${result.totalMigrated} carpetas migradas.`);
-                    loadMediaStructure(); // Recargar la estructura
-                  } else {
-                    throw new Error('Error en la migración');
-                  }
-                } catch (error) {
-                  alert('Error durante la migración: ' + error.message);
-                }
-              }
-            }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            <span>Migrar Noticias</span>
           </button>
           
           <button
@@ -295,22 +284,25 @@ export default function MediaPage() {
             </svg>
           </div>
           <div className="text-sm text-blue-800">
-            <p className="font-medium">Navegación de Media</p>
+            <p className="font-medium">Navegación de Media en Cloudinary</p>
             <p className="mt-1">
-              <strong>Vista actual:</strong> {currentPath === '/uploads' ? 'Carpeta raíz (uploads)' : `Carpeta: ${currentPath}`}
+              <strong>Vista actual:</strong> {currentPath === 'root' || currentPath === '/uploads' ? 'Carpeta raíz (Cloudinary)' : `Carpeta: ${currentPath}`}
             </p>
             <p className="mt-1">
-              Haz clic en las carpetas para navegar dentro de ellas. Haz clic en las imágenes para ver la vista previa en el panel derecho.
+              Todas las imágenes están almacenadas en Cloudinary. Haz clic en las carpetas para navegar y en las imágenes para ver la vista previa.
+            </p>
+            <p className="mt-1 text-xs">
+              Las imágenes se cargan automáticamente desde tu cuenta de Cloudinary configurada.
             </p>
           </div>
         </div>
       </div>
-      
-      {currentPath !== '/uploads' && (
+
+      {currentPath !== 'root' && currentPath !== '/uploads' && (
         <div className="mb-4">
           <button
             onClick={() => {
-              const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/uploads';
+              const parentPath = currentPath.split('/').slice(0, -1).join('/') || 'root';
               setCurrentPath(parentPath);
             }}
             className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors flex items-center space-x-2"
@@ -329,20 +321,51 @@ export default function MediaPage() {
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                {currentPath === '/uploads' ? 'Carpetas de Media' : currentFolder?.name || 'Media'}
+                {currentPath === 'root' || currentPath === '/uploads' ? 'Carpetas de Media' : currentFolder?.name || 'Media'}
               </h2>
               <p className="text-sm text-gray-500">
-                Ruta actual: <code className="bg-gray-100 px-2 py-1 rounded text-xs">{currentPath}</code>
+                Ruta actual: <code className="bg-gray-100 px-2 py-1 rounded text-xs">{currentPath === 'root' ? 'Cloudinary' : currentPath}</code>
               </p>
+              {/* Campo de búsqueda */}
+              <div className="mt-3">
+                <input
+                  type="text"
+                  placeholder="Buscar imágenes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
             </div>
             
-            <div className="space-y-3">
-              {/* Mostrar carpetas y archivos del folder actual */}
-              {currentFolder?.subfolders?.map((folder) => renderMediaItem(folder, true))}
-              {currentFolder?.files?.map((file) => renderMediaItem(file))}
-              
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {searchTerm ? (
+                // Vista de búsqueda
+                filteredFiles().map((file) => renderMediaItem(file))
+              ) : (
+                <>
+                  {/* Mostrar carpetas y archivos del folder actual */}
+                  {currentFolder?.subfolders?.map((folder) => renderMediaItem(folder, true))}
+                  {currentFolder?.files?.filter(file => file.type === 'image')?.map((file) => renderMediaItem(file))}
+                </>
+              )}
+
               {/* Mensaje cuando no hay contenido */}
-              {(!currentFolder?.subfolders?.length && !currentFolder?.files?.length) && (
+              {searchTerm && filteredFiles().length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg font-medium">No se encontraron resultados</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    No hay imágenes que coincidan con "{searchTerm}"
+                  </p>
+                </div>
+              )}
+
+              {!searchTerm && !currentFolder?.subfolders?.length && !currentFolder?.files?.length && (
                 <div className="text-center py-12">
                   <div className="text-gray-400 mb-4">
                     <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,10 +373,10 @@ export default function MediaPage() {
                     </svg>
                   </div>
                   <p className="text-gray-500 text-lg font-medium">
-                    {currentPath === '/uploads' ? 'No hay archivos o carpetas' : 'Esta carpeta está vacía'}
+                    {currentPath === 'root' || currentPath === '/uploads' ? 'No hay archivos o carpetas' : 'Esta carpeta está vacía'}
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
-                    {currentPath === '/uploads' ? 'La carpeta uploads está vacía' : 'No hay archivos o subcarpetas en esta ubicación'}
+                    No hay imágenes en esta ubicación
                   </p>
                 </div>
               )}
@@ -436,13 +459,30 @@ export default function MediaPage() {
                 
                 <div className="flex space-x-2 flex-wrap gap-2">
                   {selectedFile.type === 'image' && (
-                    <button
-                      onClick={() => window.open(selectedFile.path, '_blank')}
-                      className="px-3 py-2 text-sm text-green-600 hover:text-green-800 transition-colors"
-                      title="Abrir en nueva pestaña"
-                    >
-                      🔗 Abrir
-                    </button>
+                    <>
+                      <button
+                        onClick={() => window.open(selectedFile.path, '_blank')}
+                        className="px-3 py-2 text-sm text-green-600 hover:text-green-800 transition-colors flex items-center space-x-1"
+                        title="Abrir en nueva pestaña"
+                      >
+                        <FiExternalLink className="w-4 h-4" />
+                        <span>Abrir</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Extraer public_id de la URL de Cloudinary para abrir en el dashboard
+                          const match = selectedFile.path.match(/\/v\d+\/(.+)\.\w+$/);
+                          if (match) {
+                            const publicId = match[1];
+                            window.open(`https://console.cloudinary.com/console/media_library/search?query=public_id:${publicId}`, '_blank');
+                          }
+                        }}
+                        className="px-3 py-2 text-sm text-purple-600 hover:text-purple-800 transition-colors"
+                        title="Ver en Cloudinary"
+                      >
+                        ☁️ Ver en Cloudinary
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => {
@@ -459,12 +499,6 @@ export default function MediaPage() {
                     className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
                   >
                     Cerrar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteFile(selectedFile)}
-                    className="px-3 py-2 text-sm text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    Eliminar
                   </button>
                 </div>
               </div>

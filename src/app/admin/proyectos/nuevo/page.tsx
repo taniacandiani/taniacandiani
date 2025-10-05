@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Project, ProjectCategory } from '@/types';
+import { Project, ProjectCategory, ProjectTab } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
@@ -22,8 +22,7 @@ export default function NewProjectPage() {
 
   const [formData, setFormData] = useState<Partial<Project>>({
     title: '',
-    subtitle: '',
-    category: '',
+    categories: [],
     year: new Date().getFullYear(),
     image: '',
     heroImages: [''],
@@ -39,9 +38,9 @@ export default function NewProjectPage() {
     curator: '',
     location: '',
     tags: [],
+    tabs: [],
     // English fields
     title_en: '',
-    subtitle_en: '',
     projectDetails_en: '',
     technicalSheet_en: '',
     heroDescription_en: '',
@@ -49,6 +48,8 @@ export default function NewProjectPage() {
     curator_en: '',
     location_en: '',
   });
+
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(-1); // -1 for main content, 0+ for tabs
   const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
@@ -64,11 +65,6 @@ export default function NewProjectPage() {
         } else {
           setCategories(storedCategories);
         }
-
-        // Set default category if we don't have one
-        if (!formData.category && storedCategories.length > 0) {
-          setFormData(prev => ({ ...prev, category: storedCategories[0].name }));
-        }
       } catch (error) {
         console.error('Error initializing categories:', error);
         // Fallback to static content
@@ -77,122 +73,78 @@ export default function NewProjectPage() {
     };
 
     initializeCategories();
-  }, [formData.category]);
-
-  // Ensure form always has at least one hero image slot
-  useEffect(() => {
-    if (!formData.heroImages || formData.heroImages.length === 0) {
-      setFormData(prev => ({ ...prev, heroImages: [''] }));
-    }
-  }, [formData.heroImages]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) {
-      showError('Error de Validación', 'Por favor completa al menos el título');
+
+    // Validar que haya al menos una categoría seleccionada
+    if (!formData.categories || formData.categories.length === 0) {
+      showError('Error de Validación', 'Debes seleccionar al menos una categoría');
       return;
     }
 
-    const cleanHeroImages = getCleanHeroImages();
-
     // Validar que haya al menos una imagen del hero
+    const cleanHeroImages = getCleanHeroImages();
     if (!cleanHeroImages || cleanHeroImages.length === 0 || cleanHeroImages[0] === '') {
       showError('Error de Validación', 'Debes agregar al menos una imagen del hero');
       return;
     }
 
     try {
-      // Generate final folder name based on project title
-      const projectSlug = ProjectStorage.generateSlug(formData.title!);
-      const finalFolder = `proyectos/${projectSlug}`;
+      // Generar slug del proyecto
+      const slug = ProjectStorage.generateSlug(formData.title || '');
 
-      // Combine all images to move
-      const allImagesToMove = [...cleanHeroImages];
-      if (formData.image) {
-        allImagesToMove.push(formData.image);
+      // Preparar el proyecto para guardar
+      const projectToSave: Omit<Project, 'id'> = {
+        title: formData.title || '',
+        ...formData,
+        slug,
+        status: formData.status || 'published',
+        featured: false,
+        heroImages: cleanHeroImages,
+        // Solo incluir tabs si hay al menos uno
+        tabs: formData.tabs && formData.tabs.length > 0 ? formData.tabs : undefined,
+        // Filtrar valores vacíos
+        description: formData.description || `Proyecto ${formData.title}`,
+        image: formData.image || cleanHeroImages[0], // Usar la primera imagen del hero como imagen principal
+      } as Omit<Project, 'id'>;
+
+      // Validar campos requeridos
+      if (!projectToSave.title) {
+        showError('Error de Validación', 'El título es requerido');
+        return;
       }
 
-      // Move images from temp folder to final folder using API
-      const moveResponse = await fetch('/api/move-images', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrls: allImagesToMove,
-          tempFolder,
-          finalFolder
-        })
-      });
-
-      if (!moveResponse.ok) {
-        throw new Error('Error al mover las imágenes');
+      if (!projectToSave.year) {
+        showError('Error de Validación', 'El año es requerido');
+        return;
       }
 
-      const { newUrls } = await moveResponse.json();
+      console.log('=== FRONTEND: Sending project to API ===');
+      console.log('Project to save:', JSON.stringify(projectToSave, null, 2));
+      console.log('Categories:', projectToSave.categories);
+      console.log('ShowInHomeHero:', projectToSave.showInHomeHero);
+      console.log('Tabs:', projectToSave.tabs);
 
-      // Split back into hero images and secondary image
-      const movedHeroImages = newUrls.slice(0, cleanHeroImages.length);
-      const movedSecondaryImage = formData.image && newUrls.length > cleanHeroImages.length
-        ? newUrls[cleanHeroImages.length]
-        : '';
+      // Crear el proyecto
+      await ProjectStorage.save(projectToSave as any);
 
-      const newProject: Project = {
-        ...formData as Project,
-        id: ProjectStorage.generateId(),
-        slug: projectSlug,
-        status: 'published',
-        heroImages: movedHeroImages,
-        image: movedSecondaryImage || ''
-      };
-
-      console.log('Guardando proyecto con descripciones:', {
-        heroImages: newProject.heroImages,
-        heroImageDescriptions: newProject.heroImageDescriptions,
-        heroImageDescriptions_en: newProject.heroImageDescriptions_en
-      });
-
-      await ProjectStorage.save(newProject);
-
-      // Dispatch event to notify other components about the update
-      window.dispatchEvent(new CustomEvent('projectsUpdated'));
-
-      // Mostrar mensaje de éxito y limpiar el formulario
+      // Mostrar mensaje de éxito
       showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente');
 
-      // Limpiar el formulario para crear otro proyecto
-      setFormData({
-        title: '',
-        subtitle: '',
-        category: '',
-        year: new Date().getFullYear(),
-        image: '',
-        heroImages: [''],
-        heroImageDescriptions: [''],
-        heroImageDescriptions_en: [''],
-        projectDetails: '',
-        technicalSheet: '',
-        downloadLink: '',
-        additionalImage: '',
-        showInHomeHero: false,
-        heroDescription: '',
-        commissionedBy: '',
-        curator: '',
-        location: '',
-        tags: [],
-        // English fields
-        title_en: '',
-        subtitle_en: '',
-        projectDetails_en: '',
-        technicalSheet_en: '',
-        heroDescription_en: '',
-        commissionedBy_en: '',
-        curator_en: '',
-        location_en: '',
-      });
-    } catch (error) {
-      console.error('Error saving project:', error);
-      showError('Error al Guardar', 'Ha ocurrido un error al guardar el proyecto');
+      // Redirigir después de un breve delay para que se vea el mensaje
+      setTimeout(() => {
+        router.push('/admin/proyectos');
+      }, 1500);
+
+    } catch (error: any) {
+      if (error.message === 'Este proyecto ya existe') {
+        showError('Error de Duplicado', 'Ya existe un proyecto con este título. Por favor, elige otro título.');
+      } else {
+        console.error('Error saving project:', error);
+        showError('Error al Guardar', 'Ha ocurrido un error al guardar el proyecto');
+      }
     }
   };
 
@@ -206,18 +158,18 @@ export default function NewProjectPage() {
     // Only add if the last image has content
     const currentHeroImages = formData.heroImages || [''];
     const lastImage = currentHeroImages[currentHeroImages.length - 1];
-    
+
     if (lastImage && lastImage.trim() !== '') {
-      setFormData({ 
-        ...formData, 
-        heroImages: [...currentHeroImages, ''] 
+      setFormData({
+        ...formData,
+        heroImages: [...currentHeroImages, '']
       });
     }
   };
 
   // Filter out empty hero images when saving, but always keep at least one slot
   const getCleanHeroImages = () => {
-    if (!formData?.heroImages) return [''];
+    if (!formData.heroImages) return [''];
     const validImages = formData.heroImages.filter(img => img && img.trim() !== '');
     // Always return at least one slot (empty if no valid images)
     return validImages.length > 0 ? validImages : [''];
@@ -228,9 +180,83 @@ export default function NewProjectPage() {
     if ((formData.heroImages || []).length <= 1) {
       return;
     }
-    
+
     const newHeroImages = (formData.heroImages || []).filter((_, i) => i !== index);
     setFormData({ ...formData, heroImages: newHeroImages });
+  };
+
+  // Tab management functions
+  const addTab = () => {
+    const newTab: Omit<ProjectTab, 'id' | 'projectId'> = {
+      tabOrder: (formData.tabs?.length || 0),
+      title: '',
+      heroImages: [''],
+      heroImageDescriptions: [''],
+      heroImageDescriptions_en: [''],
+      additionalImage: '',
+      projectDetails: '',
+      technicalSheet: '',
+      title_en: '',
+      projectDetails_en: '',
+      technicalSheet_en: ''
+    } as any;
+
+    const newTabIndex = formData.tabs?.length || 0;
+
+    setFormData({
+      ...formData,
+      tabs: [...(formData.tabs || []), newTab]
+    });
+
+    // Automatically switch to the new tab
+    setActiveTabIndex(newTabIndex);
+  };
+
+  const removeTab = (index: number) => {
+    const newTabs = (formData.tabs || []).filter((_, i) => i !== index);
+    // Update tabOrder for remaining tabs
+    newTabs.forEach((tab, i) => {
+      tab.tabOrder = i;
+    });
+    setFormData({ ...formData, tabs: newTabs });
+
+    // Update active tab index if necessary
+    if (activeTabIndex === index) {
+      // If we're deleting the active tab, switch to main content
+      setActiveTabIndex(-1);
+    } else if (activeTabIndex > index) {
+      // If we're deleting a tab before the active one, adjust the index
+      setActiveTabIndex(activeTabIndex - 1);
+    }
+  };
+
+  const updateTab = (index: number, field: keyof ProjectTab, value: any) => {
+    const newTabs = [...(formData.tabs || [])];
+    newTabs[index] = { ...newTabs[index], [field]: value };
+    setFormData({ ...formData, tabs: newTabs });
+  };
+
+  const removeTabHeroImage = (tabIndex: number, imageIndex: number) => {
+    const newTabs = [...(formData.tabs || [])];
+    const tab = newTabs[tabIndex];
+
+    // Never remove the last image - always keep at least one empty slot
+    if ((tab.heroImages || []).length <= 1) {
+      return;
+    }
+
+    const newHeroImages = (tab.heroImages || []).filter((_, i) => i !== imageIndex);
+    const newDescriptions = (tab.heroImageDescriptions || []).filter((_, i) => i !== imageIndex);
+    const newDescriptionsEn = (tab.heroImageDescriptions_en || []).filter((_, i) => i !== imageIndex);
+
+    newTabs[tabIndex] = {
+      ...tab,
+      heroImages: newHeroImages,
+      heroImageDescriptions: newDescriptions,
+      heroImageDescriptions_en: newDescriptionsEn
+    };
+
+    setFormData({ ...formData, tabs: newTabs });
   };
 
   return (
@@ -238,7 +264,7 @@ export default function NewProjectPage() {
       <div className="mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Nuevo Proyecto</h1>
-          <p className="text-gray-600">Crea un nuevo proyecto artístico</p>
+          <p className="text-gray-600">Crea un nuevo proyecto para tu portafolio</p>
         </div>
       </div>
 
@@ -284,185 +310,210 @@ export default function NewProjectPage() {
         </div>
       </div>
 
-      <form id="project-form" onSubmit={handleSubmit} className="space-y-8">
-        {/* Información Básica */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
-            <span className="text-sm font-medium text-gray-600">
-              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Título *' : 'Title *'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? formData.title : (formData.title_en || '')}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'title' : 'title_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required={editingLanguage === 'es'}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Subtítulo' : 'Subtitle'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? (formData.subtitle || '') : (formData.subtitle_en || '')}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'subtitle' : 'subtitle_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoría *
-              </label>
-                              <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                  required
-                >
-                  {categories.length === 0 ? (
-                    <option value="">Cargando categorías...</option>
-                  ) : (
-                    categories.map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))
-                  )}
-                </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Año *
-              </label>
-              <input
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required
-              />
-            </div>
-          </div>
-
-
+      {/* Tab Management */}
+      <div className="mb-6 space-y-4">
+        {/* Add Tab Button */}
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={addTab}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar Tab
+          </button>
         </div>
 
-        {/* Imágenes */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Imagen del Hero <span className="text-red-500">*</span>
-              </label>
-
-              {/* Usar ImageUploader para las imágenes del hero */}
-              <ImageUploader
-                  label=""
-                  projectId={tempFolder.split('/').pop() || 'temp'}
-                  currentImage=""
-                  onImageUpload={(imageUrl) => {
-                    if (imageUrl) {
-                      const newHeroImages = [...(formData.heroImages || [''])];
-                      if (newHeroImages.length === 0 || newHeroImages[0] === '') {
-                        newHeroImages[0] = imageUrl;
-                      } else {
-                        newHeroImages.push(imageUrl);
+        {/* Tab Navigation */}
+        {formData.tabs && formData.tabs.length > 0 && (
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
+              <button
+                type="button"
+                onClick={() => setActiveTabIndex(-1)}
+                className={`
+                  whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm transition-colors
+                  ${activeTabIndex === -1
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                Información Principal
+              </button>
+              {formData.tabs.map((tab, index) => (
+                <div key={index} className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTabIndex(index)}
+                    className={`
+                      whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm transition-colors
+                      ${activeTabIndex === index
+                        ? 'border-black text-black'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }
-                      setFormData({ ...formData, heroImages: newHeroImages });
-                    }
-                  }}
-                  required={true}
-                  contentType={tempFolder}
-                  multiple={true}
-                  onImagesUpload={(imageUrls) => {
-                    if (imageUrls.length > 0) {
-                      // Obtener las imágenes actuales que no están vacías
-                      const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
-                      // Agregar las nuevas imágenes
-                      const newHeroImages = [...currentImages, ...imageUrls];
-
-                      // Agregar espacios vacíos para descripciones de nuevas imágenes
-                      const currentDescriptions = formData.heroImageDescriptions || [];
-                      const currentDescriptions_en = formData.heroImageDescriptions_en || [];
-                      const newDescriptions = [...currentDescriptions];
-                      const newDescriptions_en = [...currentDescriptions_en];
-
-                      // Asegurar que hay un slot de descripción por cada imagen
-                      while (newDescriptions.length < newHeroImages.length) {
-                        newDescriptions.push('');
+                    `}
+                  >
+                    {tab.title || `Tab ${index + 1}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removeTab(index);
+                      // Si eliminamos el tab activo, volver al contenido principal
+                      if (activeTabIndex === index) {
+                        setActiveTabIndex(-1);
+                      } else if (activeTabIndex > index) {
+                        // Ajustar el índice activo si es mayor al eliminado
+                        setActiveTabIndex(activeTabIndex - 1);
                       }
-                      while (newDescriptions_en.length < newHeroImages.length) {
-                        newDescriptions_en.push('');
-                      }
+                    }}
+                    className="ml-1 text-red-500 hover:text-red-700 p-1"
+                    title="Eliminar tab"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </nav>
+          </div>
+        )}
+      </div>
 
-                      setFormData({
-                        ...formData,
-                        heroImages: newHeroImages,
-                        heroImageDescriptions: newDescriptions,
-                        heroImageDescriptions_en: newDescriptions_en
-                      });
-                    }
-                  }}
-                />
+      <form id="project-form" onSubmit={handleSubmit} className="space-y-8">
+        {/* CONTENIDO PRINCIPAL */}
+        {activeTabIndex === -1 ? (
+          <>
+            {/* Información Básica */}
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
+                <span className="text-sm font-medium text-gray-600">
+                  Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {editingLanguage === 'es' ? 'Título *' : 'Title *'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLanguage === 'es' ? formData.title : (formData.title_en || '')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'title' : 'title_en']: e.target.value
+                    })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    required={editingLanguage === 'es'}
+                  />
+                </div>
 
-              {/* Mostrar miniaturas de las imágenes cargadas */}
-              {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 font-medium mb-3">Imágenes del Hero cargadas:</p>
-                  <div className="space-y-4">
-                    {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex gap-4 items-start">
-                          <div className="relative flex-shrink-0">
-                            <img
-                              src={image}
-                              alt={`Imagen del hero ${index + 1}`}
-                              className="w-32 h-32 object-cover rounded-lg border"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newHeroImages = [...(formData.heroImages || [])];
-                                const newDescriptions = [...(formData.heroImageDescriptions || [])];
-                                const newDescriptions_en = [...(formData.heroImageDescriptions_en || [])];
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Año *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  />
+                </div>
 
-                                newHeroImages.splice(index, 1);
-                                newDescriptions.splice(index, 1);
-                                newDescriptions_en.splice(index, 1);
-
-                                setFormData({
-                                  ...formData,
-                                  heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
-                                  heroImageDescriptions: newDescriptions,
-                                  heroImageDescriptions_en: newDescriptions_en
-                                });
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Categorías * (Selecciona una o más)
+                  </label>
+                  <div className="bg-white border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
+                    {categories.length === 0 ? (
+                      <p className="text-gray-500">Cargando categorías...</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {categories.map(cat => (
+                          <label key={cat.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={formData.categories?.includes(cat.name) || false}
+                              onChange={(e) => {
+                                const newCategories = e.target.checked
+                                  ? [...(formData.categories || []), cat.name]
+                                  : (formData.categories || []).filter(c => c !== cat.name);
+                                setFormData({ ...formData, categories: newCategories });
                               }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                            >
-                              ×
-                            </button>
-                          </div>
+                              className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
+                            />
+                            <span className="text-sm">{cat.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {formData.categories && formData.categories.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.categories.length} categoría{formData.categories.length !== 1 ? 's' : ''} seleccionada{formData.categories.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
 
+            {/* Imágenes */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
+
+              <div className="space-y-6">
+                {/* Imágenes del Hero */}
+                <div>
+                  <ImageUploader
+                    label={editingLanguage === 'es' ? 'Imagen del Hero *' : 'Hero Image *'}
+                    projectId={tempFolder.split('/').pop() || 'temp'}
+                    currentImage=""
+                    onImageUpload={(imageUrl) => {
+                      if (imageUrl) {
+                        const newHeroImages = [...(formData.heroImages || [''])];
+                        if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                          newHeroImages[0] = imageUrl;
+                        } else {
+                          newHeroImages.push(imageUrl);
+                        }
+                        setFormData({ ...formData, heroImages: newHeroImages });
+                      }
+                    }}
+                    required={false}
+                    contentType={tempFolder}
+                    multiple={true}
+                    onImagesUpload={(imageUrls) => {
+                      if (imageUrls.length > 0) {
+                        const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
+                        setFormData({
+                          ...formData,
+                          heroImages: [...currentImages, ...imageUrls]
+                        });
+                      }
+                    }}
+                  />
+
+                  {/* Mostrar imágenes del hero cargadas */}
+                  {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
+                        <div key={index} className="flex items-start gap-4 p-3 border border-gray-200 rounded">
+                          <img
+                            src={image}
+                            alt={`Hero ${index + 1}`}
+                            className="w-24 h-24 object-cover rounded"
+                          />
                           <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              {editingLanguage === 'es' ? `Descripción imagen ${index + 1} (opcional)` : `Image ${index + 1} description (optional)`}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {editingLanguage === 'es'
+                                ? `Descripción imagen ${index + 1} (opcional)`
+                                : `Image ${index + 1} description (optional)`}
                             </label>
                             <textarea
                               value={
@@ -471,193 +522,423 @@ export default function NewProjectPage() {
                                   : (formData.heroImageDescriptions_en?.[index] || '')
                               }
                               onChange={(e) => {
-                                const newDescriptions = editingLanguage === 'es'
-                                  ? [...(formData.heroImageDescriptions || [])]
-                                  : [...(formData.heroImageDescriptions_en || [])];
-
-                                newDescriptions[index] = e.target.value;
-
-                                setFormData({
-                                  ...formData,
-                                  [editingLanguage === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en']: newDescriptions
-                                });
+                                const field = editingLanguage === 'es'
+                                  ? 'heroImageDescriptions'
+                                  : 'heroImageDescriptions_en';
+                                const descriptions = [...(formData[field] || [])];
+                                while (descriptions.length <= index) {
+                                  descriptions.push('');
+                                }
+                                descriptions[index] = e.target.value;
+                                setFormData({ ...formData, [field]: descriptions });
                               }}
-                              className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
-                              placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el slider del proyecto...' : 'Description that will appear in the project slider...'}
+                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+                              placeholder={editingLanguage === 'es'
+                                ? 'Descripción de la imagen...'
+                                : 'Image description...'}
                             />
-                            <p className="text-xs text-gray-500 mt-1">
-                              {editingLanguage === 'es' ? 'Esta descripción se mostrará en el slider del proyecto' : 'This description will be shown in the project slider'}
-                            </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newHeroImages = formData.heroImages?.filter((_, i) => i !== index) || [];
+                              const newDescriptions = formData.heroImageDescriptions?.filter((_, i) => i !== index) || [];
+                              const newDescriptionsEn = formData.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                              setFormData({
+                                ...formData,
+                                heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                                heroImageDescriptions: newDescriptions,
+                                heroImageDescriptions_en: newDescriptionsEn
+                              });
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Imagen Secundaria */}
+                <div>
+                  <ImageUploader
+                    label={editingLanguage === 'es' ? 'Imagen Secundaria' : 'Secondary Image'}
+                    projectId={tempFolder.split('/').pop() || 'temp'}
+                    currentImage={formData.additionalImage}
+                    onImageUpload={(imageUrl) => setFormData({ ...formData, additionalImage: imageUrl || '' })}
+                    required={false}
+                    contentType={tempFolder}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <ImageUploader
-                label="Imagen Secundaria"
-                projectId={tempFolder.split('/').pop() || 'temp'}
-                currentImage={formData.image}
-                onImageUpload={(imageUrl) => setFormData({ ...formData, image: imageUrl })}
-                required={false}
-                contentType={tempFolder}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Contenido */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Contenido del Proyecto</h2>
-            <span className="text-sm font-medium text-gray-600">
-              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
-            </span>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <RichTextEditor
-                label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
-                value={editingLanguage === 'es' ? (formData.projectDetails || '') : (formData.projectDetails_en || '')}
-                onChange={(content) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
-                })}
-                placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
-                height={250}
-              />
-            </div>
-
-            <div>
-              <RichTextEditor
-                label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
-                value={editingLanguage === 'es' ? (formData.technicalSheet || '') : (formData.technicalSheet_en || '')}
-                onChange={(content) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
-                })}
-                placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
-                height={250}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Información Adicional */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Información Adicional</h2>
-            <span className="text-sm font-medium text-gray-600">
-              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Link de Descarga' : 'Download Link'}
-              </label>
-              <input
-                type="text"
-                value={formData.downloadLink || ''}
-                onChange={(e) => setFormData({ ...formData, downloadLink: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="https://..."
-                disabled={editingLanguage === 'en'}
-              />
-              {editingLanguage === 'en' && (
-                <p className="text-xs text-gray-500 mt-1">Este campo es compartido entre idiomas</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Comisionado por' : 'Commissioned by'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? (formData.commissionedBy || '') : (formData.commissionedBy_en || '')}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'commissionedBy' : 'commissionedBy_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Curador/a' : 'Curator'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? (formData.curator || '') : (formData.curator_en || '')}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'curator' : 'curator_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Ubicación' : 'Location'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? (formData.location || '') : (formData.location_en || '')}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [editingLanguage === 'es' ? 'location' : 'location_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.showInHomeHero || false}
-                  onChange={(e) => setFormData({ ...formData, showInHomeHero: e.target.checked })}
-                  className="rounded focus:ring-black"
-                  disabled={editingLanguage === 'en'}
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {editingLanguage === 'es' ? 'Mostrar en el hero de la página principal' : 'Show in home page hero'}
+            {/* Contenido del Proyecto */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Contenido del Proyecto</h2>
+                <span className="text-sm font-medium text-gray-600">
+                  Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
                 </span>
-              </label>
-              {editingLanguage === 'en' && (
-                <p className="text-xs text-gray-500 mt-1">Esta opción se configura solo en español</p>
-              )}
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <RichTextEditor
+                    label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
+                    value={editingLanguage === 'es' ? (formData.projectDetails || '') : (formData.projectDetails_en || '')}
+                    onChange={(content) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
+                    })}
+                    placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
+                    height={250}
+                  />
+                </div>
+
+                <div>
+                  <RichTextEditor
+                    label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
+                    value={editingLanguage === 'es' ? (formData.technicalSheet || '') : (formData.technicalSheet_en || '')}
+                    onChange={(content) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
+                    })}
+                    placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
+                    height={250}
+                  />
+                </div>
+              </div>
             </div>
 
-            {formData.showInHomeHero && (
+            {/* Información Adicional */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Información Adicional</h2>
+                <span className="text-sm font-medium text-gray-600">
+                  Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {editingLanguage === 'es' ? 'Link de Descarga' : 'Download Link'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.downloadLink || ''}
+                    onChange={(e) => setFormData({ ...formData, downloadLink: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="https://..."
+                    disabled={editingLanguage === 'en'}
+                  />
+                  {editingLanguage === 'en' && (
+                    <p className="text-xs text-gray-500 mt-1">Este campo es compartido entre idiomas</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {editingLanguage === 'es' ? 'Comisionado por' : 'Commissioned by'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLanguage === 'es' ? (formData.commissionedBy || '') : (formData.commissionedBy_en || '')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'commissionedBy' : 'commissionedBy_en']: e.target.value
+                    })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {editingLanguage === 'es' ? 'Curador/a' : 'Curator'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLanguage === 'es' ? (formData.curator || '') : (formData.curator_en || '')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'curator' : 'curator_en']: e.target.value
+                    })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {editingLanguage === 'es' ? 'Ubicación' : 'Location'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLanguage === 'es' ? (formData.location || '') : (formData.location_en || '')}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'location' : 'location_en']: e.target.value
+                    })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.showInHomeHero || false}
+                      onChange={(e) => setFormData({ ...formData, showInHomeHero: e.target.checked })}
+                      className="rounded focus:ring-black"
+                      disabled={editingLanguage === 'en'}
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {editingLanguage === 'es' ? 'Mostrar en el hero de la página principal' : 'Show in home page hero'}
+                    </span>
+                  </label>
+                  {editingLanguage === 'en' && (
+                    <p className="text-xs text-gray-500 mt-1">Esta opción se configura solo en español</p>
+                  )}
+                </div>
+
+                {formData.showInHomeHero && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {editingLanguage === 'es' ? 'Descripción para el Hero' : 'Hero Description'}
+                    </label>
+                    <textarea
+                      value={editingLanguage === 'es' ? (formData.heroDescription || '') : (formData.heroDescription_en || '')}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        [editingLanguage === 'es' ? 'heroDescription' : 'heroDescription_en']: e.target.value
+                      })}
+                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
+                      placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el hero de la página principal' : 'Description that will appear in the home page hero'}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Estado del Proyecto */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Estado del Proyecto</h2>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {editingLanguage === 'es' ? 'Descripción para el Hero' : 'Hero Description'}
+                  Estado
                 </label>
-                <textarea
-                  value={editingLanguage === 'es' ? (formData.heroDescription || '') : (formData.heroDescription_en || '')}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    [editingLanguage === 'es' ? 'heroDescription' : 'heroDescription_en']: e.target.value
-                  })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el hero de la página principal' : 'Description that will appear in the home page hero'}
-                />
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'published' | 'draft' | 'archived' })}
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="published">Publicado</option>
+                  <option value="draft">Borrador</option>
+                  <option value="archived">Archivado</option>
+                </select>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        ) : (
+          /* CONTENIDO DEL TAB SELECCIONADO */
+          formData.tabs && formData.tabs[activeTabIndex] && (() => {
+            const tab = formData.tabs[activeTabIndex];
+
+            return (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {tab.title || `Tab ${activeTabIndex + 1}`}
+                    </h3>
+                    <span className="text-sm font-medium text-gray-600">
+                      Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Título del Tab */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {editingLanguage === 'es' ? 'Título del Tab *' : 'Tab Title *'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLanguage === 'es' ? tab.title : (tab.title_en || '')}
+                        onChange={(e) => updateTab(
+                          activeTabIndex,
+                          editingLanguage === 'es' ? 'title' : 'title_en',
+                          e.target.value
+                        )}
+                        className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                        required={editingLanguage === 'es'}
+                      />
+                    </div>
+
+                    {/* Imágenes del Hero del Tab */}
+                    <div>
+                      <ImageUploader
+                        label={editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
+                        projectId={tempFolder.split('/').pop() || 'temp'}
+                        currentImage=""
+                        onImageUpload={(imageUrl) => {
+                          if (imageUrl) {
+                            const newTabs = [...(formData.tabs || [])];
+                            const currentTab = newTabs[activeTabIndex];
+                            const newHeroImages = [...(currentTab.heroImages || [''])];
+                            if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                              newHeroImages[0] = imageUrl;
+                            } else {
+                              newHeroImages.push(imageUrl);
+                            }
+                            currentTab.heroImages = newHeroImages;
+                            setFormData({ ...formData, tabs: newTabs });
+                          }
+                        }}
+                        required={false}
+                        contentType={tempFolder}
+                        multiple={true}
+                        onImagesUpload={(imageUrls) => {
+                          if (imageUrls.length > 0) {
+                            const newTabs = [...(formData.tabs || [])];
+                            const currentTab = newTabs[activeTabIndex];
+                            const currentImages = (currentTab.heroImages || []).filter(img => img && img.trim() !== '');
+                            const newHeroImages = [...currentImages, ...imageUrls];
+
+                            // Actualizar descripciones
+                            const currentDescriptions = currentTab.heroImageDescriptions || [];
+                            const currentDescriptionsEn = currentTab.heroImageDescriptions_en || [];
+                            const newDescriptions = [...currentDescriptions];
+                            const newDescriptionsEn = [...currentDescriptionsEn];
+
+                            while (newDescriptions.length < newHeroImages.length) {
+                              newDescriptions.push('');
+                            }
+                            while (newDescriptionsEn.length < newHeroImages.length) {
+                              newDescriptionsEn.push('');
+                            }
+
+                            currentTab.heroImages = newHeroImages;
+                            currentTab.heroImageDescriptions = newDescriptions;
+                            currentTab.heroImageDescriptions_en = newDescriptionsEn;
+                            setFormData({ ...formData, tabs: newTabs });
+                          }
+                        }}
+                      />
+
+                      {/* Mostrar imágenes del hero del tab */}
+                      {tab.heroImages && tab.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
+                        <div className="mt-4 space-y-3">
+                          {tab.heroImages.filter(img => img && img.trim() !== '').map((image, imgIndex) => {
+                            const realImgIndex = tab.heroImages!.findIndex((img, idx) => img === image && idx >= imgIndex);
+                            return (
+                              <div key={imgIndex} className="flex items-start gap-4 p-3 border border-gray-200 rounded">
+                                <img
+                                  src={image}
+                                  alt={`Tab ${activeTabIndex + 1} Hero ${imgIndex + 1}`}
+                                  className="w-24 h-24 object-cover rounded"
+                                />
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {editingLanguage === 'es'
+                                      ? `Descripción imagen ${imgIndex + 1} (opcional)`
+                                      : `Image ${imgIndex + 1} description (optional)`}
+                                  </label>
+                                  <textarea
+                                    value={
+                                      editingLanguage === 'es'
+                                        ? (tab.heroImageDescriptions?.[realImgIndex] || '')
+                                        : (tab.heroImageDescriptions_en?.[realImgIndex] || '')
+                                    }
+                                    onChange={(e) => {
+                                      const newTabs = [...(formData.tabs || [])];
+                                      const currentTab = newTabs[activeTabIndex];
+                                      const field = editingLanguage === 'es'
+                                        ? 'heroImageDescriptions'
+                                        : 'heroImageDescriptions_en';
+                                      const descriptions = [...(currentTab[field] || [])];
+                                      descriptions[realImgIndex] = e.target.value;
+                                      currentTab[field] = descriptions;
+                                      setFormData({ ...formData, tabs: newTabs });
+                                    }}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+                                    placeholder={editingLanguage === 'es'
+                                      ? 'Descripción de la imagen...'
+                                      : 'Image description...'}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeTabHeroImage(activeTabIndex, realImgIndex)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Imagen Secundaria del Tab */}
+                    <div>
+                      <ImageUploader
+                        label={editingLanguage === 'es' ? 'Imagen Secundaria del Tab' : 'Tab Secondary Image'}
+                        projectId={tempFolder.split('/').pop() || 'temp'}
+                        currentImage={tab.additionalImage}
+                        onImageUpload={(imageUrl) => updateTab(activeTabIndex, 'additionalImage', imageUrl)}
+                        required={false}
+                        contentType={tempFolder}
+                      />
+                    </div>
+
+                    {/* Detalles del Proyecto del Tab */}
+                    <div>
+                      <RichTextEditor
+                        label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
+                        value={editingLanguage === 'es' ? (tab.projectDetails || '') : (tab.projectDetails_en || '')}
+                        onChange={(content) => updateTab(
+                          activeTabIndex,
+                          editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en',
+                          content
+                        )}
+                        placeholder={editingLanguage === 'es'
+                          ? 'Escribe los detalles del proyecto para este tab...'
+                          : 'Write the project details for this tab...'}
+                        height={200}
+                      />
+                    </div>
+
+                    {/* Ficha Técnica del Tab */}
+                    <div>
+                      <RichTextEditor
+                        label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
+                        value={editingLanguage === 'es' ? (tab.technicalSheet || '') : (tab.technicalSheet_en || '')}
+                        onChange={(content) => updateTab(
+                          activeTabIndex,
+                          editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en',
+                          content
+                        )}
+                        placeholder={editingLanguage === 'es'
+                          ? 'Escribe la ficha técnica para este tab...'
+                          : 'Write the technical sheet for this tab...'}
+                        height={200}
+                      />
+                    </div>
+                  </div>
+                </div>
+            );
+          })()
+        )}
 
         {/* Botones - Bottom */}
         <div className="flex justify-end space-x-4 pt-6 border-t">
@@ -675,7 +956,7 @@ export default function NewProjectPage() {
           </button>
         </div>
       </form>
-      
+
       {/* Notification Component */}
       <ToastNotification
         type={notification.type}

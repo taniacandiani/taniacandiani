@@ -345,7 +345,7 @@ export default function RichTextEditor({
       </div>
       
       {/* Editor content */}
-      <div className="border border-t-0 border-gray-300 rounded-b-md relative" style={{ height: currentHeight }}>
+      <div className="bg-white border border-t-0 border-gray-300 rounded-b-md relative" style={{ height: currentHeight }}>
         <EditorContent
           editor={editor}
           className="h-full overflow-y-auto focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"

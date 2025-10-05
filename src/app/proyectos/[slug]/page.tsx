@@ -21,6 +21,7 @@ export default function ProjectPage({ params }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('detalles');
+  const [activeProjectTab, setActiveProjectTab] = useState<number>(-1); // -1 for main project, 0+ for tabs
   const [loading, setLoading] = useState(true);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
@@ -45,7 +46,18 @@ export default function ProjectPage({ params }: Props) {
   // Always define slider images, even if project is null
   const sliderImages = (() => {
     if (!project) return ['/fondo1.jpg'];
-    
+
+    // Si hay un tab seleccionado, usar las imágenes del tab
+    if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+      const tab = project.tabs[activeProjectTab];
+      if (tab.heroImages && tab.heroImages.length > 0) {
+        const validHeroImages = tab.heroImages.filter(img => img && img.trim() !== '');
+        if (validHeroImages.length > 0) {
+          return validHeroImages;
+        }
+      }
+    }
+
     // Use hero images if they exist and have content
     if (project.heroImages && project.heroImages.length > 0) {
       const validHeroImages = project.heroImages.filter(img => img && img.trim() !== '');
@@ -53,7 +65,7 @@ export default function ProjectPage({ params }: Props) {
         return validHeroImages;
       }
     }
-    
+
     // Final fallback
     return ['/fondo1.jpg'];
   })();
@@ -215,10 +227,39 @@ export default function ProjectPage({ params }: Props) {
 
             {/* Resto del contenido */}
             <div>
-              <div className="border-b border-gray-300 mb-4"></div>
-              <p className="text-base text-gray-800 mb-8" style={{ fontWeight: 900 }}>
-                {getLocalizedContent('subtitle', getLocalizedContent('title'))}
-              </p>
+              {/* Tabs del proyecto */}
+              {project.tabs && project.tabs.length > 0 && (
+                <div className="mb-8">
+                  <div className="border-b border-gray-300 mb-4"></div>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setActiveProjectTab(-1)}
+                      className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded ${
+                        activeProjectTab === -1
+                          ? 'bg-black text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                      style={{ fontWeight: 600 }}
+                    >
+                      {language === 'en' ? 'Main' : 'Principal'}
+                    </button>
+                    {project.tabs.map((tab, index) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveProjectTab(index)}
+                        className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded ${
+                          activeProjectTab === index
+                            ? 'bg-black text-white'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {language === 'en' ? (tab.title_en || tab.title) : tab.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Datos del proyecto */}
               {project.projectInfo && project.projectInfo.length > 0 && (
@@ -518,6 +559,19 @@ export default function ProjectPage({ params }: Props) {
                 {activeTab === 'detalles' && (
                   <div>
                     {(() => {
+                      // Si hay un tab seleccionado, mostrar el contenido del tab
+                      if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                        const tab = project.tabs[activeProjectTab];
+                        const content = language === 'en'
+                          ? (tab.projectDetails_en || tab.projectDetails)
+                          : tab.projectDetails;
+                        return content ? (
+                          <RichContent content={content} />
+                        ) : (
+                          <p>{language === 'en' ? 'Project details not available.' : 'Detalles del proyecto no disponibles.'}</p>
+                        );
+                      }
+                      // Si no hay tab seleccionado, mostrar el contenido principal
                       const content = getLocalizedContent('projectDetails');
                       return content ? (
                         <RichContent content={content} />
@@ -530,6 +584,19 @@ export default function ProjectPage({ params }: Props) {
                 {activeTab === 'ficha' && (
                   <div>
                     {(() => {
+                      // Si hay un tab seleccionado, mostrar la ficha técnica del tab
+                      if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                        const tab = project.tabs[activeProjectTab];
+                        const content = language === 'en'
+                          ? (tab.technicalSheet_en || tab.technicalSheet)
+                          : tab.technicalSheet;
+                        return content ? (
+                          <RichContent content={content} />
+                        ) : (
+                          <p>{language === 'en' ? 'Technical sheet not available.' : 'Ficha técnica no disponible.'}</p>
+                        );
+                      }
+                      // Si no hay tab seleccionado, mostrar la ficha técnica principal
                       const content = getLocalizedContent('technicalSheet');
                       return content ? (
                         <RichContent content={content} />
@@ -543,11 +610,11 @@ export default function ProjectPage({ params }: Props) {
             </div>
 
             {/* Imagen secundaria */}
-            {project.image && (
+            {project.additionalImage && (
               <div className="mb-32">
                 <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
                   <Image
-                    src={project.image}
+                    src={project.additionalImage}
                     alt={`${project.title} - Imagen secundaria`}
                     fill
                     className="object-cover"

@@ -172,7 +172,7 @@ export default function AdminAboutPage() {
                 type="text"
                 value={content?.title || ''}
                 onChange={(e) => setContent({ ...content!, title: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 

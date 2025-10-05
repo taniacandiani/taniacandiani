@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/losoj/OneDrive/Desktop/screenshots/**)"
+      "Read(//c/Users/losoj/OneDrive/Desktop/screenshots/**)",
+      "Bash(npm run:*)",
+      "Bash(^C)",
+      "Bash(npx eslint:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

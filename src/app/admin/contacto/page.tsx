@@ -155,7 +155,7 @@ export default function AdminContactPage() {
               type="text"
               value={content.title}
               onChange={(e) => setContent({ ...content, title: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
 
@@ -166,7 +166,7 @@ export default function AdminContactPage() {
               rows={6}
               value={content.description}
               onChange={(e) => setContent({ ...content, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               placeholder="Escribe aquí el texto descriptivo que aparecerá debajo del título en la página de Contacto."
             />
           </div>

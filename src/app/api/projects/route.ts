@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
   try {
     const projectData = await request.json();
 
+    console.log('=== POST /api/projects ===');
+    console.log('Received projectData:', JSON.stringify(projectData, null, 2));
+    console.log('Categories:', projectData.categories);
+    console.log('ShowInHomeHero:', projectData.showInHomeHero);
+    console.log('Tabs count:', projectData.tabs?.length || 0);
+
     // Generate slug if not provided
     if (!projectData.slug && projectData.title) {
       projectData.slug = projectData.title
@@ -35,11 +41,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const project = await ProjectService.create(projectData);
+    // Remove id if provided (create generates its own)
+    const { id, ...projectDataWithoutId } = projectData;
 
+    console.log('About to call ProjectService.create with:', {
+      title: projectDataWithoutId.title,
+      categoriesCount: projectDataWithoutId.categories?.length,
+      showInHomeHero: projectDataWithoutId.showInHomeHero,
+      hasHeroImages: !!projectDataWithoutId.heroImages?.length
+    });
+
+    const project = await ProjectService.create(projectDataWithoutId);
+
+    console.log('Project created successfully:', project.id);
     return NextResponse.json({ success: true, id: project.id, slug: project.slug });
   } catch (error) {
-    console.error('Error writing projects data:', error);
+    console.error('Error writing projects data - Full error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json({ error: 'Failed to save project' }, { status: 500 });
   }
 }

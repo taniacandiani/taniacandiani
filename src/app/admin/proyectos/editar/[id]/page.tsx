@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Project, ProjectCategory } from '@/types';
+import { Project, ProjectCategory, ProjectTab } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
@@ -24,6 +24,7 @@ export default function EditProjectPage() {
   const [mediaSelectorType, setMediaSelectorType] = useState<'hero' | 'secondary' | null>(null);
   const [mediaSelectorIndex, setMediaSelectorIndex] = useState<number>(0);
   const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(-1); // -1 for main content, 0+ for tabs
   const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
@@ -48,6 +49,10 @@ export default function EditProjectPage() {
         if (id) {
           const foundProject = await ProjectStorage.getById(id);
           if (foundProject) {
+            // Ensure tabs array exists
+            if (!foundProject.tabs) {
+              foundProject.tabs = [];
+            }
             setProject(foundProject);
           } else {
             router.push('/admin/proyectos');
@@ -119,7 +124,6 @@ export default function EditProjectPage() {
         location: project.location || '',
         // Campos en inglés
         title_en: project.title_en || '',
-        subtitle_en: project.subtitle_en || '',
         description_en: project.description_en || '',
         projectDetails_en: project.projectDetails_en || '',
         technicalSheet_en: project.technicalSheet_en || '',
@@ -204,14 +208,89 @@ export default function EditProjectPage() {
 
   const removeHeroImage = (index: number) => {
     if (!project) return;
-    
+
     // Never remove the last image - always keep at least one
     if ((project.heroImages || []).length <= 1) {
       return;
     }
-    
+
     const newHeroImages = (project.heroImages || []).filter((_, i) => i !== index);
     setProject({ ...project, heroImages: newHeroImages });
+  };
+
+  // Tab management functions
+  const addTab = () => {
+    if (!project) return;
+
+    const newTab: ProjectTab = {
+      id: `tab-${Date.now()}`,
+      projectId: project.id,
+      tabOrder: (project.tabs?.length || 0),
+      title: '',
+      heroImages: [''],
+      heroImageDescriptions: [''],
+      heroImageDescriptions_en: [''],
+      additionalImage: '',
+      projectDetails: '',
+      technicalSheet: '',
+      title_en: '',
+      projectDetails_en: '',
+      technicalSheet_en: ''
+    };
+
+    const newTabIndex = project.tabs?.length || 0;
+
+    setProject({
+      ...project,
+      tabs: [...(project.tabs || []), newTab]
+    });
+
+    // Automatically switch to the new tab
+    setActiveTabIndex(newTabIndex);
+  };
+
+  const removeTab = (index: number) => {
+    if (!project) return;
+
+    const newTabs = (project.tabs || []).filter((_, i) => i !== index);
+    // Update tabOrder for remaining tabs
+    newTabs.forEach((tab, i) => {
+      tab.tabOrder = i;
+    });
+    setProject({ ...project, tabs: newTabs });
+  };
+
+  const updateTab = (index: number, field: keyof ProjectTab, value: any) => {
+    if (!project) return;
+
+    const newTabs = [...(project.tabs || [])];
+    newTabs[index] = { ...newTabs[index], [field]: value };
+    setProject({ ...project, tabs: newTabs });
+  };
+
+  const removeTabHeroImage = (tabIndex: number, imageIndex: number) => {
+    if (!project) return;
+
+    const newTabs = [...(project.tabs || [])];
+    const tab = newTabs[tabIndex];
+
+    // Never remove the last image - always keep at least one empty slot
+    if ((tab.heroImages || []).length <= 1) {
+      return;
+    }
+
+    const newHeroImages = (tab.heroImages || []).filter((_, i) => i !== imageIndex);
+    const newDescriptions = (tab.heroImageDescriptions || []).filter((_, i) => i !== imageIndex);
+    const newDescriptionsEn = (tab.heroImageDescriptions_en || []).filter((_, i) => i !== imageIndex);
+
+    newTabs[tabIndex] = {
+      ...tab,
+      heroImages: newHeroImages,
+      heroImageDescriptions: newDescriptions,
+      heroImageDescriptions_en: newDescriptionsEn
+    };
+
+    setProject({ ...project, tabs: newTabs });
   };
 
   if (loading) {
@@ -283,9 +362,77 @@ export default function EditProjectPage() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="mb-6 border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          {/* Main Content Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveTabIndex(-1)}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTabIndex === -1
+                ? 'border-black text-black'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Contenido Principal
+          </button>
+
+          {/* Dynamic Tabs */}
+          {project.tabs?.map((tab, index) => (
+            <div key={tab.id} className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setActiveTabIndex(index)}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  activeTabIndex === index
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.title || `Tab ${index + 1}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeTab(index);
+                  // Si eliminamos el tab activo, volver al contenido principal
+                  if (activeTabIndex === index) {
+                    setActiveTabIndex(-1);
+                  } else if (activeTabIndex > index) {
+                    // Ajustar el índice activo si es mayor al eliminado
+                    setActiveTabIndex(activeTabIndex - 1);
+                  }
+                }}
+                className="ml-1 text-red-500 hover:text-red-700 p-1"
+                title="Eliminar tab"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+
+          {/* Add Tab Button */}
+          <button
+            type="button"
+            onClick={addTab}
+            className="inline-flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <form id="project-form" onSubmit={handleSubmit} className="space-y-8">
-        {/* Información Básica */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        {activeTabIndex === -1 ? (
+          <>
+            {/* Main Content - Show when no tab is selected */}
+            {/* Información Básica */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
             <span className="text-sm font-medium text-gray-600">
@@ -304,59 +451,9 @@ export default function EditProjectPage() {
                   ...project,
                   [editingLanguage === 'es' ? 'title' : 'title_en']: e.target.value
                 })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 required={editingLanguage === 'es'}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Subtítulo' : 'Subtitle'}
-              </label>
-              <input
-                type="text"
-                value={editingLanguage === 'es' ? (project.subtitle || '') : (project.subtitle_en || '')}
-                onChange={(e) => setProject({
-                  ...project,
-                  [editingLanguage === 'es' ? 'subtitle' : 'subtitle_en']: e.target.value
-                })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categorías *
-              </label>
-              <div className="space-y-2">
-                {categories.map(cat => (
-                  <label key={cat.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={project.categories?.includes(cat.name) || false}
-                      onChange={(e) => {
-                        const currentCategories = project.categories || [];
-                        if (e.target.checked) {
-                          setProject({ 
-                            ...project, 
-                            categories: [...currentCategories, cat.name]
-                          });
-                        } else {
-                          setProject({ 
-                            ...project, 
-                            categories: currentCategories.filter(c => c !== cat.name)
-                          });
-                        }
-                      }}
-                      className="rounded focus:ring-black"
-                    />
-                    <span className="text-sm text-gray-700">{cat.name}</span>
-                  </label>
-                ))}
-              </div>
-              {(!project.categories || project.categories.length === 0) && (
-                <p className="text-sm text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
-              )}
             </div>
 
             <div>
@@ -367,9 +464,50 @@ export default function EditProjectPage() {
                 type="number"
                 value={project.year}
                 onChange={(e) => setProject({ ...project, year: parseInt(e.target.value) })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 required
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Categorías * (Selecciona una o más)
+              </label>
+              <div className="bg-white border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
+                  {categories.map(cat => (
+                    <label key={cat.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={project.categories?.includes(cat.name) || false}
+                        onChange={(e) => {
+                          const currentCategories = project.categories || [];
+                          if (e.target.checked) {
+                            setProject({
+                              ...project,
+                              categories: [...currentCategories, cat.name]
+                            });
+                          } else {
+                            setProject({
+                              ...project,
+                              categories: currentCategories.filter(c => c !== cat.name)
+                            });
+                          }
+                        }}
+                        className="w-4 h-4 text-black focus:ring-black border-gray-300 rounded"
+                      />
+                      <span className="text-sm">{cat.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {project.categories && project.categories.length > 0 ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  {project.categories.length} categoría{project.categories.length !== 1 ? 's' : ''} seleccionada{project.categories.length !== 1 ? 's' : ''}
+                </p>
+              ) : (
+                <p className="text-sm text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
+              )}
             </div>
           </div>
 
@@ -495,7 +633,7 @@ export default function EditProjectPage() {
                                       [editingLanguage === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en']: newDescriptions
                                     });
                                   }}
-                                  className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
                                   placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el slider del proyecto...' : 'Description that will appear in the project slider...'}
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
@@ -618,7 +756,7 @@ export default function EditProjectPage() {
                 type="text"
                 value={project.downloadLink || ''}
                 onChange={(e) => setProject({ ...project, downloadLink: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 placeholder="https://..."
                 disabled={editingLanguage === 'en'}
               />
@@ -638,7 +776,7 @@ export default function EditProjectPage() {
                   ...project,
                   [editingLanguage === 'es' ? 'commissionedBy' : 'commissionedBy_en']: e.target.value
                 })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
@@ -653,7 +791,7 @@ export default function EditProjectPage() {
                   ...project,
                   [editingLanguage === 'es' ? 'curator' : 'curator_en']: e.target.value
                 })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
@@ -668,7 +806,7 @@ export default function EditProjectPage() {
                   ...project,
                   [editingLanguage === 'es' ? 'location' : 'location_en']: e.target.value
                 })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           </div>
@@ -703,7 +841,7 @@ export default function EditProjectPage() {
                     ...project,
                     [editingLanguage === 'es' ? 'heroDescription' : 'heroDescription_en']: e.target.value
                   })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el hero de la página principal' : 'Description that will appear in the home page hero'}
                 />
               </div>
@@ -711,25 +849,232 @@ export default function EditProjectPage() {
           </div>
         </div>
 
-        {/* Estado del Proyecto */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Estado del Proyecto</h2>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
-            </label>
-            <select
-              value={project.status || 'published'}
-              onChange={(e) => setProject({ ...project, status: e.target.value as 'published' | 'draft' | 'archived' })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            >
-              <option value="published">Publicado</option>
-              <option value="draft">Borrador</option>
-              <option value="archived">Archivado</option>
-            </select>
+            {/* Estado del Proyecto */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Estado del Proyecto</h2>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado
+                </label>
+                <select
+                  value={project.status || 'published'}
+                  onChange={(e) => setProject({ ...project, status: e.target.value as 'published' | 'draft' | 'archived' })}
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="published">Publicado</option>
+                  <option value="draft">Borrador</option>
+                  <option value="archived">Archivado</option>
+                </select>
+              </div>
+            </div>
+          </>
+        ) : activeTabIndex >= 0 && project.tabs?.[activeTabIndex] ? (
+          /* Tab Content - Show when a tab is selected */
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            {(() => {
+              const tab = project.tabs[activeTabIndex];
+              const tabIndex = activeTabIndex;
+              return (
+                <>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Tab {tabIndex + 1}: {tab.title || 'Sin título'}
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-600">
+                      Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeTab(tabIndex)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Título del Tab */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {editingLanguage === 'es' ? 'Título del Tab *' : 'Tab Title *'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLanguage === 'es' ? tab.title : (tab.title_en || '')}
+                      onChange={(e) => updateTab(
+                        tabIndex,
+                        editingLanguage === 'es' ? 'title' : 'title_en',
+                        e.target.value
+                      )}
+                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                      required={editingLanguage === 'es'}
+                    />
+                  </div>
+
+                  {/* Imágenes del Hero del Tab */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
+                    </label>
+                    <ImageUploader
+                      label=""
+                      projectId={project.slug}
+                      currentImage=""
+                      onImageUpload={(imageUrl) => {
+                        if (imageUrl) {
+                          const newTabs = [...(project.tabs || [])];
+                          const currentTab = newTabs[tabIndex];
+                          const newHeroImages = [...(currentTab.heroImages || [''])];
+                          if (newHeroImages.length === 0 || newHeroImages[0] === '') {
+                            newHeroImages[0] = imageUrl;
+                          } else {
+                            newHeroImages.push(imageUrl);
+                          }
+                          currentTab.heroImages = newHeroImages;
+                          setProject({ ...project, tabs: newTabs });
+                        }
+                      }}
+                      required={false}
+                      contentType={`proyectos/${project.slug}`}
+                      multiple={true}
+                      onImagesUpload={(imageUrls) => {
+                        if (imageUrls.length > 0) {
+                          const newTabs = [...(project.tabs || [])];
+                          const currentTab = newTabs[tabIndex];
+                          const currentImages = (currentTab.heroImages || []).filter(img => img && img.trim() !== '');
+                          const newHeroImages = [...currentImages, ...imageUrls];
+
+                          // Actualizar descripciones
+                          const currentDescriptions = currentTab.heroImageDescriptions || [];
+                          const currentDescriptionsEn = currentTab.heroImageDescriptions_en || [];
+                          const newDescriptions = [...currentDescriptions];
+                          const newDescriptionsEn = [...currentDescriptionsEn];
+
+                          while (newDescriptions.length < newHeroImages.length) {
+                            newDescriptions.push('');
+                          }
+                          while (newDescriptionsEn.length < newHeroImages.length) {
+                            newDescriptionsEn.push('');
+                          }
+
+                          currentTab.heroImages = newHeroImages;
+                          currentTab.heroImageDescriptions = newDescriptions;
+                          currentTab.heroImageDescriptions_en = newDescriptionsEn;
+                          setProject({ ...project, tabs: newTabs });
+                        }
+                      }}
+                    />
+
+                    {/* Mostrar imágenes del hero del tab */}
+                    {tab.heroImages && tab.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {tab.heroImages.filter(img => img && img.trim() !== '').map((image, imgIndex) => (
+                          <div key={imgIndex} className="flex items-start gap-4 p-3 border border-gray-200 rounded">
+                            <img
+                              src={image}
+                              alt={`Tab ${tabIndex + 1} Hero ${imgIndex + 1}`}
+                              className="w-24 h-24 object-cover rounded"
+                            />
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {editingLanguage === 'es'
+                                  ? `Descripción imagen ${imgIndex + 1} (opcional)`
+                                  : `Image ${imgIndex + 1} description (optional)`}
+                              </label>
+                              <textarea
+                                value={
+                                  editingLanguage === 'es'
+                                    ? (tab.heroImageDescriptions?.[imgIndex] || '')
+                                    : (tab.heroImageDescriptions_en?.[imgIndex] || '')
+                                }
+                                onChange={(e) => {
+                                  const newTabs = [...(project.tabs || [])];
+                                  const currentTab = newTabs[tabIndex];
+                                  const field = editingLanguage === 'es'
+                                    ? 'heroImageDescriptions'
+                                    : 'heroImageDescriptions_en';
+                                  const descriptions = [...(currentTab[field] || [])];
+                                  descriptions[imgIndex] = e.target.value;
+                                  currentTab[field] = descriptions;
+                                  setProject({ ...project, tabs: newTabs });
+                                }}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-black"
+                                placeholder={editingLanguage === 'es'
+                                  ? 'Descripción de la imagen...'
+                                  : 'Image description...'}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeTabHeroImage(tabIndex, imgIndex)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Imagen Secundaria del Tab */}
+                  <div>
+                    <ImageUploader
+                      label={editingLanguage === 'es' ? 'Imagen Secundaria del Tab' : 'Tab Secondary Image'}
+                      projectId={project.slug}
+                      currentImage={tab.additionalImage}
+                      onImageUpload={(imageUrl) => updateTab(tabIndex, 'additionalImage', imageUrl)}
+                      required={false}
+                      contentType={`proyectos/${project.slug}`}
+                    />
+                  </div>
+
+                  {/* Detalles del Proyecto del Tab */}
+                  <div>
+                    <RichTextEditor
+                      label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
+                      value={editingLanguage === 'es' ? (tab.projectDetails || '') : (tab.projectDetails_en || '')}
+                      onChange={(content) => updateTab(
+                        tabIndex,
+                        editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en',
+                        content
+                      )}
+                      placeholder={editingLanguage === 'es'
+                        ? 'Escribe los detalles del proyecto para este tab...'
+                        : 'Write the project details for this tab...'}
+                      height={200}
+                    />
+                  </div>
+
+                  {/* Ficha Técnica del Tab */}
+                  <div>
+                    <RichTextEditor
+                      label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
+                      value={editingLanguage === 'es' ? (tab.technicalSheet || '') : (tab.technicalSheet_en || '')}
+                      onChange={(content) => updateTab(
+                        tabIndex,
+                        editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en',
+                        content
+                      )}
+                      placeholder={editingLanguage === 'es'
+                        ? 'Escribe la ficha técnica para este tab...'
+                        : 'Write the technical sheet for this tab...'}
+                      height={200}
+                    />
+                  </div>
+                </div>
+                </>
+              );
+            })()}
           </div>
-        </div>
+        ) : null}
 
         {/* Botones - Bottom */}
         <div className="flex justify-end space-x-4 pt-6 border-t">

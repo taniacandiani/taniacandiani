@@ -19,10 +19,25 @@ export interface NewsItem {
   tags?: string[];
 }
 
+export interface ProjectTab {
+  id: string;
+  projectId: string;
+  tabOrder: number;
+  title: string;
+  heroImages?: string[];
+  heroImageDescriptions?: string[];
+  heroImageDescriptions_en?: string[];
+  additionalImage?: string;
+  projectDetails?: string;
+  technicalSheet?: string;
+  title_en?: string;
+  projectDetails_en?: string;
+  technicalSheet_en?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
-  subtitle?: string;
   image: string; // Main card image
   categories: string[]; // Changed from single category to array
   year: number;
@@ -51,10 +66,10 @@ export interface Project {
   location?: string;
   duration?: string;
   projectInfo?: ProjectMetadata[];
+  tabs?: ProjectTab[]; // New: Dynamic tabs
 
   // English translations
   title_en?: string;
-  subtitle_en?: string;
   description_en?: string;
   projectDetails_en?: string;
   technicalSheet_en?: string;

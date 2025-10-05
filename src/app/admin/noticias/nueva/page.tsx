@@ -209,7 +209,7 @@ export default function NewNewsPage() {
                 type="text"
                 value={formData.title}
                 onChange={handleTitleChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 required
               />
             </div>
@@ -222,7 +222,7 @@ export default function NewNewsPage() {
                 type="text"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 placeholder="se-genera-automaticamente"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -232,39 +232,45 @@ export default function NewNewsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categorías
+                Categorías * (Selecciona una o más)
               </label>
-              <div className="space-y-2">
+              <div className="bg-white border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
                 {categories.length === 0 ? (
-                  <div className="text-sm text-gray-500">Cargando categorías...</div>
+                  <p className="text-gray-500">Cargando categorías...</p>
                 ) : (
-                  categories.map(cat => (
-                    <label key={cat.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.categories?.includes(cat.name) || false}
-                        onChange={(e) => {
-                          const currentCategories = formData.categories || [];
-                          if (e.target.checked) {
-                            setFormData({ 
-                              ...formData, 
-                              categories: [...currentCategories, cat.name]
-                            });
-                          } else {
-                            setFormData({ 
-                              ...formData, 
-                              categories: currentCategories.filter(c => c !== cat.name)
-                            });
-                          }
-                        }}
-                        className="rounded focus:ring-black"
-                      />
-                      <span className="text-sm text-gray-700">{cat.name}</span>
-                    </label>
-                  ))
+                  <div className="space-y-2">
+                    {categories.map(cat => (
+                      <label key={cat.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.categories?.includes(cat.name) || false}
+                          onChange={(e) => {
+                            const currentCategories = formData.categories || [];
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                categories: [...currentCategories, cat.name]
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                categories: currentCategories.filter(c => c !== cat.name)
+                              });
+                            }
+                          }}
+                          className="w-4 h-4 text-black focus:ring-black border-gray-300 rounded"
+                        />
+                        <span className="text-sm">{cat.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
-              {(!formData.categories || formData.categories.length === 0) && (
+              {formData.categories && formData.categories.length > 0 ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.categories.length} categoría{formData.categories.length !== 1 ? 's' : ''} seleccionada{formData.categories.length !== 1 ? 's' : ''}
+                </p>
+              ) : (
                 <p className="text-sm text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
@@ -284,7 +290,7 @@ export default function NewNewsPage() {
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               >
                 <option value="draft">Borrador</option>
                 <option value="published">Publicado</option>
