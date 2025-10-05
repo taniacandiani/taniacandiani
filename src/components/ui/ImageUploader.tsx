@@ -30,25 +30,28 @@ export default function ImageUploader({
   const [showMediaSelector, setShowMediaSelector] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): boolean => {
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
-      setError('Solo se permiten archivos de imagen');
-      return false;
+      return { valid: false, error: 'Solo se permiten archivos de imagen' };
     }
-    
-    // Validar tamaño (5MB máximo)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('La imagen debe ser menor a 5MB');
-      return false;
+
+    // Validar tamaño (20MB máximo)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      return { valid: false, error: `Tamaño: ${fileSizeMB}MB (máximo 20MB)` };
     }
-    
-    setError('');
-    return true;
+
+    return { valid: true };
   };
 
   const handleFileUpload = async (file: File) => {
-    if (!validateFile(file)) return;
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setError(validation.error || 'Archivo inválido');
+      return;
+    }
     
     setUploading(true);
     setError('');
@@ -80,36 +83,64 @@ export default function ImageUploader({
   const handleMultipleFileUpload = async (files: FileList) => {
     setUploading(true);
     setError('');
-    
+
     try {
       const imageUrls: string[] = [];
-      
+      const errors: string[] = [];
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (!validateFile(file)) continue;
-        
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('projectId', projectId);
-        formData.append('contentType', contentType);
-        
-        const response = await fetch('/api/upload-image', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          throw new Error('Error al subir la imagen');
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        console.log(`Procesando archivo ${i + 1}/${files.length}: ${file.name} (${fileSizeMB}MB)`);
+
+        const validation = validateFile(file);
+        if (!validation.valid) {
+          console.log(`Archivo ${file.name} no pasó la validación: ${validation.error}`);
+          errors.push(`${file.name}: ${validation.error}`);
+          continue;
         }
-        
-        const { imageUrl } = await response.json();
-        imageUrls.push(imageUrl);
+
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+          formData.append('projectId', projectId);
+          formData.append('contentType', contentType);
+
+          console.log(`Subiendo ${file.name}...`);
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Error al subir ${file.name}:`, errorText);
+            errors.push(`${file.name}: Error al subir`);
+            continue;
+          }
+
+          const { imageUrl } = await response.json();
+          console.log(`${file.name} subido exitosamente:`, imageUrl);
+          imageUrls.push(imageUrl);
+        } catch (fileError) {
+          console.error(`Error al procesar ${file.name}:`, fileError);
+          errors.push(`${file.name}: Error al procesar`);
+        }
       }
-      
+
       if (onImagesUpload && imageUrls.length > 0) {
         onImagesUpload(imageUrls);
       }
+
+      if (errors.length > 0) {
+        setError(`Algunas imágenes no se pudieron subir: ${errors.join(', ')}`);
+      } else if (imageUrls.length === 0) {
+        setError('No se pudo subir ninguna imagen. Verifica el tamaño y formato.');
+      }
+
+      console.log(`Proceso completado: ${imageUrls.length} de ${files.length} imágenes subidas`);
     } catch (error) {
+      console.error('Error general al subir imágenes:', error);
       setError('Error al subir las imágenes. Intenta de nuevo.');
     } finally {
       setUploading(false);
@@ -161,9 +192,11 @@ export default function ImageUploader({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
       
       {/* Input de archivo oculto */}
       <input
@@ -230,7 +263,10 @@ export default function ImageUploader({
                 {multiple ? 'Arrastra múltiples imágenes aquí o haz clic para seleccionar' : 'Arrastra una imagen aquí o haz clic para seleccionar'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                PNG, JPG, GIF hasta 5MB
+                PNG, JPG, GIF hasta 20MB
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Las imágenes serán optimizadas automáticamente
               </p>
             </div>
           </div>

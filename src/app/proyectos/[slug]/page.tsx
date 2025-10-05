@@ -10,18 +10,37 @@ import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export default function ProjectPage({ params }: Props) {
+  const { language } = useLanguage();
   const [project, setProject] = useState<Project | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('detalles');
   const [loading, setLoading] = useState(true);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
+  const [isSliderHovered, setIsSliderHovered] = useState(false);
+
+  // Get localized content
+  const getLocalizedContent = (field: keyof Project, fallback: string = '') => {
+    if (!project) return fallback;
+
+    if (language === 'en') {
+      const enField = `${field}_en` as keyof Project;
+      const enValue = project[enField];
+      if (enValue && typeof enValue === 'string' && enValue.trim() !== '') {
+        return enValue;
+      }
+    }
+
+    const value = project[field];
+    return (typeof value === 'string' ? value : fallback) || fallback;
+  };
 
   // Always define slider images, even if project is null
   const sliderImages = (() => {
@@ -157,16 +176,16 @@ export default function ProjectPage({ params }: Props) {
     };
   }, [params]);
 
-  // Auto-rotate del slider - always runs
+  // Auto-rotate del slider - pausar cuando hover
   useEffect(() => {
-    if (sliderImages.length > 1) {
+    if (sliderImages.length > 1 && !isSliderHovered) {
       const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
       }, 5000);
 
       return () => clearInterval(interval);
     }
-  }, [sliderImages.length]);
+  }, [sliderImages.length, isSliderHovered]);
 
   // Render loading state
   if (loading || !project) {
@@ -190,7 +209,7 @@ export default function ProjectPage({ params }: Props) {
             {/* Título sticky */}
             <div className="sticky top-32 bg-white z-10 mb-8">
               <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                {project.title}
+                {getLocalizedContent('title')}
               </h1>
             </div>
 
@@ -198,7 +217,7 @@ export default function ProjectPage({ params }: Props) {
             <div>
               <div className="border-b border-gray-300 mb-4"></div>
               <p className="text-base text-gray-800 mb-8" style={{ fontWeight: 900 }}>
-                {project.subtitle || project.title}
+                {getLocalizedContent('subtitle', getLocalizedContent('title'))}
               </p>
 
               {/* Datos del proyecto */}
@@ -228,25 +247,34 @@ export default function ProjectPage({ params }: Props) {
               )}
 
               {/* Información adicional */}
-              {(project.commissionedBy || project.curator || project.location) && (
+              {(project.commissionedBy || project.curator || project.location ||
+                project.commissionedBy_en || project.curator_en || project.location_en) && (
                 <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                  <h4 className="projects-h4 text-lg font-normal mb-4">Información</h4>
-                  {project.commissionedBy && (
+                  <h4 className="projects-h4 text-lg font-normal mb-4">
+                    {language === 'en' ? 'Information' : 'Información'}
+                  </h4>
+                  {(project.commissionedBy || project.commissionedBy_en) && (
                     <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Comisionado por:</span><br />
-                      {project.commissionedBy}
+                      <span className="font-medium">
+                        {language === 'en' ? 'Commissioned by:' : 'Comisionado por:'}
+                      </span><br />
+                      {getLocalizedContent('commissionedBy')}
                     </div>
                   )}
-                  {project.curator && (
+                  {(project.curator || project.curator_en) && (
                     <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Curador/a:</span><br />
-                      {project.curator}
+                      <span className="font-medium">
+                        {language === 'en' ? 'Curator:' : 'Curador/a:'}
+                      </span><br />
+                      {getLocalizedContent('curator')}
                     </div>
                   )}
-                  {project.location && (
+                  {(project.location || project.location_en) && (
                     <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">Ubicación:</span><br />
-                      {project.location}
+                      <span className="font-medium">
+                        {language === 'en' ? 'Location:' : 'Ubicación:'}
+                      </span><br />
+                      {getLocalizedContent('location')}
                     </div>
                   )}
                 </div>
@@ -309,7 +337,11 @@ export default function ProjectPage({ params }: Props) {
           {/* Contenido Principal */}
           <div className="flex-1">
             {/* Slider con puntitos */}
-            <div className="relative mb-8">
+            <div
+              className="relative mb-8"
+              onMouseEnter={() => setIsSliderHovered(true)}
+              onMouseLeave={() => setIsSliderHovered(false)}
+            >
               <div className="relative aspect-[16/7] overflow-hidden group" style={{ borderRadius: '5px' }}>
                 <Image
                   src={sliderImages[currentSlide]}
@@ -364,27 +396,29 @@ export default function ProjectPage({ params }: Props) {
             <div className="mb-6 pb-4 border-b border-gray-200">
               <nav className="text-sm">
                 <Link href="/" className="text-gray-500 hover:text-black">
-                  Inicio
+                  {language === 'en' ? 'Home' : 'Inicio'}
                 </Link>
                 <span className="mx-2 text-gray-400">/</span>
                 <Link href="/proyectos" className="text-gray-500 hover:text-black">
-                  Proyectos
+                  {language === 'en' ? 'Projects' : 'Proyectos'}
                 </Link>
                 <span className="mx-2 text-gray-400">/</span>
-                <span className="text-black">{project.title}</span>
+                <span className="text-black">{getLocalizedContent('title')}</span>
               </nav>
             </div>
 
             {/* Título del proyecto */}
             <div className="mb-8">
-              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>{project.title}</h1>
-              
+              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>
+                {getLocalizedContent('title')}
+              </h1>
+
               <div className="flex items-center gap-4 text-base text-gray-600">
                 <span>
-                  Categorías: 
+                  {language === 'en' ? 'Categories:' : 'Categorías:'}
                   {project.categories?.map((category, index) => (
                     <span key={category}>
-                      <Link 
+                      <Link
                         href={`/proyectos?category=${encodeURIComponent(category)}`}
                         className="font-medium hover:text-black transition-colors cursor-pointer ml-1"
                       >
@@ -395,8 +429,8 @@ export default function ProjectPage({ params }: Props) {
                   ))}
                 </span>
                 <span>
-                  Año: 
-                  <Link 
+                  {language === 'en' ? 'Year:' : 'Año:'}
+                  <Link
                     href={`/proyectos?year=${project.year}`}
                     className="font-medium hover:text-black transition-colors cursor-pointer ml-1"
                   >
@@ -417,7 +451,7 @@ export default function ProjectPage({ params }: Props) {
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Detalles del Proyecto
+                  {language === 'en' ? 'Project Details' : 'Detalles del Proyecto'}
                 </button>
                 <button
                   onClick={() => setActiveTab('ficha')}
@@ -427,21 +461,21 @@ export default function ProjectPage({ params }: Props) {
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Ficha Técnica
+                  {language === 'en' ? 'Technical Sheet' : 'Ficha Técnica'}
                 </button>
                 {project.downloadLink ? (
                   <a
                     href={project.downloadLink}
                     className="px-6 pt-8 pb-6 text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
                   >
-                    <span>Descargar</span>
+                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                       picture_as_pdf
                     </span>
                   </a>
                 ) : (
                   <div className="px-6 pt-8 pb-6 text-lg font-medium text-gray-300 flex items-center justify-center gap-2">
-                    <span>Descargar</span>
+                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                       picture_as_pdf
                     </span>
@@ -453,20 +487,26 @@ export default function ProjectPage({ params }: Props) {
               <div className="text-base text-black leading-relaxed pt-8 pb-8">
                 {activeTab === 'detalles' && (
                   <div>
-                    {project.projectDetails ? (
-                      <RichContent content={project.projectDetails} />
-                    ) : (
-                      <p>Detalles del proyecto no disponibles.</p>
-                    )}
+                    {(() => {
+                      const content = getLocalizedContent('projectDetails');
+                      return content ? (
+                        <RichContent content={content} />
+                      ) : (
+                        <p>{language === 'en' ? 'Project details not available.' : 'Detalles del proyecto no disponibles.'}</p>
+                      );
+                    })()}
                   </div>
                 )}
                 {activeTab === 'ficha' && (
                   <div>
-                    {project.technicalSheet ? (
-                      <RichContent content={project.technicalSheet} />
-                    ) : (
-                      <p>Información técnica no disponible para este proyecto.</p>
-                    )}
+                    {(() => {
+                      const content = getLocalizedContent('technicalSheet');
+                      return content ? (
+                        <RichContent content={content} />
+                      ) : (
+                        <p>{language === 'en' ? 'Technical information not available for this project.' : 'Información técnica no disponible para este proyecto.'}</p>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

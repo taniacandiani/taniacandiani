@@ -8,7 +8,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import HardBreak from '@tiptap/extension-hard-break';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
   value: string;
@@ -18,29 +18,22 @@ interface RichTextEditorProps {
   label?: string;
 }
 
-export default function RichTextEditor({ 
-  value, 
-  onChange, 
+export default function RichTextEditor({
+  value,
+  onChange,
   placeholder = 'Escribe aquí...',
   height = 300,
   label
 }: RichTextEditorProps) {
   const [isClient, setIsClient] = useState(false);
   const [currentHeight, setCurrentHeight] = useState(height);
+  const isUpdatingFromEditor = useRef(false);
 
   // Función para limpiar HTML antes de enviarlo
   const cleanHTML = (html: string): string => {
     return html
-      // Eliminar párrafos vacíos
-      .replace(/<p><\/p>/g, '')
-      .replace(/<p>\s*<\/p>/g, '')
-      // Eliminar &nbsp; y espacios en blanco innecesarios
-      .replace(/&nbsp;/g, ' ')
-      // Limpiar espacios múltiples
-      .replace(/\s+/g, ' ')
-      // Limpiar espacios al inicio y final de párrafos
-      .replace(/<p>\s+/g, '<p>')
-      .replace(/\s+<\/p>/g, '</p>')
+      // Eliminar párrafos vacíos duplicados consecutivos
+      .replace(/(<p><\/p>\s*){2,}/g, '<p></p>')
       // Limpiar espacios al inicio y final del HTML
       .trim();
   };
@@ -71,11 +64,8 @@ export default function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        paragraph: {
-          HTMLAttributes: {
-            class: 'mb-0',
-          },
-        },
+        // Desactivar link del StarterKit para usar nuestra configuración personalizada
+        link: false,
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -88,69 +78,79 @@ export default function RichTextEditor({
           class: 'text-blue-600 underline hover:text-blue-800',
         },
       }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto',
-        },
-      }),
-      HardBreak.configure({
-        HTMLAttributes: {
-          class: 'my-2',
-        },
-      }),
+      Image,
     ],
     content: value ? cleanHTML(value) : '',
     onUpdate: ({ editor }) => {
+      // Marcar que la actualización viene del editor
+      isUpdatingFromEditor.current = true;
+
       // Obtener el HTML del editor y limpiarlo
       const html = cleanHTML(editor.getHTML());
       onChange(html);
+
+      // Resetear el flag después de un breve delay
+      setTimeout(() => {
+        isUpdatingFromEditor.current = false;
+      }, 0);
     },
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none px-4 py-3',
         placeholder: placeholder,
+        style: 'white-space: pre-wrap;',
       },
       handleKeyDown: (view, event) => {
         // Permitir que Enter funcione naturalmente
         return false;
       },
       handlePaste: (view, event) => {
-        // Limpiar contenido pegado para evitar caracteres problemáticos
-        event.preventDefault();
-        const text = event.clipboardData?.getData('text/plain') || '';
-        const cleanText = cleanHTML(text);
-        view.dispatch(view.state.tr.insertText(cleanText));
-        return true;
+        if (!editor) return false;
+
+        const html = event.clipboardData?.getData('text/html');
+        const text = event.clipboardData?.getData('text/plain');
+
+        // Si hay HTML, dejar que TipTap lo maneje
+        if (html && html.trim()) {
+          return false;
+        }
+
+        // Si hay texto plano con múltiples párrafos
+        if (text) {
+          const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+
+          if (paragraphs.length > 1) {
+            event.preventDefault();
+
+            // Convertir a HTML con párrafos
+            const htmlContent = paragraphs
+              .map(para => {
+                // Reemplazar saltos simples con <br>
+                const withBreaks = para.trim().replace(/\n/g, '<br>');
+                return `<p>${withBreaks}</p>`;
+              })
+              .join('');
+
+            // Insertar el HTML
+            editor.commands.insertContent(htmlContent);
+            return true;
+          }
+        }
+
+        return false;
       },
     },
     immediatelyRender: false,
     autofocus: false, // Desactivar autofocus automático
   });
 
-  // Enfocar el editor cuando esté listo y tenga contenido
-  useEffect(() => {
-    if (editor && isClient) {
-      // Pequeño delay para asegurar que el editor esté completamente montado
-      const timer = setTimeout(() => {
-        if (editor.isDestroyed) return;
-        
-        // Enfocar el editor y mover el cursor al final del contenido
-        editor.commands.focus('end');
-        
-        // Si no hay contenido, crear un párrafo vacío para mejor UX
-        if (!editor.getHTML() || editor.getHTML() === '<p></p>') {
-          editor.commands.setContent('<p><br></p>');
-          editor.commands.focus('end');
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [editor, isClient]);
+  // REMOVIDO: El useEffect de auto-focus causaba que el cursor saltara al final
+  // TipTap maneja el focus naturalmente cuando el usuario hace clic
 
   // Limpiar contenido cuando cambie el valor desde las props
+  // SOLO si el cambio NO viene del editor mismo (evita loops y saltos de cursor)
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
+    if (editor && !isUpdatingFromEditor.current && value !== editor.getHTML()) {
       const cleanValue = cleanHTML(value || '');
       if (cleanValue !== editor.getHTML()) {
         editor.commands.setContent(cleanValue);
@@ -192,7 +192,17 @@ export default function RichTextEditor({
           {label}
         </label>
       )}
-      
+
+      {/* CSS para los párrafos dentro del editor */}
+      <style jsx>{`
+        :global(.ProseMirror p) {
+          margin-bottom: 1em;
+        }
+        :global(.ProseMirror p:last-child) {
+          margin-bottom: 0;
+        }
+      `}</style>
+
       {/* Toolbar */}
       <div className="border border-gray-300 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-1">
         {/* Text formatting */}
@@ -333,25 +343,10 @@ export default function RichTextEditor({
       
       {/* Editor content */}
       <div className="border border-t-0 border-gray-300 rounded-b-md relative" style={{ height: currentHeight }}>
-        <EditorContent 
-          editor={editor} 
+        <EditorContent
+          editor={editor}
           className="h-full overflow-y-auto focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
-          tabIndex={0}
-          onClick={() => {
-            // Asegurar que el editor se enfoque cuando se hace clic en el área de contenido
-            if (editor && !editor.isDestroyed) {
-              editor.commands.focus('end');
-            }
-          }}
-          onKeyDown={(e) => {
-            // Si se presiona Tab, enfocar el editor
-            if (e.key === 'Tab') {
-              e.preventDefault();
-              if (editor && !editor.isDestroyed) {
-                editor.commands.focus('end');
-              }
-            }
-          }}
+          style={{ cursor: 'text' }}
         />
         
         {/* Resize button - bottom right corner */}

@@ -15,6 +15,7 @@ import ToastNotification from '@/components/ui/Notification';
 export default function NewProjectPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
+  const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
   const [formData, setFormData] = useState<Partial<Project>>({
     title: '',
     subtitle: '',
@@ -32,6 +33,15 @@ export default function NewProjectPage() {
     curator: '',
     location: '',
     tags: [],
+    // English fields
+    title_en: '',
+    subtitle_en: '',
+    projectDetails_en: '',
+    technicalSheet_en: '',
+    heroDescription_en: '',
+    commissionedBy_en: '',
+    curator_en: '',
+    location_en: '',
   });
   const { showSuccess, showError, notification, hideNotification } = useNotification();
 
@@ -177,16 +187,29 @@ export default function NewProjectPage() {
 
       {/* Action Buttons - Top */}
       <div className="flex justify-between items-center mb-8 pt-4 border-b border-gray-200 pb-4">
-        <Link
-          href="/admin/proyectos"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          Ver Proyectos
-        </Link>
-        
+        <div className="flex gap-3">
+          <Link
+            href="/admin/proyectos"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Ver Proyectos
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            {editingLanguage === 'es' ? 'English' : 'Español'}
+          </button>
+        </div>
+
         <div className="flex gap-4">
           <Link
             href="/admin/proyectos"
@@ -207,29 +230,40 @@ export default function NewProjectPage() {
       <form id="project-form" onSubmit={handleSubmit} className="space-y-8">
         {/* Información Básica */}
         <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Básica</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título *
+                {editingLanguage === 'es' ? 'Título *' : 'Title *'}
               </label>
               <input
                 type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                value={editingLanguage === 'es' ? formData.title : (formData.title_en || '')}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'title' : 'title_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required
+                required={editingLanguage === 'es'}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subtítulo
+                {editingLanguage === 'es' ? 'Subtítulo' : 'Subtitle'}
               </label>
               <input
                 type="text"
-                value={formData.subtitle || ''}
-                onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                value={editingLanguage === 'es' ? (formData.subtitle || '') : (formData.subtitle_en || '')}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'subtitle' : 'subtitle_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
@@ -276,14 +310,13 @@ export default function NewProjectPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Imagen del Hero <span className="text-red-500">*</span>
-                </label>
-                
-                {/* Usar ImageUploader para las imágenes del hero */}
-                <ImageUploader
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Imagen del Hero <span className="text-red-500">*</span>
+              </label>
+
+              {/* Usar ImageUploader para las imágenes del hero */}
+              <ImageUploader
                   label=""
                   projectId="new"
                   currentImage=""
@@ -303,29 +336,20 @@ export default function NewProjectPage() {
                   multiple={true}
                   onImagesUpload={(imageUrls) => {
                     if (imageUrls.length > 0) {
-                      const newHeroImages = [...(formData.heroImages || [''])];
-                      // Reemplazar imágenes vacías o agregar nuevas
-                      let currentIndex = 0;
-                      for (let i = 0; i < newHeroImages.length && currentIndex < imageUrls.length; i++) {
-                        if (!newHeroImages[i] || newHeroImages[i].trim() === '') {
-                          newHeroImages[i] = imageUrls[currentIndex];
-                          currentIndex++;
-                        }
-                      }
-                      // Agregar las imágenes restantes
-                      while (currentIndex < imageUrls.length) {
-                        newHeroImages.push(imageUrls[currentIndex]);
-                        currentIndex++;
-                      }
+                      // Obtener las imágenes actuales que no están vacías
+                      const currentImages = (formData.heroImages || []).filter(img => img && img.trim() !== '');
+                      // Agregar las nuevas imágenes
+                      const newHeroImages = [...currentImages, ...imageUrls];
                       setFormData({ ...formData, heroImages: newHeroImages });
                     }
                   }}
                 />
-                
-                {/* Mostrar miniaturas de las imágenes cargadas */}
-                {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-600 font-medium">Imágenes del Hero cargadas:</p>
+
+              {/* Mostrar miniaturas de las imágenes cargadas */}
+              {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 font-medium mb-3">Imágenes del Hero cargadas:</p>
+                  <div className="flex flex-wrap gap-3">
                     {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
                       <div key={index} className="relative inline-block">
                         <img
@@ -336,9 +360,9 @@ export default function NewProjectPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const newHeroImages = [...formData.heroImages];
-                            newHeroImages[index] = '';
-                            setFormData({ ...formData, heroImages: newHeroImages });
+                            const newHeroImages = [...(formData.heroImages || [])];
+                            newHeroImages.splice(index, 1);
+                            setFormData({ ...formData, heroImages: newHeroImages.length > 0 ? newHeroImages : [''] });
                           }}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                         >
@@ -347,8 +371,8 @@ export default function NewProjectPage() {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -366,25 +390,36 @@ export default function NewProjectPage() {
 
         {/* Contenido */}
         <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Contenido del Proyecto</h2>
-          
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Contenido del Proyecto</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
+
           <div className="space-y-6">
             <div>
               <RichTextEditor
-                label="Detalles del Proyecto"
-                value={formData.projectDetails || ''}
-                onChange={(content) => setFormData({ ...formData, projectDetails: content })}
-                placeholder="Escribe los detalles del proyecto aquí..."
+                label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
+                value={editingLanguage === 'es' ? (formData.projectDetails || '') : (formData.projectDetails_en || '')}
+                onChange={(content) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
+                })}
+                placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
                 height={250}
               />
             </div>
 
             <div>
               <RichTextEditor
-                label="Ficha Técnica"
-                value={formData.technicalSheet || ''}
-                onChange={(content) => setFormData({ ...formData, technicalSheet: content })}
-                placeholder="Escribe la ficha técnica aquí..."
+                label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
+                value={editingLanguage === 'es' ? (formData.technicalSheet || '') : (formData.technicalSheet_en || '')}
+                onChange={(content) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
+                })}
+                placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
                 height={250}
               />
             </div>
@@ -393,12 +428,17 @@ export default function NewProjectPage() {
 
         {/* Información Adicional */}
         <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Adicional</h2>
-          
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Información Adicional</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Link de Descarga
+                {editingLanguage === 'es' ? 'Link de Descarga' : 'Download Link'}
               </label>
               <input
                 type="text"
@@ -406,41 +446,54 @@ export default function NewProjectPage() {
                 onChange={(e) => setFormData({ ...formData, downloadLink: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 placeholder="https://..."
+                disabled={editingLanguage === 'en'}
               />
+              {editingLanguage === 'en' && (
+                <p className="text-xs text-gray-500 mt-1">Este campo es compartido entre idiomas</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Comisionado por
+                {editingLanguage === 'es' ? 'Comisionado por' : 'Commissioned by'}
               </label>
               <input
                 type="text"
-                value={formData.commissionedBy || ''}
-                onChange={(e) => setFormData({ ...formData, commissionedBy: e.target.value })}
+                value={editingLanguage === 'es' ? (formData.commissionedBy || '') : (formData.commissionedBy_en || '')}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'commissionedBy' : 'commissionedBy_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Curador/a
+                {editingLanguage === 'es' ? 'Curador/a' : 'Curator'}
               </label>
               <input
                 type="text"
-                value={formData.curator || ''}
-                onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
+                value={editingLanguage === 'es' ? (formData.curator || '') : (formData.curator_en || '')}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'curator' : 'curator_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ubicación
+                {editingLanguage === 'es' ? 'Ubicación' : 'Location'}
               </label>
               <input
                 type="text"
-                value={formData.location || ''}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                value={editingLanguage === 'es' ? (formData.location || '') : (formData.location_en || '')}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  [editingLanguage === 'es' ? 'location' : 'location_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
@@ -454,23 +507,30 @@ export default function NewProjectPage() {
                   checked={formData.showInHomeHero || false}
                   onChange={(e) => setFormData({ ...formData, showInHomeHero: e.target.checked })}
                   className="rounded focus:ring-black"
+                  disabled={editingLanguage === 'en'}
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Mostrar en el hero de la página principal
+                  {editingLanguage === 'es' ? 'Mostrar en el hero de la página principal' : 'Show in home page hero'}
                 </span>
               </label>
+              {editingLanguage === 'en' && (
+                <p className="text-xs text-gray-500 mt-1">Esta opción se configura solo en español</p>
+              )}
             </div>
 
             {formData.showInHomeHero && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción para el Hero
+                  {editingLanguage === 'es' ? 'Descripción para el Hero' : 'Hero Description'}
                 </label>
                 <textarea
-                  value={formData.heroDescription || ''}
-                  onChange={(e) => setFormData({ ...formData, heroDescription: e.target.value })}
+                  value={editingLanguage === 'es' ? (formData.heroDescription || '') : (formData.heroDescription_en || '')}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    [editingLanguage === 'es' ? 'heroDescription' : 'heroDescription_en']: e.target.value
+                  })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="Descripción que aparecerá en el hero de la página principal"
+                  placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el hero de la página principal' : 'Description that will appear in the home page hero'}
                 />
               </div>
             )}

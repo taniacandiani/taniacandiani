@@ -23,6 +23,7 @@ export default function EditProjectPage() {
   const [showMediaSelector, setShowMediaSelector] = useState(false);
   const [mediaSelectorType, setMediaSelectorType] = useState<'hero' | 'secondary' | null>(null);
   const [mediaSelectorIndex, setMediaSelectorIndex] = useState<number>(0);
+  const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
   const { showSuccess, showError, notification, hideNotification } = useNotification();
 
   useEffect(() => {
@@ -228,17 +229,30 @@ export default function EditProjectPage() {
 
       {/* Action Buttons - Top */}
       <div className="flex justify-between items-center mb-8 pt-4 border-b border-gray-200 pb-4">
-        <Link
-          href={`/proyectos/${project.slug}`}
-          target="_blank"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          Ver Proyecto
-        </Link>
-        
+        <div className="flex gap-3">
+          <Link
+            href={`/proyectos/${project.slug}`}
+            target="_blank"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Ver Proyecto
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            {editingLanguage === 'es' ? 'English' : 'Español'}
+          </button>
+        </div>
+
         <div className="flex gap-4">
           <Link
             href="/admin/proyectos"
@@ -260,29 +274,40 @@ export default function EditProjectPage() {
       <form id="project-form" onSubmit={handleSubmit} className="space-y-8">
         {/* Información Básica */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Básica</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título *
+                {editingLanguage === 'es' ? 'Título *' : 'Title *'}
               </label>
               <input
                 type="text"
-                value={project.title}
-                onChange={(e) => setProject({ ...project, title: e.target.value })}
+                value={editingLanguage === 'es' ? project.title : (project.title_en || '')}
+                onChange={(e) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'title' : 'title_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required
+                required={editingLanguage === 'es'}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subtítulo
+                {editingLanguage === 'es' ? 'Subtítulo' : 'Subtitle'}
               </label>
               <input
                 type="text"
-                value={project.subtitle || ''}
-                onChange={(e) => setProject({ ...project, subtitle: e.target.value })}
+                value={editingLanguage === 'es' ? (project.subtitle || '') : (project.subtitle_en || '')}
+                onChange={(e) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'subtitle' : 'subtitle_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
@@ -489,25 +514,36 @@ export default function EditProjectPage() {
 
         {/* Contenido */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Contenido del Proyecto</h2>
-          
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Contenido del Proyecto</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
+
           <div className="space-y-6">
             <div>
               <RichTextEditor
-                label="Detalles del Proyecto"
-                value={project.projectDetails || ''}
-                onChange={(content) => setProject({ ...project, projectDetails: content })}
-                placeholder="Escribe los detalles del proyecto aquí..."
+                label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
+                value={editingLanguage === 'es' ? (project.projectDetails || '') : (project.projectDetails_en || '')}
+                onChange={(content) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
+                })}
+                placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
                 height={250}
               />
             </div>
 
             <div>
               <RichTextEditor
-                label="Ficha Técnica"
-                value={project.technicalSheet || ''}
-                onChange={(content) => setProject({ ...project, technicalSheet: content })}
-                placeholder="Escribe la ficha técnica aquí..."
+                label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
+                value={editingLanguage === 'es' ? (project.technicalSheet || '') : (project.technicalSheet_en || '')}
+                onChange={(content) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
+                })}
+                placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
                 height={250}
               />
             </div>
@@ -516,12 +552,17 @@ export default function EditProjectPage() {
 
         {/* Información Adicional */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Adicional</h2>
-          
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Información Adicional</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Link de Descarga
+                {editingLanguage === 'es' ? 'Link de Descarga' : 'Download Link'}
               </label>
               <input
                 type="text"
@@ -529,41 +570,54 @@ export default function EditProjectPage() {
                 onChange={(e) => setProject({ ...project, downloadLink: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 placeholder="https://..."
+                disabled={editingLanguage === 'en'}
               />
+              {editingLanguage === 'en' && (
+                <p className="text-xs text-gray-500 mt-1">Este campo es compartido entre idiomas</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Comisionado por
+                {editingLanguage === 'es' ? 'Comisionado por' : 'Commissioned by'}
               </label>
               <input
                 type="text"
-                value={project.commissionedBy || ''}
-                onChange={(e) => setProject({ ...project, commissionedBy: e.target.value })}
+                value={editingLanguage === 'es' ? (project.commissionedBy || '') : (project.commissionedBy_en || '')}
+                onChange={(e) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'commissionedBy' : 'commissionedBy_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Curador/a
+                {editingLanguage === 'es' ? 'Curador/a' : 'Curator'}
               </label>
               <input
                 type="text"
-                value={project.curator || ''}
-                onChange={(e) => setProject({ ...project, curator: e.target.value })}
+                value={editingLanguage === 'es' ? (project.curator || '') : (project.curator_en || '')}
+                onChange={(e) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'curator' : 'curator_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ubicación
+                {editingLanguage === 'es' ? 'Ubicación' : 'Location'}
               </label>
               <input
                 type="text"
-                value={project.location || ''}
-                onChange={(e) => setProject({ ...project, location: e.target.value })}
+                value={editingLanguage === 'es' ? (project.location || '') : (project.location_en || '')}
+                onChange={(e) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'location' : 'location_en']: e.target.value
+                })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
@@ -577,23 +631,30 @@ export default function EditProjectPage() {
                   checked={project.showInHomeHero || false}
                   onChange={(e) => setProject({ ...project, showInHomeHero: e.target.checked })}
                   className="rounded focus:ring-black"
+                  disabled={editingLanguage === 'en'}
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Mostrar en el hero de la página principal
+                  {editingLanguage === 'es' ? 'Mostrar en el hero de la página principal' : 'Show in home page hero'}
                 </span>
               </label>
+              {editingLanguage === 'en' && (
+                <p className="text-xs text-gray-500 mt-1">Esta opción se configura solo en español</p>
+              )}
             </div>
 
             {project.showInHomeHero && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción para el Hero
+                  {editingLanguage === 'es' ? 'Descripción para el Hero' : 'Hero Description'}
                 </label>
                 <textarea
-                  value={project.heroDescription || ''}
-                  onChange={(e) => setProject({ ...project, heroDescription: e.target.value })}
+                  value={editingLanguage === 'es' ? (project.heroDescription || '') : (project.heroDescription_en || '')}
+                  onChange={(e) => setProject({
+                    ...project,
+                    [editingLanguage === 'es' ? 'heroDescription' : 'heroDescription_en']: e.target.value
+                  })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="Descripción que aparecerá en el hero de la página principal"
+                  placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el hero de la página principal' : 'Description that will appear in the home page hero'}
                 />
               </div>
             )}

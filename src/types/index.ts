@@ -31,24 +31,35 @@ export interface Project {
   tags?: string[];
   featured?: boolean;
   status?: 'published' | 'draft' | 'archived';
-  
+
   // Extended fields for full project page
   heroImages?: string[]; // Slider images for hero
   projectDetails?: string; // Full project description (HTML)
   technicalSheet?: string; // Technical sheet content (HTML)
   downloadLink?: string; // PDF download link
   additionalImage?: string; // Bottom image
-  
+
   // Hero display options
   showInHomeHero?: boolean; // Checkbox to show in home hero
   heroDescription?: string; // Custom description for home hero
-  
+
   // Additional project metadata
   commissionedBy?: string;
   curator?: string;
   location?: string;
   duration?: string;
   projectInfo?: ProjectMetadata[];
+
+  // English translations
+  title_en?: string;
+  subtitle_en?: string;
+  description_en?: string;
+  projectDetails_en?: string;
+  technicalSheet_en?: string;
+  heroDescription_en?: string;
+  commissionedBy_en?: string;
+  curator_en?: string;
+  location_en?: string;
 }
 
 export interface ProjectMetadata {

@@ -172,16 +172,24 @@ export default function AdminProjects() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {projects.map((project) => (
+                {projects.map((project) => {
+                  // Get thumbnail: prioritize heroImages, then image, then additionalImage
+                  const thumbnail = project.heroImages?.[0] || project.image || project.additionalImage || '';
+
+                  return (
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12">
-                          <img
-                            className="h-12 w-12 rounded object-cover"
-                            src={project.image}
-                            alt={project.title}
-                          />
+                        <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded flex items-center justify-center">
+                          {thumbnail ? (
+                            <img
+                              className="h-12 w-12 rounded object-cover"
+                              src={thumbnail}
+                              alt={project.title}
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-xs">🎨</span>
+                          )}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{project.title}</div>
@@ -238,7 +246,7 @@ export default function AdminProjects() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
