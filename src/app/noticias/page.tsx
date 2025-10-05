@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,7 +14,7 @@ import { SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import { generateNewsExcerpt } from '@/lib/utils';
 
-export default function NoticiasPage() {
+function NoticiasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -374,5 +374,24 @@ export default function NoticiasPage() {
         </div>
       </div>
     </MainLayout>
+  );
+}
+
+export default function NoticiasPage() {
+  return (
+    <Suspense fallback={
+      <MainLayout>
+        <div className="container-mobile py-8 pt-16">
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    }>
+      <NoticiasContent />
+    </Suspense>
   );
 }
