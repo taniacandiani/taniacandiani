@@ -265,6 +265,7 @@ Common errors:
 - **Hero display**: Projects have `showInHomeHero` flag to control homepage carousel inclusion
 - **Status workflow**: Draft → Published → Archived states available but primarily uses published/draft
 - **Image optimization**: Cloudinary handles all image uploads with automatic optimization
+- **PDF Generation**: Projects can be downloaded as PDFs via `/api/projects/[id]/pdf?lang={es|en}` - see `PDF_FEATURE.md` for details
 
 ### Type Safety
 

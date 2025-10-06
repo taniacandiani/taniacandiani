@@ -272,24 +272,22 @@ export default function ProjectPage({ params }: Props) {
                     </p>
                   ))}
                   
-                  {project.downloadLink && (
-                    <div className="mt-4">
-                      <a 
-                        href={project.downloadLink}
-                        className="flex items-center gap-2 text-base border border-gray-300 px-3 py-1 rounded hover:bg-gray-50"
-                      >
-                        <span>Descargar</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                          picture_as_pdf
-                        </span>
-                      </a>
-                    </div>
-                  )}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
+                      className="flex items-center gap-2 text-base border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 w-full cursor-pointer"
+                    >
+                      <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                        picture_as_pdf
+                      </span>
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Información adicional */}
-              {(project.commissionedBy || project.curator || project.location ||
+              {(project.commissionedBy || project.curator || project.location || project.year ||
                 project.commissionedBy_en || project.curator_en || project.location_en) && (
                 <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
                   <h4 className="projects-h4 text-lg font-normal mb-4">
@@ -317,6 +315,14 @@ export default function ProjectPage({ params }: Props) {
                         {language === 'en' ? 'Location:' : 'Ubicación:'}
                       </span><br />
                       {getLocalizedContent('location')}
+                    </div>
+                  )}
+                  {project.year && (
+                    <div className="text-base text-gray-600 py-1">
+                      <span className="font-medium">
+                        {language === 'en' ? 'Year:' : 'Año:'}
+                      </span><br />
+                      {project.year}
                     </div>
                   )}
                 </div>
@@ -543,24 +549,15 @@ export default function ProjectPage({ params }: Props) {
                 >
                   {language === 'en' ? 'Technical Sheet' : 'Ficha Técnica'}
                 </button>
-                {project.downloadLink ? (
-                  <a
-                    href={project.downloadLink}
-                    className="px-6 pt-8 pb-6 text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
-                  >
-                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      picture_as_pdf
-                    </span>
-                  </a>
-                ) : (
-                  <div className="px-6 pt-8 pb-6 text-lg font-medium text-gray-300 flex items-center justify-center gap-2">
-                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      picture_as_pdf
-                    </span>
-                  </div>
-                )}
+                <button
+                  onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
+                  className="px-6 pt-8 pb-6 text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    picture_as_pdf
+                  </span>
+                </button>
               </div>
 
               {/* Contenido de los tabs */}
@@ -693,24 +690,15 @@ export default function ProjectPage({ params }: Props) {
                 })()}
                 
                 {/* Descargar (Centro) */}
-                {project.downloadLink ? (
-                  <a
-                    href={project.downloadLink}
-                    className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
-                  >
-                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                      picture_as_pdf
-                    </span>
-                  </a>
-                ) : (
-                  <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 flex items-center justify-center gap-2">
-                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                      picture_as_pdf
-                    </span>
-                  </div>
-                )}
+                <button
+                  onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
+                  className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                    picture_as_pdf
+                  </span>
+                </button>
                 
                 {/* Siguiente Proyecto */}
                 {(() => {

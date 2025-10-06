@@ -142,8 +142,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error al subir imagen:', error);
-    return NextResponse.json({
-      error: 'Error interno del servidor al subir la imagen'
-    }, { status: 500 });
+
+    // Proporcionar más detalles sobre el error
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    const errorDetails = {
+      error: 'Error al procesar la imagen',
+      details: errorMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    console.error('Detalles completos del error:', errorDetails);
+
+    return NextResponse.json(errorDetails, { status: 500 });
   }
 }

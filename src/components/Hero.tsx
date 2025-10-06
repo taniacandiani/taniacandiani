@@ -175,7 +175,9 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
                 {language === 'en' ? 'Category' : 'Categoría'}
               </span>
               <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">
-                {loading ? (language === 'en' ? 'Loading...' : 'Cargando...') : (getCurrentProjectInfo()?.category || (language === 'en' ? 'Not available' : 'No disponible'))}
+                {loading
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
+                  : (getCurrentProjectInfo()?.categories?.[0] || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
 

@@ -14,11 +14,11 @@ interface ImageUploaderProps {
   contentType?: string; // 'proyectos', 'noticias', 'acerca', etc.
 }
 
-export default function ImageUploader({ 
-  onImageUpload, 
-  projectId, 
-  currentImage, 
-  label, 
+export default function ImageUploader({
+  onImageUpload,
+  projectId,
+  currentImage,
+  label,
   required = false,
   multiple = false,
   onImagesUpload,
@@ -28,6 +28,7 @@ export default function ImageUploader({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
   const [showMediaSelector, setShowMediaSelector] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
@@ -83,6 +84,7 @@ export default function ImageUploader({
   const handleMultipleFileUpload = async (files: FileList) => {
     setUploading(true);
     setError('');
+    setUploadProgress({ current: 0, total: files.length });
 
     try {
       const imageUrls: string[] = [];
@@ -92,6 +94,9 @@ export default function ImageUploader({
         const file = files[i];
         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
         console.log(`Procesando archivo ${i + 1}/${files.length}: ${file.name} (${fileSizeMB}MB)`);
+
+        // Actualizar progreso
+        setUploadProgress({ current: i + 1, total: files.length });
 
         const validation = validateFile(file);
         if (!validation.valid) {
@@ -113,9 +118,9 @@ export default function ImageUploader({
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Error al subir ${file.name}:`, errorText);
-            errors.push(`${file.name}: Error al subir`);
+            const errorData = await response.json();
+            console.error(`Error al subir ${file.name}:`, errorData);
+            errors.push(`${file.name}: ${errorData.details || errorData.error || 'Error al subir'}`);
             continue;
           }
 
@@ -144,6 +149,7 @@ export default function ImageUploader({
       setError('Error al subir las imágenes. Intenta de nuevo.');
     } finally {
       setUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -247,9 +253,26 @@ export default function ImageUploader({
         onClick={openFileDialog}
       >
         {uploading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-sm text-gray-600">Subiendo imagen...</p>
+            {uploadProgress.total > 0 ? (
+              <>
+                <p className="text-sm text-gray-600">
+                  Subiendo imagen {uploadProgress.current} de {uploadProgress.total}
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {Math.round((uploadProgress.current / uploadProgress.total) * 100)}% completado
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">Subiendo imagen...</p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
