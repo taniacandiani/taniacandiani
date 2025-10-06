@@ -9,6 +9,7 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import ReorderableImageList from '@/components/ui/ReorderableImageList';
 import MediaSelector from '@/components/ui/MediaSelector';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
@@ -108,7 +109,7 @@ export default function EditProjectPage() {
         heroImages: cleanHeroImages,
         heroImageDescriptions: project.heroImageDescriptions || [],
         heroImageDescriptions_en: project.heroImageDescriptions_en || [],
-        image: project.image || '',
+        image: project.image || cleanHeroImages[0] || '',
         // Campos opcionales con valores por defecto
         description: project.description || '',
         tags: project.tags || [],
@@ -558,93 +559,41 @@ export default function EditProjectPage() {
                       </div>
                     </div>
                     
-                    {/* Mostrar miniaturas de las imágenes cargadas */}
-                    {project.heroImages && project.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                      <div className="space-y-4">
-                        {project.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex gap-4 items-start">
-                              <div className="relative flex-shrink-0">
-                                <img
-                                  src={image}
-                                  alt={`Imagen del hero ${index + 1}`}
-                                  className="w-32 h-32 object-cover rounded-lg border"
-                                />
-                                <div className="absolute -top-2 -right-2 flex space-x-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => openMediaSelector('hero', index)}
-                                    className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-blue-600"
-                                    title="Cambiar imagen"
-                                  >
-                                    ↻
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const currentHeroImages = project.heroImages || [''];
-                                      const newHeroImages = [...currentHeroImages];
-                                      const newDescriptions = [...(project.heroImageDescriptions || [])];
-                                      const newDescriptions_en = [...(project.heroImageDescriptions_en || [])];
-
-                                      newHeroImages.splice(index, 1);
-                                      newDescriptions.splice(index, 1);
-                                      newDescriptions_en.splice(index, 1);
-
-                                      setProject({
-                                        ...project,
-                                        heroImages: newHeroImages,
-                                        heroImageDescriptions: newDescriptions,
-                                        heroImageDescriptions_en: newDescriptions_en
-                                      });
-                                    }}
-                                    className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                                    title="Eliminar imagen"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  {editingLanguage === 'es' ? `Descripción imagen ${index + 1} (opcional)` : `Image ${index + 1} description (optional)`}
-                                </label>
-                                <textarea
-                                  value={
-                                    editingLanguage === 'es'
-                                      ? (project.heroImageDescriptions?.[index] || '')
-                                      : (project.heroImageDescriptions_en?.[index] || '')
-                                  }
-                                  onChange={(e) => {
-                                    const newDescriptions = editingLanguage === 'es'
-                                      ? [...(project.heroImageDescriptions || [])]
-                                      : [...(project.heroImageDescriptions_en || [])];
-
-                                    // Asegurar que el array tenga el tamaño correcto
-                                    while (newDescriptions.length <= index) {
-                                      newDescriptions.push('');
-                                    }
-
-                                    newDescriptions[index] = e.target.value;
-
-                                    setProject({
-                                      ...project,
-                                      [editingLanguage === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en']: newDescriptions
-                                    });
-                                  }}
-                                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-black resize-none"
-                                  placeholder={editingLanguage === 'es' ? 'Descripción que aparecerá en el slider del proyecto...' : 'Description that will appear in the project slider...'}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {editingLanguage === 'es' ? 'Esta descripción se mostrará en el slider del proyecto' : 'This description will be shown in the project slider'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Mostrar imágenes del hero con drag and drop */}
+                    <ReorderableImageList
+                      images={project.heroImages || ['']}
+                      descriptions={project.heroImageDescriptions}
+                      descriptionsEn={project.heroImageDescriptions_en}
+                      editingLanguage={editingLanguage}
+                      onReorder={(newImages, newDescriptions, newDescriptionsEn) => {
+                        setProject({
+                          ...project,
+                          heroImages: newImages,
+                          heroImageDescriptions: newDescriptions,
+                          heroImageDescriptions_en: newDescriptionsEn
+                        });
+                      }}
+                      onRemove={(index) => {
+                        const newHeroImages = project.heroImages?.filter((_, i) => i !== index) || [];
+                        const newDescriptions = project.heroImageDescriptions?.filter((_, i) => i !== index) || [];
+                        const newDescriptionsEn = project.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                        setProject({
+                          ...project,
+                          heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                          heroImageDescriptions: newDescriptions,
+                          heroImageDescriptions_en: newDescriptionsEn
+                        });
+                      }}
+                      onDescriptionChange={(index, value, language) => {
+                        const field = language === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en';
+                        const descriptions = [...(project[field] || [])];
+                        while (descriptions.length <= index) {
+                          descriptions.push('');
+                        }
+                        descriptions[index] = value;
+                        setProject({ ...project, [field]: descriptions });
+                      }}
+                    />
                   </div>
                 </div>
 

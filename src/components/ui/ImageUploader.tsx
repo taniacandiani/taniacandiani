@@ -266,7 +266,7 @@ export default function ImageUploader({
                 PNG, JPG, GIF hasta 20MB
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Las imágenes serán optimizadas automáticamente
+                Las imágenes se subirán con la máxima calidad posible (hasta 4000px)
               </p>
             </div>
           </div>

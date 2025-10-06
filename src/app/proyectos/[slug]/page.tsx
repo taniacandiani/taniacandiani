@@ -384,7 +384,7 @@ export default function ProjectPage({ params }: Props) {
               onMouseEnter={() => setIsSliderHovered(true)}
               onMouseLeave={() => setIsSliderHovered(false)}
             >
-              <div className="relative aspect-[16/7] overflow-hidden group" style={{ borderRadius: '5px' }}>
+              <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
                 <Image
                   src={sliderImages[currentSlide]}
                   alt={`${project.title} - Slide ${currentSlide + 1}`}
@@ -626,7 +626,7 @@ export default function ProjectPage({ params }: Props) {
                 if (tab.additionalImage) {
                   return (
                     <div className="mb-32">
-                      <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
+                      <div className="relative aspect-[16/8] overflow-hidden" style={{ borderRadius: '5px' }}>
                         <Image
                           src={tab.additionalImage}
                           alt={`${language === 'en' ? (tab.title_en || tab.title) : tab.title} - Imagen secundaria`}
@@ -643,7 +643,7 @@ export default function ProjectPage({ params }: Props) {
               if (project.additionalImage) {
                 return (
                   <div className="mb-32">
-                    <div className="relative aspect-[16/6] overflow-hidden" style={{ borderRadius: '5px' }}>
+                    <div className="relative aspect-[16/8] overflow-hidden" style={{ borderRadius: '5px' }}>
                       <Image
                         src={project.additionalImage}
                         alt={`${project.title} - Imagen secundaria`}

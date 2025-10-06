@@ -9,6 +9,7 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import ImageUploader from '@/components/ui/ImageUploader';
+import ReorderableImageList from '@/components/ui/ReorderableImageList';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
 
@@ -546,68 +547,41 @@ export default function NewProjectPage() {
                     />
                   )}
 
-                  {/* Mostrar imágenes del hero cargadas */}
-                  {formData.heroImages && formData.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                    <div className="mt-4 space-y-3">
-                      {formData.heroImages.filter(img => img && img.trim() !== '').map((image, index) => (
-                        <div key={index} className="flex items-start gap-4 p-3 border border-gray-200 rounded">
-                          <img
-                            src={image}
-                            alt={`Hero ${index + 1}`}
-                            className="w-24 h-24 object-cover rounded"
-                          />
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {editingLanguage === 'es'
-                                ? `Descripción imagen ${index + 1} (opcional)`
-                                : `Image ${index + 1} description (optional)`}
-                            </label>
-                            <textarea
-                              value={
-                                editingLanguage === 'es'
-                                  ? (formData.heroImageDescriptions?.[index] || '')
-                                  : (formData.heroImageDescriptions_en?.[index] || '')
-                              }
-                              onChange={(e) => {
-                                const field = editingLanguage === 'es'
-                                  ? 'heroImageDescriptions'
-                                  : 'heroImageDescriptions_en';
-                                const descriptions = [...(formData[field] || [])];
-                                while (descriptions.length <= index) {
-                                  descriptions.push('');
-                                }
-                                descriptions[index] = e.target.value;
-                                setFormData({ ...formData, [field]: descriptions });
-                              }}
-                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-black"
-                              placeholder={editingLanguage === 'es'
-                                ? 'Descripción de la imagen...'
-                                : 'Image description...'}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newHeroImages = formData.heroImages?.filter((_, i) => i !== index) || [];
-                              const newDescriptions = formData.heroImageDescriptions?.filter((_, i) => i !== index) || [];
-                              const newDescriptionsEn = formData.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
-                              setFormData({
-                                ...formData,
-                                heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
-                                heroImageDescriptions: newDescriptions,
-                                heroImageDescriptions_en: newDescriptionsEn
-                              });
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Mostrar imágenes del hero cargadas con drag and drop */}
+                  <ReorderableImageList
+                    images={formData.heroImages || ['']}
+                    descriptions={formData.heroImageDescriptions}
+                    descriptionsEn={formData.heroImageDescriptions_en}
+                    editingLanguage={editingLanguage}
+                    onReorder={(newImages, newDescriptions, newDescriptionsEn) => {
+                      setFormData({
+                        ...formData,
+                        heroImages: newImages,
+                        heroImageDescriptions: newDescriptions,
+                        heroImageDescriptions_en: newDescriptionsEn
+                      });
+                    }}
+                    onRemove={(index) => {
+                      const newHeroImages = formData.heroImages?.filter((_, i) => i !== index) || [];
+                      const newDescriptions = formData.heroImageDescriptions?.filter((_, i) => i !== index) || [];
+                      const newDescriptionsEn = formData.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                      setFormData({
+                        ...formData,
+                        heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                        heroImageDescriptions: newDescriptions,
+                        heroImageDescriptions_en: newDescriptionsEn
+                      });
+                    }}
+                    onDescriptionChange={(index, value, language) => {
+                      const field = language === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en';
+                      const descriptions = [...(formData[field] || [])];
+                      while (descriptions.length <= index) {
+                        descriptions.push('');
+                      }
+                      descriptions[index] = value;
+                      setFormData({ ...formData, [field]: descriptions });
+                    }}
+                  />
                 </div>
 
                 {/* Imagen Secundaria */}

@@ -30,9 +30,12 @@ export async function uploadToCloudinary(
       typeof file === 'string' ? file : `data:image/png;base64,${file.toString('base64')}`,
       {
         folder,
-        resource_type: 'image'
-        // Sin transformaciones - Sharp ya optimizó la imagen con calidad 90%
-        // Cloudinary solo almacena, no comprime adicionalente
+        resource_type: 'image',
+        quality: 'auto:best', // Cloudinary usará la mejor calidad posible
+        fetch_format: 'auto', // Cloudinary elegirá el mejor formato según el navegador
+        flags: 'preserve_transparency', // Preservar transparencia en PNGs
+        // No aplicar transformaciones adicionales - Sharp ya optimizó la imagen
+        // Cloudinary solo almacena sin comprimir más
       }
     );
 

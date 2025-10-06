@@ -10,7 +10,8 @@
       "Bash(git commit:*)",
       "Bash(npx tsx:*)",
       "Bash(node:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

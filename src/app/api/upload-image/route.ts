@@ -29,51 +29,93 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Comprimir y optimizar imagen con Sharp
+    // Procesar imagen con Sharp - Máxima calidad para portafolio de arte
     let processedBuffer: Buffer;
     let mimeType: string;
 
-    // Determinar formato de salida basado en el tamaño original
-    const shouldConvertToWebP = file.size > 2 * 1024 * 1024; // Convertir a WebP si es > 2MB
+    // Para un portafolio de arte, mantenemos la máxima calidad posible
+    // Solo redimensionamos si la imagen es extremadamente grande
+    const MAX_DIMENSION = 4000; // Aumentado de 2000 a 4000 píxeles para mejor calidad
 
-    if (shouldConvertToWebP && (extension === 'jpg' || extension === 'jpeg' || extension === 'png')) {
-      // Convertir a WebP para mejor compresión
-      processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, {
+    // Obtener dimensiones de la imagen original
+    const imageInfo = await sharp(buffer).metadata();
+    const needsResize = (imageInfo.width && imageInfo.width > MAX_DIMENSION) ||
+                        (imageInfo.height && imageInfo.height > MAX_DIMENSION);
+
+    if (extension === 'jpg' || extension === 'jpeg') {
+      // JPEG con calidad máxima (100% para evitar pérdida de calidad)
+      const sharpInstance = sharp(buffer);
+
+      if (needsResize) {
+        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          kernel: sharp.kernel.lanczos3 // Mejor algoritmo de interpolación
+        });
+      }
+
+      processedBuffer = await sharpInstance
+        .jpeg({
+          quality: 100, // Máxima calidad
+          progressive: true,
+          mozjpeg: true // Usar mozjpeg para mejor compresión sin pérdida de calidad
         })
-        .webp({ quality: 90 })
-        .toBuffer();
-      mimeType = 'image/webp';
-    } else if (extension === 'jpg' || extension === 'jpeg') {
-      // Optimizar JPEG con alta calidad (90% - ideal para portfolios de arte)
-      processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, {
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: 90, progressive: true })
         .toBuffer();
       mimeType = 'image/jpeg';
     } else if (extension === 'png') {
-      // Optimizar PNG
-      processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, {
+      // PNG con mejor compresión sin pérdida de calidad
+      const sharpInstance = sharp(buffer);
+
+      if (needsResize) {
+        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          kernel: sharp.kernel.lanczos3
+        });
+      }
+
+      processedBuffer = await sharpInstance
+        .png({
+          compressionLevel: 6, // Balanceado (0-9, donde 9 es máxima compresión pero más lento)
+          quality: 100,
+          effort: 7 // Mayor esfuerzo en compresión sin pérdida
         })
-        .png({ compressionLevel: 9 })
         .toBuffer();
       mimeType = 'image/png';
-    } else {
-      // Para otros formatos, solo redimensionar
-      processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, {
+    } else if (extension === 'webp') {
+      // WebP con alta calidad
+      const sharpInstance = sharp(buffer);
+
+      if (needsResize) {
+        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          kernel: sharp.kernel.lanczos3
+        });
+      }
+
+      processedBuffer = await sharpInstance
+        .webp({
+          quality: 95, // Alta calidad para WebP
+          lossless: false, // Usar compresión con pérdida controlada
+          effort: 6 // Mayor esfuerzo en compresión
         })
         .toBuffer();
+      mimeType = 'image/webp';
+    } else {
+      // Para otros formatos, mantener sin cambios si es posible
+      if (needsResize) {
+        processedBuffer = await sharp(buffer)
+          .resize(MAX_DIMENSION, MAX_DIMENSION, {
+            fit: 'inside',
+            withoutEnlargement: true,
+            kernel: sharp.kernel.lanczos3
+          })
+          .toBuffer();
+      } else {
+        // No procesar, usar buffer original
+        processedBuffer = buffer;
+      }
       mimeType = file.type;
     }
 

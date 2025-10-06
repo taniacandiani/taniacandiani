@@ -90,6 +90,15 @@ export default function AcercaPage() {
 
   return (
     <MainLayout>
+      <style jsx global>{`
+        .publication-description p {
+          text-align: justify;
+          margin-bottom: 1em;
+        }
+        .publication-description p:last-child {
+          margin-bottom: 0;
+        }
+      `}</style>
       <div className="container-mobile py-8 pt-16">
         {aboutContent && (
           <>
@@ -127,24 +136,31 @@ export default function AcercaPage() {
                   <div key={publication.id} className="group flex flex-col h-full">
                     <div className="flex flex-col flex-1 space-y-4">
                       {/* Thumbnail */}
-                      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
+                      <Link
+                        href={publication.downloadLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative aspect-[9/14] w-full overflow-hidden rounded-lg block"
+                      >
                         <Image
                           src={publication.thumbnail}
                           alt={language === 'en' && publication.titleEn ? publication.titleEn : publication.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                      </div>
-                      
+                      </Link>
+
                       {/* Title */}
                       <h3 className="text-lg font-semibold text-black">
                         {language === 'en' && publication.titleEn ? publication.titleEn : publication.title}
                       </h3>
 
                       {/* Description */}
-                      <p className="text-gray-600 text-sm leading-relaxed flex-1">
-                        {language === 'en' && publication.descriptionEn ? publication.descriptionEn : publication.description}
-                      </p>
+                      <div className="text-gray-600 text-sm leading-relaxed flex-1 publication-description">
+                        <RichContent
+                          content={language === 'en' && publication.descriptionEn ? publication.descriptionEn : publication.description}
+                        />
+                      </div>
                       
                       {/* Download Link */}
                       <div className="pt-2 mt-auto">
