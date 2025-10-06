@@ -26,20 +26,24 @@ export class PublicationStorage {
 
   static async save(publication: Publication): Promise<void> {
     try {
+      // Check if we're updating an existing publication
+      const existingPublication = await this.getById(publication.id);
+      const isUpdate = existingPublication !== null;
+
       const response = await fetch('/api/publications', {
-        method: 'POST',
+        method: isUpdate ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(publication),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(`Failed to save publication: ${errorMessage}`);
       }
-      
+
       // Dispatch event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('publicationsUpdated'));

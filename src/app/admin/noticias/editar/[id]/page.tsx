@@ -21,9 +21,12 @@ interface Props {
 export default function EditNewsPage({ params }: Props) {
   const router = useRouter();
   const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [isEnglish, setIsEnglish] = useState(false);
   const [formData, setFormData] = useState<Partial<NewsItem>>({
     title: '',
+    titleEn: '',
     content: '',
+    contentEn: '',
     image: '/fondo1.jpg',
     categories: [],
     author: 'Tania Candiani',
@@ -187,17 +190,29 @@ export default function EditNewsPage({ params }: Props) {
 
       {/* Action Buttons - Top */}
       <div className="flex justify-between items-center mb-8 pt-4 border-b border-gray-200 pb-4">
-        <Link
-          href={`/noticias/${formData.slug}`}
-          target="_blank"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          Ver Noticia
-        </Link>
-        
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/noticias/${formData.slug}`}
+            target="_blank"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Ver Noticia
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsEnglish(!isEnglish)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            {isEnglish ? 'Español' : 'English'}
+          </button>
+        </div>
+
         <div className="flex gap-4">
           <Link
             href="/admin/noticias"
@@ -227,14 +242,20 @@ export default function EditNewsPage({ params }: Props) {
           {/* Título */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Título *
+              {isEnglish ? 'Title *' : 'Título *'}
             </label>
             <input
               type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              value={isEnglish ? (formData.titleEn || '') : (formData.title || '')}
+              onChange={(e) => {
+                if (isEnglish) {
+                  setFormData({ ...formData, titleEn: e.target.value });
+                } else {
+                  setFormData({ ...formData, title: e.target.value });
+                }
+              }}
               className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-              required
+              required={!isEnglish}
             />
           </div>
 
@@ -243,10 +264,16 @@ export default function EditNewsPage({ params }: Props) {
           {/* Contenido completo */}
           <div>
             <RichTextEditor
-              label="Contenido completo *"
-              value={formData.content || ''}
-              onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Escribe el contenido completo del artículo aquí..."
+              label={isEnglish ? 'Full content *' : 'Contenido completo *'}
+              value={isEnglish ? (formData.contentEn || '') : (formData.content || '')}
+              onChange={(content) => {
+                if (isEnglish) {
+                  setFormData({ ...formData, contentEn: content });
+                } else {
+                  setFormData({ ...formData, content: content });
+                }
+              }}
+              placeholder={isEnglish ? 'Write the full article content here...' : 'Escribe el contenido completo del artículo aquí...'}
               height={300}
             />
           </div>

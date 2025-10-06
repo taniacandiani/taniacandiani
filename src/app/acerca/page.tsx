@@ -130,7 +130,7 @@ export default function AcercaPage() {
                       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
                         <Image
                           src={publication.thumbnail}
-                          alt={publication.title}
+                          alt={language === 'en' && publication.titleEn ? publication.titleEn : publication.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -138,12 +138,12 @@ export default function AcercaPage() {
                       
                       {/* Title */}
                       <h3 className="text-lg font-semibold text-black">
-                        {publication.title}
+                        {language === 'en' && publication.titleEn ? publication.titleEn : publication.title}
                       </h3>
-                      
+
                       {/* Description */}
                       <p className="text-gray-600 text-sm leading-relaxed flex-1">
-                        {publication.description}
+                        {language === 'en' && publication.descriptionEn ? publication.descriptionEn : publication.description}
                       </p>
                       
                       {/* Download Link */}

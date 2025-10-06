@@ -7,11 +7,11 @@ import { NEWS_CATEGORIES } from '@/data/content';
 import { generateSlug } from '@/lib/utils';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
+import CategoryEditor from '@/components/admin/CategoryEditor';
 
 export default function NewsCategoriasPage() {
   const [categories, setCategories] = useState<NewsCategory[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<NewsCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const { showSuccess, showError, notification, hideNotification } = useNotification();
@@ -55,78 +55,71 @@ export default function NewsCategoriasPage() {
     return generateSlug(name);
   };
 
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
+  const handleSaveCategory = async (categoryData: Partial<NewsCategory>) => {
+    if (!categoryData.name?.trim()) {
       showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
       return;
     }
 
-    const id = generateId(newCategoryName);
-    const existingCategory = categories.find(c => c.id === id || c.name === newCategoryName.trim());
-    
+    // Check if category name already exists
+    const existingCategory = categories.find(cat =>
+      cat.name.toLowerCase() === categoryData.name!.trim().toLowerCase() &&
+      cat.id !== editingCategory?.id
+    );
+
     if (existingCategory) {
       showError('Error de Validación', 'Ya existe una categoría con ese nombre');
       return;
     }
 
     try {
-      const newCategory: NewsCategory = {
-        id,
-        name: newCategoryName.trim(),
-        count: 0,
-        description: newCategoryDescription.trim() || undefined
-      };
+      if (editingCategory) {
+        // Update existing category
+        const updatedCategory: NewsCategory = {
+          ...editingCategory,
+          ...categoryData,
+          name: categoryData.name!.trim(),
+          nameEn: categoryData.nameEn?.trim() || undefined,
+          description: categoryData.description?.trim() || undefined,
+          descriptionEn: categoryData.descriptionEn?.trim() || undefined
+        };
+        await NewsCategoryStorage.save(updatedCategory);
+        showSuccess('Categoría Actualizada', 'La categoría se ha actualizado correctamente');
+      } else {
+        // Create new category
+        const newCategory: NewsCategory = {
+          id: generateId(categoryData.name!),
+          name: categoryData.name!.trim(),
+          nameEn: categoryData.nameEn?.trim() || undefined,
+          count: 0,
+          description: categoryData.description?.trim() || undefined,
+          descriptionEn: categoryData.descriptionEn?.trim() || undefined
+        };
+        await NewsCategoryStorage.save(newCategory);
+        showSuccess('Categoría Creada', 'La categoría se ha creado correctamente');
+      }
 
-      await NewsCategoryStorage.save(newCategory);
       await loadCategories();
-      setNewCategoryName('');
-      setNewCategoryDescription('');
-      showSuccess('Categoría Creada', 'La categoría se ha creado correctamente');
+      setShowForm(false);
+      setEditingCategory(null);
     } catch (error) {
-      console.error('Error adding category:', error);
-      showError('Error al Crear', 'Ha ocurrido un error al crear la categoría');
+      console.error('Error saving category:', error);
+      showError('Error al Guardar', 'Ha ocurrido un error al guardar la categoría');
     }
   };
 
   const handleEditCategory = (category: NewsCategory) => {
-    setEditingCategory({ ...category });
+    setEditingCategory(category);
+    setShowForm(true);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingCategory || !editingCategory.name.trim()) {
-      showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
-      return;
-    }
-
-    // Check if name conflicts with other categories (excluding current)
-    const conflictingCategory = categories.find(c => 
-      c.id !== editingCategory.id && 
-      (c.name === editingCategory.name.trim() || c.id === generateId(editingCategory.name))
-    );
-    
-    if (conflictingCategory) {
-      showError('Error de Validación', 'Ya existe una categoría con ese nombre');
-      return;
-    }
-
-    try {
-      const updatedCategory: NewsCategory = {
-        ...editingCategory,
-        name: editingCategory.name.trim(),
-        description: editingCategory.description?.trim() || undefined
-      };
-
-      await NewsCategoryStorage.save(updatedCategory);
-      await loadCategories();
-      setEditingCategory(null);
-      showSuccess('Categoría Actualizada', 'La categoría se ha actualizado correctamente');
-    } catch (error) {
-      console.error('Error updating category:', error);
-      showError('Error al Actualizar', 'Ha ocurrido un error al actualizar la categoría');
-    }
+  const handleNewCategory = () => {
+    setEditingCategory(null);
+    setShowForm(true);
   };
 
-  const handleCancelEdit = () => {
+  const handleCancel = () => {
+    setShowForm(false);
     setEditingCategory(null);
   };
 
@@ -168,55 +161,33 @@ export default function NewsCategoriasPage() {
         </Link>
       </div>
 
-      {/* Add New Category */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Agregar Nueva Categoría</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre de la Categoría *
-            </label>
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Ej: Exposiciones, Conferencias..."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción (Opcional)
-            </label>
-            <input
-              type="text"
-              value={newCategoryDescription}
-              onChange={(e) => setNewCategoryDescription(e.target.value)}
-              placeholder="Descripción de la categoría..."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <button
-            onClick={handleAddCategory}
-            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
-          >
-            Agregar Categoría
-          </button>
-        </div>
-      </div>
+      {/* Category Form */}
+      {showForm && (
+        <CategoryEditor
+          category={editingCategory}
+          onSave={handleSaveCategory}
+          onCancel={handleCancel}
+          type="news"
+        />
+      )}
 
       {/* Categories List */}
       <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Categorías Existentes</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {categories.length} categoría(s) registrada(s)
-          </p>
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-medium text-gray-900">Categorías Existentes</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {categories.length} categoría(s) registrada(s)
+            </p>
+          </div>
+          {!showForm && (
+            <button
+              onClick={handleNewCategory}
+              className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm"
+            >
+              + Nueva Categoría
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -244,34 +215,18 @@ export default function NewsCategoriasPage() {
                 {categories.map((category) => (
                   <tr key={category.id} className="hover:bg-gray-50">
                     <td className="py-3 px-6">
-                      {editingCategory?.id === category.id ? (
-                        <input
-                          type="text"
-                          value={editingCategory.name}
-                          onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      ) : (
-                        <span className="font-medium text-gray-900">{category.name}</span>
+                      <span className="font-medium text-gray-900">{category.name}</span>
+                      {category.nameEn && (
+                        <span className="text-sm text-gray-500 block">{category.nameEn}</span>
                       )}
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-500 font-mono">
                       {category.id}
                     </td>
                     <td className="py-3 px-6">
-                      {editingCategory?.id === category.id ? (
-                        <input
-                          type="text"
-                          value={editingCategory.description || ''}
-                          onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
-                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                          placeholder="Descripción opcional"
-                        />
-                      ) : (
-                        <span className="text-sm text-gray-600">
-                          {category.description || '-'}
-                        </span>
-                      )}
+                      <span className="text-sm text-gray-600">
+                        {category.description || '-'}
+                      </span>
                     </td>
                     <td className="py-3 px-6">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -279,39 +234,22 @@ export default function NewsCategoriasPage() {
                       </span>
                     </td>
                     <td className="py-3 px-6">
-                      {editingCategory?.id === category.id ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={handleSaveEdit}
-                            className="text-green-600 hover:text-green-800 text-sm"
-                          >
-                            Guardar
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-gray-600 hover:text-gray-800 text-sm"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditCategory(category)}
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                            disabled={category.count > 0}
-                            title={category.count > 0 ? 'No se puede eliminar porque tiene noticias asociadas' : 'Eliminar categoría'}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditCategory(category)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                          disabled={category.count > 0}
+                          title={category.count > 0 ? 'No se puede eliminar porque tiene noticias asociadas' : 'Eliminar categoría'}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

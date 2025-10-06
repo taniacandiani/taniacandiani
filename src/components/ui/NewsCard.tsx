@@ -11,12 +11,17 @@ interface NewsCardProps {
 
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const { language } = useLanguage();
+
+  // Use English content if available and language is 'en'
+  const title = language === 'en' && news.titleEn ? news.titleEn : news.title;
+  const content = language === 'en' && news.contentEn ? news.contentEn : news.content;
+
   return (
     <article className="flex flex-col h-full" role="article" aria-labelledby={`news-title-${news.id}`}>
       <div className="border-b border-gray-200 pb-12 h-[300px]">
         <Image
           src={news.image}
-          alt={`Imagen del artículo: ${news.title}`}
+          alt={`Imagen del artículo: ${title}`}
           width={400}
           height={300}
           className="w-full h-full object-cover rounded-[5px]"
@@ -26,15 +31,15 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
       </div>
       <div className="flex flex-col flex-1">
         <header>
-          <h2 
+          <h2
             id={`news-title-${news.id}`}
             className="text-2xl font-semibold mt-8 mb-4"
           >
-            {news.title}
+            {title}
           </h2>
         </header>
         <p className="text-gray-700 mb-4 flex-1" aria-describedby={`news-title-${news.id}`}>
-          {generateNewsExcerpt(news.content, 150)}
+          {generateNewsExcerpt(content, 150)}
         </p>
         <Link
           href={`/noticias/${news.slug}`}

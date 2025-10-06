@@ -102,10 +102,14 @@ function NoticiasContent() {
     let filtered = news.filter(n => n.status === 'published');
 
     if (searchTerm) {
-      filtered = filtered.filter(n => 
-        n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(n => {
+        // Search in both Spanish and English content
+        const titleToSearch = language === 'en' && n.titleEn ? n.titleEn : n.title;
+        const contentToSearch = language === 'en' && n.contentEn ? n.contentEn : n.content;
+
+        return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
+      });
     }
 
     if (selectedCategory) {
@@ -117,7 +121,7 @@ function NoticiasContent() {
     }
 
     setFilteredNews(filtered);
-  }, [searchTerm, selectedCategory, selectedYear, news]);
+  }, [searchTerm, selectedCategory, selectedYear, news, language]);
 
   // Listen for news updates from admin
   useEffect(() => {
@@ -279,7 +283,7 @@ function NoticiasContent() {
                       }`}
                       aria-pressed={selectedCategory === category.name}
                     >
-                      {category.name} ({category.count})
+                      {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                     </button>
                   ))}
                 </div>
@@ -337,7 +341,7 @@ function NoticiasContent() {
                         <div className="relative aspect-[2/1] w-full overflow-hidden rounded-md">
                           <Image
                             src={newsItem.image}
-                            alt={newsItem.title}
+                            alt={language === 'en' && newsItem.titleEn ? newsItem.titleEn : newsItem.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -348,17 +352,23 @@ function NoticiasContent() {
                             {newsItem.categories && newsItem.categories.length > 0 && (
                               <>
                                 <span>•</span>
-                                <span>{newsItem.categories.join(', ')}</span>
+                                <span>{newsItem.categories.map(catName => {
+                                  const cat = categories.find(c => c.name === catName);
+                                  return language === 'en' && cat?.nameEn ? cat.nameEn : catName;
+                                }).join(', ')}</span>
                               </>
                             )}
                           </div>
                           <h2 className="text-xl font-medium text-black group-hover:text-gray-700 transition-colors">
-                            {newsItem.title}
+                            {language === 'en' && newsItem.titleEn ? newsItem.titleEn : newsItem.title}
                           </h2>
-                          <div 
+                          <div
                             className="text-black text-sm leading-relaxed"
                           >
-                            {generateNewsExcerpt(newsItem.content, 150)}
+                            {generateNewsExcerpt(
+                              language === 'en' && newsItem.contentEn ? newsItem.contentEn : newsItem.content,
+                              150
+                            )}
                           </div>
                           <div className="pt-2">
                             <span className="text-black text-sm group-hover:underline">

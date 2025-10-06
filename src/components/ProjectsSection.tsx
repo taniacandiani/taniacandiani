@@ -262,7 +262,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                   }`}
                   aria-pressed={filterState.selectedCategory === category.name}
                 >
-                  {category.name} ({category.count})
+                  {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                 </button>
               ))}
             </div>

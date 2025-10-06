@@ -11,12 +11,14 @@ import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES, SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export default function NoticiaPage({ params }: Props) {
+  const { language } = useLanguage();
   const [newsItem, setNewsItem] = useState<NewsItem | null>(null);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
@@ -118,7 +120,7 @@ export default function NoticiaPage({ params }: Props) {
         <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando noticia...</p>
+            <p className="text-gray-600">{language === 'en' ? 'Loading news...' : 'Cargando noticia...'}</p>
           </div>
         </div>
       </MainLayout>
@@ -129,7 +131,9 @@ export default function NoticiaPage({ params }: Props) {
     return notFound();
   }
 
-
+  // Use English content if available and language is 'en'
+  const title = language === 'en' && newsItem.titleEn ? newsItem.titleEn : newsItem.title;
+  const content = language === 'en' && newsItem.contentEn ? newsItem.contentEn : newsItem.content;
 
   return (
     <MainLayout>
@@ -221,7 +225,7 @@ export default function NoticiaPage({ params }: Props) {
             <div className="relative h-96 w-full mb-8 rounded-lg overflow-hidden">
               <Image
                 src={newsItem.image}
-                alt={newsItem.title}
+                alt={title}
                 fill
                 className="object-cover"
                 priority
@@ -232,14 +236,14 @@ export default function NoticiaPage({ params }: Props) {
             <div className="mb-8 pb-4 border-b border-gray-200">
               <nav className="text-sm">
                 <Link href="/" className="text-gray-500 hover:text-black">
-                  Inicio
+                  {language === 'en' ? 'Home' : 'Inicio'}
                 </Link>
                 <span className="mx-2 text-gray-400">/</span>
                 <Link href="/noticias" className="text-gray-500 hover:text-black">
-                  Noticias
+                  {language === 'en' ? 'News' : 'Noticias'}
                 </Link>
                 <span className="mx-2 text-gray-400">/</span>
-                <span className="text-black">{newsItem.title}</span>
+                <span className="text-black">{title}</span>
               </nav>
             </div>
 
@@ -256,14 +260,14 @@ export default function NoticiaPage({ params }: Props) {
                   )}
                 </div>
                 <h1 className="text-4xl font-light text-black mb-4 leading-tight">
-                  {newsItem.title}
+                  {title}
                 </h1>
               </header>
 
               {/* Content - FOURTH */}
               <div className="prose prose-lg max-w-none mb-12">
-                <RichContent 
-                  content={newsItem.content} 
+                <RichContent
+                  content={content}
                   className="text-black leading-relaxed"
                 />
               </div>
@@ -271,7 +275,9 @@ export default function NoticiaPage({ params }: Props) {
               {/* Tags - FIFTH */}
               {newsItem.tags && newsItem.tags.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Etiquetas</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">
+                    {language === 'en' ? 'Tags' : 'Etiquetas'}
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {newsItem.tags.map((tag, index) => (
                       <span
@@ -302,15 +308,21 @@ export default function NoticiaPage({ params }: Props) {
                           arrow_back
                         </span>
                         <div>
-                          <div className="text-xs text-gray-400 mb-1">Noticia Anterior</div>
-                          <div className="font-medium">{previous.title}</div>
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Previous News' : 'Noticia Anterior'}
+                          </div>
+                          <div className="font-medium">
+                            {language === 'en' && previous.titleEn ? previous.titleEn : previous.title}
+                          </div>
                         </div>
                       </div>
                     </Link>
                   ) : (
                     <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
-                      <div className="text-xs text-gray-400 mb-1">Noticia Anterior</div>
-                      <div>No disponible</div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Previous News' : 'Noticia Anterior'}
+                      </div>
+                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                   );
                 })()}
@@ -325,8 +337,12 @@ export default function NoticiaPage({ params }: Props) {
                     >
                       <div className="flex items-center justify-end gap-2">
                         <div className="text-right">
-                          <div className="text-xs text-gray-400 mb-1">Siguiente Noticia</div>
-                          <div className="font-medium">{next.title}</div>
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Next News' : 'Siguiente Noticia'}
+                          </div>
+                          <div className="font-medium">
+                            {language === 'en' && next.titleEn ? next.titleEn : next.title}
+                          </div>
                         </div>
                         <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
                           arrow_forward
@@ -335,8 +351,10 @@ export default function NoticiaPage({ params }: Props) {
                     </Link>
                   ) : (
                     <div className="px-6 text-lg font-medium text-gray-300 text-right">
-                      <div className="text-xs text-gray-400 mb-1">Siguiente Noticia</div>
-                      <div>No disponible</div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Next News' : 'Siguiente Noticia'}
+                      </div>
+                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                   );
                 })()}

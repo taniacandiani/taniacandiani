@@ -83,6 +83,10 @@ export const news = pgTable('news', {
   tags: jsonb('tags').$type<string[]>(),
   heroImages: jsonb('hero_images').$type<string[]>(),
 
+  // English translations
+  titleEn: varchar('title_en', { length: 500 }),
+  contentEn: text('content_en'),
+
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -91,6 +95,9 @@ export const news = pgTable('news', {
 export const projectCategories = pgTable('project_categories', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
+  nameEn: varchar('name_en', { length: 255 }),
+  description: text('description'),
+  descriptionEn: text('description_en'),
   count: integer('count').default(0),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -99,6 +106,9 @@ export const projectCategories = pgTable('project_categories', {
 export const newsCategories = pgTable('news_categories', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
+  nameEn: varchar('name_en', { length: 255 }),
+  description: text('description'),
+  descriptionEn: text('description_en'),
   count: integer('count').default(0),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -107,7 +117,9 @@ export const newsCategories = pgTable('news_categories', {
 export const publications = pgTable('publications', {
   id: varchar('id', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 500 }).notNull(),
+  titleEn: varchar('title_en', { length: 500 }),
   description: text('description'),
+  descriptionEn: text('description_en'),
   thumbnail: text('thumbnail'),
   downloadLink: text('download_link'),
   publishedAt: timestamp('published_at'),

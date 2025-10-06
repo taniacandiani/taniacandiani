@@ -67,9 +67,9 @@ export class NewsService {
     const result = await nile.db.query(
       `INSERT INTO news (
         id, title, content, image, slug, published_at, categories,
-        author, status, tags, hero_images
+        author, status, tags, hero_images, title_en, content_en
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb, $12, $13
       ) RETURNING *`,
       [
         id,
@@ -83,6 +83,8 @@ export class NewsService {
         news.status || 'draft',
         JSON.stringify(news.tags || []),
         JSON.stringify(news.heroImages || []),
+        news.titleEn || null,
+        news.contentEn || null,
       ]
     );
 
@@ -105,6 +107,8 @@ export class NewsService {
         status = COALESCE($9, status),
         tags = COALESCE($10::jsonb, tags),
         hero_images = COALESCE($11::jsonb, hero_images),
+        title_en = COALESCE($12, title_en),
+        content_en = COALESCE($13, content_en),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -120,6 +124,8 @@ export class NewsService {
         news.status,
         news.tags ? JSON.stringify(news.tags) : null,
         news.heroImages ? JSON.stringify(news.heroImages) : null,
+        news.titleEn,
+        news.contentEn,
       ]
     );
 
@@ -150,6 +156,8 @@ export class NewsService {
       status: row.status,
       tags: row.tags || [],
       heroImages: row.hero_images || [],
+      titleEn: row.title_en,
+      contentEn: row.content_en,
     };
   }
 }

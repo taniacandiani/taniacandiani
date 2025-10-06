@@ -44,13 +44,15 @@ export class PublicationService {
 
     const result = await nile.db.query(
       `INSERT INTO publications (
-        id, title, description, thumbnail, download_link, published_at, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        id, title, title_en, description, description_en, thumbnail, download_link, published_at, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         id,
         publication.title,
+        publication.titleEn || null,
         publication.description || null,
+        publication.descriptionEn || null,
         publication.thumbnail || null,
         publication.downloadLink || null,
         publication.publishedAt || new Date().toISOString(),
@@ -68,18 +70,22 @@ export class PublicationService {
     const result = await nile.db.query(
       `UPDATE publications SET
         title = COALESCE($2, title),
-        description = COALESCE($3, description),
-        thumbnail = COALESCE($4, thumbnail),
-        download_link = COALESCE($5, download_link),
-        published_at = COALESCE($6, published_at),
-        status = COALESCE($7, status),
+        title_en = COALESCE($3, title_en),
+        description = COALESCE($4, description),
+        description_en = COALESCE($5, description_en),
+        thumbnail = COALESCE($6, thumbnail),
+        download_link = COALESCE($7, download_link),
+        published_at = COALESCE($8, published_at),
+        status = COALESCE($9, status),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
       [
         id,
         publication.title,
+        publication.titleEn,
         publication.description,
+        publication.descriptionEn,
         publication.thumbnail,
         publication.downloadLink,
         publication.publishedAt,
@@ -105,7 +111,9 @@ export class PublicationService {
     return {
       id: row.id,
       title: row.title,
+      titleEn: row.title_en,
       description: row.description,
+      descriptionEn: row.description_en,
       thumbnail: row.thumbnail,
       downloadLink: row.download_link,
       publishedAt: row.published_at,

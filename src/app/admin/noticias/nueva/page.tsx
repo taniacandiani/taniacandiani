@@ -16,9 +16,12 @@ export default function NewNewsPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEnglish, setIsEnglish] = useState(false);
   const [formData, setFormData] = useState<Partial<NewsItem>>({
     title: '',
+    titleEn: '',
     content: '',
+    contentEn: '',
     image: '',
     slug: '',
     categories: [],
@@ -74,11 +77,18 @@ export default function NewNewsPage() {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
-    setFormData({
-      ...formData,
-      title,
-      slug: generateSlug(title)
-    });
+    if (!isEnglish) {
+      setFormData({
+        ...formData,
+        title,
+        slug: generateSlug(title)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        titleEn: title
+      });
+    }
   };
 
   const handleAddTag = () => {
@@ -127,7 +137,9 @@ export default function NewNewsPage() {
       const newsItem: NewsItem = {
         id: uniqueId,
         title: formData.title!,
+        titleEn: formData.titleEn,
         content: formData.content!,
+        contentEn: formData.contentEn,
         image: formData.image!,
         slug: finalSlug,
         publishedAt: formData.publishedAt!,
@@ -180,7 +192,7 @@ export default function NewNewsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Nueva Noticia</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -195,6 +207,23 @@ export default function NewNewsPage() {
         </Link>
       </div>
 
+      {/* Language Toggle */}
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setIsEnglish(!isEnglish)}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+          {isEnglish ? 'Español' : 'English'}
+        </button>
+        <div className="text-sm text-gray-500">
+          {isEnglish ? 'Editando traducción en inglés' : 'Editando contenido en español'}
+        </div>
+      </div>
+
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -203,32 +232,34 @@ export default function NewNewsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título *
+                {isEnglish ? 'Title *' : 'Título *'}
               </label>
               <input
                 type="text"
-                value={formData.title}
+                value={isEnglish ? (formData.titleEn || '') : (formData.title || '')}
                 onChange={handleTitleChange}
                 className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                required
+                required={!isEnglish}
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Slug
-              </label>
-              <input
-                type="text"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="se-genera-automaticamente"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Se genera automáticamente desde el título, pero puedes personalizarlo
-              </p>
-            </div>
+            {!isEnglish && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Slug
+                </label>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="se-genera-automaticamente"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Se genera automáticamente desde el título, pero puedes personalizarlo
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -317,14 +348,22 @@ export default function NewNewsPage() {
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Contenido</h2>
-          
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            {isEnglish ? 'Content' : 'Contenido'}
+          </h2>
+
           <div>
             <RichTextEditor
-              label="Contenido completo *"
-              value={formData.content || ''}
-              onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Escribe el contenido completo del artículo aquí..."
+              label={isEnglish ? 'Full content *' : 'Contenido completo *'}
+              value={isEnglish ? (formData.contentEn || '') : (formData.content || '')}
+              onChange={(content) => {
+                if (isEnglish) {
+                  setFormData({ ...formData, contentEn: content });
+                } else {
+                  setFormData({ ...formData, content: content });
+                }
+              }}
+              placeholder={isEnglish ? 'Write the full article content here...' : 'Escribe el contenido completo del artículo aquí...'}
               height={300}
             />
           </div>

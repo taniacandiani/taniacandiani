@@ -1,5 +1,5 @@
 import { getNile } from '@/db/client';
-import type { Category } from '@/types';
+import type { ProjectCategory, NewsCategory } from '@/types';
 
 export class ProjectCategoryService {
   private static async getClient() {
@@ -7,7 +7,7 @@ export class ProjectCategoryService {
   }
 
   // Get all categories
-  static async getAll(): Promise<Category[]> {
+  static async getAll(): Promise<ProjectCategory[]> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM project_categories ORDER BY name ASC`
@@ -16,7 +16,7 @@ export class ProjectCategoryService {
   }
 
   // Get category by ID
-  static async getById(id: string): Promise<Category | null> {
+  static async getById(id: string): Promise<ProjectCategory | null> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM project_categories WHERE id = $1`,
@@ -26,31 +26,34 @@ export class ProjectCategoryService {
   }
 
   // Create category
-  static async create(category: Omit<Category, 'id'>): Promise<Category> {
+  static async create(category: Omit<ProjectCategory, 'id'>): Promise<ProjectCategory> {
     const nile = await this.getClient();
     const id = crypto.randomUUID();
 
     const result = await nile.db.query(
-      `INSERT INTO project_categories (id, name, count, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO project_categories (id, name, name_en, description, description_en, count, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [id, category.name, category.count || 0]
+      [id, category.name, category.nameEn || null, category.description || null, category.descriptionEn || null, category.count || 0]
     );
 
     return this.rowToCategory(result.rows[0]);
   }
 
   // Update category
-  static async update(id: string, category: Partial<Category>): Promise<Category | null> {
+  static async update(id: string, category: Partial<ProjectCategory>): Promise<ProjectCategory | null> {
     const nile = await this.getClient();
 
     const result = await nile.db.query(
       `UPDATE project_categories SET
         name = COALESCE($2, name),
-        count = COALESCE($3, count)
+        name_en = COALESCE($3, name_en),
+        description = COALESCE($4, description),
+        description_en = COALESCE($5, description_en),
+        count = COALESCE($6, count)
       WHERE id = $1
       RETURNING *`,
-      [id, category.name, category.count]
+      [id, category.name, category.nameEn, category.description, category.descriptionEn, category.count]
     );
 
     return result.rows.length > 0 ? this.rowToCategory(result.rows[0]) : null;
@@ -81,13 +84,15 @@ export class ProjectCategoryService {
     `);
   }
 
-  // Helper: Convert DB row to Category type
-  private static rowToCategory(row: any): Category {
+  // Helper: Convert DB row to ProjectCategory type
+  private static rowToCategory(row: any): ProjectCategory {
     return {
       id: row.id,
       name: row.name,
+      nameEn: row.name_en,
+      description: row.description,
+      descriptionEn: row.description_en,
       count: row.count,
-      createdAt: row.created_at,
     };
   }
 }
@@ -98,7 +103,7 @@ export class NewsCategoryService {
   }
 
   // Get all categories
-  static async getAll(): Promise<Category[]> {
+  static async getAll(): Promise<NewsCategory[]> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM news_categories ORDER BY name ASC`
@@ -107,7 +112,7 @@ export class NewsCategoryService {
   }
 
   // Get category by ID
-  static async getById(id: string): Promise<Category | null> {
+  static async getById(id: string): Promise<NewsCategory | null> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM news_categories WHERE id = $1`,
@@ -117,31 +122,34 @@ export class NewsCategoryService {
   }
 
   // Create category
-  static async create(category: Omit<Category, 'id'>): Promise<Category> {
+  static async create(category: Omit<NewsCategory, 'id'>): Promise<NewsCategory> {
     const nile = await this.getClient();
     const id = crypto.randomUUID();
 
     const result = await nile.db.query(
-      `INSERT INTO news_categories (id, name, count, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO news_categories (id, name, name_en, description, description_en, count, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [id, category.name, category.count || 0]
+      [id, category.name, category.nameEn || null, category.description || null, category.descriptionEn || null, category.count || 0]
     );
 
     return this.rowToCategory(result.rows[0]);
   }
 
   // Update category
-  static async update(id: string, category: Partial<Category>): Promise<Category | null> {
+  static async update(id: string, category: Partial<NewsCategory>): Promise<NewsCategory | null> {
     const nile = await this.getClient();
 
     const result = await nile.db.query(
       `UPDATE news_categories SET
         name = COALESCE($2, name),
-        count = COALESCE($3, count)
+        name_en = COALESCE($3, name_en),
+        description = COALESCE($4, description),
+        description_en = COALESCE($5, description_en),
+        count = COALESCE($6, count)
       WHERE id = $1
       RETURNING *`,
-      [id, category.name, category.count]
+      [id, category.name, category.nameEn, category.description, category.descriptionEn, category.count]
     );
 
     return result.rows.length > 0 ? this.rowToCategory(result.rows[0]) : null;
@@ -171,13 +179,15 @@ export class NewsCategoryService {
     `);
   }
 
-  // Helper: Convert DB row to Category type
-  private static rowToCategory(row: any): Category {
+  // Helper: Convert DB row to NewsCategory type
+  private static rowToCategory(row: any): NewsCategory {
     return {
       id: row.id,
       name: row.name,
+      nameEn: row.name_en,
+      description: row.description,
+      descriptionEn: row.description_en,
       count: row.count,
-      createdAt: row.created_at,
     };
   }
 }

@@ -28,8 +28,11 @@ export class CategoryStorage {
 
   static async save(category: ProjectCategory): Promise<void> {
     try {
+      // Check if we're updating an existing category or creating a new one
+      const isUpdate = category.id && await this.getById(category.id);
+
       const response = await fetch('/api/categories', {
-        method: 'POST',
+        method: isUpdate ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

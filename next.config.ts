@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    domains: ['localhost'],
   },
   eslint: {
     // Warning: This allows production builds to successfully complete even if

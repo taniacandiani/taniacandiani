@@ -7,13 +7,12 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECT_CATEGORIES } from '@/data/content';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
+import CategoryEditor from '@/components/admin/CategoryEditor';
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProjectCategory | null>(null);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
   const { showSuccess, showError, notification, hideNotification } = useNotification();
@@ -63,20 +62,18 @@ export default function AdminCategories() {
     }
   }, [categories.length]);
 
-  const handleSaveCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newCategoryName.trim()) {
+  const handleSaveCategory = async (categoryData: Partial<ProjectCategory>) => {
+    if (!categoryData.name?.trim()) {
       showError('Error de Validación', 'Por favor ingresa un nombre para la categoría');
       return;
     }
 
     // Check if category name already exists
-    const existingCategory = categories.find(cat => 
-      cat.name.toLowerCase() === newCategoryName.trim().toLowerCase() && 
+    const existingCategory = categories.find(cat =>
+      cat.name.toLowerCase() === categoryData.name!.trim().toLowerCase() &&
       cat.id !== editingCategory?.id
     );
-    
+
     if (existingCategory) {
       showError('Error de Validación', 'Ya existe una categoría con ese nombre');
       return;
@@ -87,18 +84,23 @@ export default function AdminCategories() {
         // Update existing category
         const updatedCategory: ProjectCategory = {
           ...editingCategory,
-          name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || undefined
+          ...categoryData,
+          name: categoryData.name!.trim(),
+          nameEn: categoryData.nameEn?.trim() || undefined,
+          description: categoryData.description?.trim() || undefined,
+          descriptionEn: categoryData.descriptionEn?.trim() || undefined
         };
         await CategoryStorage.save(updatedCategory);
         showSuccess('Categoría Actualizada', 'La categoría se ha actualizado correctamente');
       } else {
         // Create new category
         const newCategory: ProjectCategory = {
-          id: CategoryStorage.generateSlug(newCategoryName),
-          name: newCategoryName.trim(),
+          id: CategoryStorage.generateSlug(categoryData.name!),
+          name: categoryData.name!.trim(),
+          nameEn: categoryData.nameEn?.trim() || undefined,
           count: 0,
-          description: newCategoryDescription.trim() || undefined
+          description: categoryData.description?.trim() || undefined,
+          descriptionEn: categoryData.descriptionEn?.trim() || undefined
         };
         await CategoryStorage.save(newCategory);
         showSuccess('Categoría Creada', 'La categoría se ha creado correctamente');
@@ -107,12 +109,10 @@ export default function AdminCategories() {
       // Refresh categories and update counts
       const updatedCategories = await CategoryStorage.updateCounts();
       setCategories(updatedCategories);
-      
+
       // Reset form
       setShowForm(false);
       setEditingCategory(null);
-      setNewCategoryName('');
-      setNewCategoryDescription('');
     } catch (error) {
       console.error('Error saving category:', error);
       showError('Error al Guardar', 'Ha ocurrido un error al guardar la categoría');
@@ -121,8 +121,6 @@ export default function AdminCategories() {
 
   const handleEditCategory = (category: ProjectCategory) => {
     setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setNewCategoryDescription(category.description || '');
     setShowForm(true);
   };
 
@@ -147,16 +145,12 @@ export default function AdminCategories() {
 
   const handleNewCategory = () => {
     setEditingCategory(null);
-    setNewCategoryName('');
-    setNewCategoryDescription('');
     setShowForm(true);
   };
 
   const handleCancel = () => {
     setShowForm(false);
     setEditingCategory(null);
-    setNewCategoryName('');
-    setNewCategoryDescription('');
   };
 
   if (loading) {
@@ -224,55 +218,12 @@ export default function AdminCategories() {
 
       {/* Formulario */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
-          </h2>
-          
-          <form onSubmit={handleSaveCategory} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre de la Categoría *
-              </label>
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="Ej: Arte Digital"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descripción (opcional)
-              </label>
-              <textarea
-                value={newCategoryDescription}
-                onChange={(e) => setNewCategoryDescription(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 h-20 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="Descripción breve de la categoría..."
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
-              >
-                {editingCategory ? 'Actualizar' : 'Crear'} Categoría
-              </button>
-            </div>
-          </form>
-        </div>
+        <CategoryEditor
+          category={editingCategory}
+          onSave={handleSaveCategory}
+          onCancel={handleCancel}
+          type="project"
+        />
       )}
 
       {/* Lista de categorías */}
@@ -329,7 +280,9 @@ export default function AdminCategories() {
                         <div className="text-2xl mr-3">🏷️</div>
                         <div>
                           <div className="text-sm font-medium text-gray-900">{category.name}</div>
-                          <div className="text-sm text-gray-500">ID: {category.id}</div>
+                          {category.nameEn && (
+                            <div className="text-sm text-gray-500">{category.nameEn}</div>
+                          )}
                         </div>
                       </div>
                     </td>

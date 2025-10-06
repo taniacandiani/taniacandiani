@@ -17,6 +17,10 @@ export interface NewsItem {
   author?: string;
   status?: 'published' | 'draft' | 'archived';
   tags?: string[];
+
+  // English translations
+  titleEn?: string;
+  contentEn?: string;
 }
 
 export interface ProjectTab {
@@ -88,21 +92,27 @@ export interface ProjectMetadata {
 export interface ProjectCategory {
   id: string;
   name: string;
+  nameEn?: string;
   count: number;
   description?: string;
+  descriptionEn?: string;
 }
 
 export interface NewsCategory {
   id: string;
   name: string;
+  nameEn?: string;
   count: number;
   description?: string;
+  descriptionEn?: string;
 }
 
 export interface Publication {
   id: string;
   title: string;
+  titleEn?: string;
   description: string;
+  descriptionEn?: string;
   thumbnail: string;
   downloadLink: string;
   publishedAt: string;

@@ -205,7 +205,7 @@ export default function ProjectPage({ params }: Props) {
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Cargando...</h1>
+            <h1 className="text-2xl font-bold mb-4">{language === 'en' ? 'Loading...' : 'Cargando...'}</h1>
           </div>
         </div>
       </MainLayout>
@@ -673,15 +673,21 @@ export default function ProjectPage({ params }: Props) {
                           arrow_back
                         </span>
                         <div>
-                          <div className="text-xs text-gray-400 mb-1">Proyecto Anterior</div>
-                          <div className="font-medium">{previous.title}</div>
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Previous Project' : 'Proyecto Anterior'}
+                          </div>
+                          <div className="font-medium">
+                            {language === 'en' && previous.title_en ? previous.title_en : previous.title}
+                          </div>
                         </div>
                       </div>
                     </Link>
                   ) : (
                     <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
-                      <div className="text-xs text-gray-400 mb-1">Proyecto Anterior</div>
-                      <div>No disponible</div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Previous Project' : 'Proyecto Anterior'}
+                      </div>
+                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                   );
                 })()}
@@ -692,14 +698,14 @@ export default function ProjectPage({ params }: Props) {
                     href={project.downloadLink}
                     className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
                   >
-                    <span>Descargar</span>
+                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                       picture_as_pdf
                     </span>
                   </a>
                 ) : (
                   <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 flex items-center justify-center gap-2">
-                    <span>Descargar</span>
+                    <span>{language === 'en' ? 'Download' : 'Descargar'}</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                       picture_as_pdf
                     </span>
@@ -716,8 +722,12 @@ export default function ProjectPage({ params }: Props) {
                     >
                       <div className="flex items-center justify-end gap-2">
                         <div className="text-right">
-                          <div className="text-xs text-gray-400 mb-1">Siguiente Proyecto</div>
-                          <div className="font-medium">{next.title}</div>
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Next Project' : 'Siguiente Proyecto'}
+                          </div>
+                          <div className="font-medium">
+                            {language === 'en' && next.title_en ? next.title_en : next.title}
+                          </div>
                         </div>
                         <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
                           arrow_forward
@@ -726,8 +736,10 @@ export default function ProjectPage({ params }: Props) {
                     </Link>
                   ) : (
                     <div className="px-6 text-lg font-medium text-gray-300 text-right">
-                      <div className="text-xs text-gray-400 mb-1">Siguiente Proyecto</div>
-                      <div>No disponible</div>
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Next Project' : 'Siguiente Proyecto'}
+                      </div>
+                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                     );
                 })()}
