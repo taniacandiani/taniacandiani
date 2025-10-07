@@ -12,7 +12,8 @@
       "Bash(node:*)",
       "Bash(python3:*)",
       "Bash(npm install:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Project } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { optimizeCloudinaryUrl, CLOUDINARY_PRESETS } from '@/lib/cloudinaryUtils';
 
 interface ProjectCardProps {
   project: Project;
@@ -21,12 +22,16 @@ export default function ProjectCard({ project, priority = false }: ProjectCardPr
     <Link href={`/proyectos/${project.slug}`} className="group cursor-pointer block">
       <div className="relative aspect-[2/1] mb-4 overflow-hidden rounded-md">
         <Image
-          src={project.heroImages && project.heroImages[0] ? project.heroImages[0] : project.image}
+          src={optimizeCloudinaryUrl(
+            project.heroImages && project.heroImages[0] ? project.heroImages[0] : project.image,
+            CLOUDINARY_PRESETS.card
+          )}
           alt={`Imagen del proyecto ${title}`}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-md"
           priority={priority}
+          quality={75}
         />
 
       </div>

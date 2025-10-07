@@ -128,7 +128,7 @@ export default function AcercaPage() {
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-                
+                <p className="text-gray-600">{language === 'en' ? 'Loading publications...' : 'Cargando publicaciones...'}</p>
               </div>
             ) : publications.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

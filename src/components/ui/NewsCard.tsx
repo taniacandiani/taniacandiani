@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { NewsItem } from '@/types';
 import { generateNewsExcerpt } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { optimizeCloudinaryUrl, CLOUDINARY_PRESETS } from '@/lib/cloudinaryUtils';
 
 interface NewsCardProps {
   news: NewsItem;
@@ -20,10 +21,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     <article className="flex flex-col h-full" role="article" aria-labelledby={`news-title-${news.id}`}>
       <div className="border-b border-gray-200 pb-12 h-[300px]">
         <Image
-          src={news.image}
+          src={optimizeCloudinaryUrl(news.image, CLOUDINARY_PRESETS.card)}
           alt={`Imagen del artículo: ${title}`}
-          width={400}
-          height={300}
+          width={600}
+          height={400}
           className="w-full h-full object-cover rounded-[5px]"
           loading="lazy"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

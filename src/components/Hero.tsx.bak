@@ -108,7 +108,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
             priority
             fetchPriority="high"
             sizes="100vw"
-            quality={75}
+            quality={85}
             className={`w-full h-[85vh] object-cover transition-opacity duration-500 ease-in-out ${fade ? 'opacity-100' : 'opacity-0'}`}
           />
           <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -145,7 +145,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
               </span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
                 {loading
-                  ? ''
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
                   : (language === 'en' && getCurrentProjectInfo()?.commissionedBy_en
                     ? getCurrentProjectInfo()?.commissionedBy_en
                     : getCurrentProjectInfo()?.commissionedBy || (language === 'en' ? 'Not available' : 'No disponible'))}
@@ -158,7 +158,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
               </span>
               <span className="text-xs lg:text-sm truncate max-w-[120px] lg:max-w-none">
                 {loading
-                  ? ''
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
                   : (language === 'en' && getCurrentProjectInfo()?.location_en
                     ? getCurrentProjectInfo()?.location_en
                     : getCurrentProjectInfo()?.location || (language === 'en' ? 'Not available' : 'No disponible'))}
@@ -170,7 +170,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
                 {language === 'en' ? 'Year' : 'Año'}
               </span>
               <span className="text-xs lg:text-sm">
-                {loading ? '' : (getCurrentProjectInfo()?.year || (language === 'en' ? 'Not available' : 'No disponible'))}
+                {loading ? (language === 'en' ? 'Loading...' : 'Cargando...') : (getCurrentProjectInfo()?.year || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>
 
@@ -180,7 +180,7 @@ const Hero: React.FC<HeroProps> = ({ slides = [], autoPlay = true, interval = 50
               </span>
               <span className="text-xs lg:text-sm truncate max-w-[80px] lg:max-w-none">
                 {loading
-                  ? ''
+                  ? (language === 'en' ? 'Loading...' : 'Cargando...')
                   : (getCurrentProjectInfo()?.categories?.[0] || (language === 'en' ? 'Not available' : 'No disponible'))}
               </span>
             </div>

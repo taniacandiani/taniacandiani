@@ -47,24 +47,28 @@
     font-family: 'DINNextLTPro';
     src: url('/fonts/DINNextLTPro-Bold.otf') format('opentype');
     font-weight: 900;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'DINNextLTPro';
     src: url('/fonts/DINNextLTPro-Light.otf') format('opentype');
     font-weight: 300;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'DINNextLTPro';
     src: url('/fonts/DINNextLTPro-Medium.otf') format('opentype');
     font-weight: 500;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'DINNextLTPro';
     src: url('/fonts/DINNextLTPro-Regular.otf') format('opentype');
     font-weight: 400;
+    font-display: swap;
 }
 
 body {
