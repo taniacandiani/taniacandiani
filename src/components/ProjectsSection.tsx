@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Project, ProjectCategory, SortOption, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { generateNewsExcerpt } from '@/lib/utils';
 
 interface ProjectsSectionProps {
   projects: Project[];
@@ -437,29 +438,36 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             </div>
           ) : (
             <div className="space-y-12 animate-fadeIn">
-              {filteredAndSortedProjects.map((project) => (
-                <div 
-                  key={project.id} 
-                  className="relative w-full h-[500px] bg-cover bg-center rounded-lg overflow-hidden group cursor-pointer"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${project.image})`
-                  }}
-                  onClick={() => {
-                    router.push(`/proyectos/${project.slug}`);
-                  }}
-                >
-                  <div className="absolute inset-0 p-8 flex flex-col justify-end text-white">
-                    <div>
-                      <h2 className="text-4xl font-bold mb-4">{project.title}</h2>
-                      <div className="max-w-2xl">
-                        <p className="text-lg leading-relaxed">
-                          {project.description}
-                        </p>
+              {filteredAndSortedProjects.map((project) => {
+                const projectDetails = language === 'en' && project.projectDetails_en
+                  ? project.projectDetails_en
+                  : project.projectDetails;
+                const excerpt = generateNewsExcerpt(projectDetails || project.description || '', 200);
+
+                return (
+                  <div
+                    key={project.id}
+                    className="relative w-full h-[500px] bg-cover bg-center rounded-lg overflow-hidden group cursor-pointer"
+                    style={{
+                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${project.image})`
+                    }}
+                    onClick={() => {
+                      router.push(`/proyectos/${project.slug}`);
+                    }}
+                  >
+                    <div className="absolute inset-0 px-8 pt-8 pb-12 flex flex-col justify-end text-white">
+                      <div>
+                        <h2 className="text-4xl font-bold mb-4">{project.title}</h2>
+                        <div className="max-w-2xl">
+                          <p className="text-lg leading-relaxed">
+                            {excerpt}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
