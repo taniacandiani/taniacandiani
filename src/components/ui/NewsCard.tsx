@@ -39,7 +39,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             {title}
           </h2>
         </header>
-        <p className="text-gray-700 mb-4 flex-1" aria-describedby={`news-title-${news.id}`}>
+        <p className="text-gray-700 mb-4" aria-describedby={`news-title-${news.id}`}>
           {generateNewsExcerpt(content, 150)}
         </p>
         <Link

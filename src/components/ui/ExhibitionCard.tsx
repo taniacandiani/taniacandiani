@@ -62,7 +62,7 @@ const ExhibitionCard: React.FC<ExhibitionCardProps> = ({ exhibition }) => {
           </div>
         )}
 
-        <p className="text-gray-700 mb-4 flex-1" aria-describedby={`exhibition-title-${exhibition.id}`}>
+        <p className="text-gray-700 mb-4" aria-describedby={`exhibition-title-${exhibition.id}`}>
           {generateNewsExcerpt(content, 150)}
         </p>
 

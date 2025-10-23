@@ -23,7 +23,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   });
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
