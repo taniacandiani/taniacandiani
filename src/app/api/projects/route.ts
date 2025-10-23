@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/db/projectService';
 import { moveFolderInCloudinary } from '@/lib/cloudinary';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const includeAll = searchParams.get('includeAll') === 'true';
+
+    // For now, ProjectService.getAll() returns all projects regardless of status
+    // This is fine for admin, but we could add a filter later if needed
     const projects = await ProjectService.getAll();
+
     return NextResponse.json(projects);
   } catch (error) {
     console.error('Error reading projects data:', error);

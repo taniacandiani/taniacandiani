@@ -1,10 +1,24 @@
 import { Exhibition } from '@/types';
 
 export class ExhibitionStorage {
-  // Get all exhibitions
+  // Get all exhibitions (published only)
   static async getAll(): Promise<Exhibition[]> {
     try {
       const response = await fetch('/api/exhibitions');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exhibitions');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching exhibitions:', error);
+      return [];
+    }
+  }
+
+  // Get all exhibitions including drafts (for admin)
+  static async getAllIncludingDrafts(): Promise<Exhibition[]> {
+    try {
+      const response = await fetch('/api/exhibitions?includeAll=true');
       if (!response.ok) {
         throw new Error('Failed to fetch exhibitions');
       }

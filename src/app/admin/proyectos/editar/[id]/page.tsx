@@ -131,16 +131,19 @@ export default function EditProjectPage() {
         heroDescription_en: project.heroDescription_en || '',
         commissionedBy_en: project.commissionedBy_en || '',
         curator_en: project.curator_en || '',
-        location_en: project.location_en || ''
+        location_en: project.location_en || '',
+        // Timestamps - preservar para control de fecha de creación
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt
       };
 
       console.log('Proyecto a actualizar:', updatedProject);
 
       await ProjectStorage.update(updatedProject);
-      
+
       // Dispatch event to notify other components about the update
       window.dispatchEvent(new CustomEvent('projectsUpdated'));
-      
+
       // Mostrar mensaje de éxito en lugar de redirigir
       showSuccess('Proyecto Guardado', 'El proyecto se ha guardado exitosamente');
     } catch (error) {
@@ -468,6 +471,28 @@ export default function EditProjectPage() {
                 className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de Creación
+              </label>
+              <input
+                type="datetime-local"
+                value={project.createdAt ? project.createdAt.slice(0, 16) : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    // Agregar segundos y Z para UTC sin conversión de zona horaria
+                    setProject({ ...project, createdAt: e.target.value + ':00Z' });
+                  } else {
+                    setProject({ ...project, createdAt: undefined });
+                  }
+                }}
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Controla el orden de visualización. Creado el: {project.createdAt ? new Date(project.createdAt).toLocaleString('es-ES') : 'N/A'}
+              </p>
             </div>
 
             <div className="md:col-span-2">

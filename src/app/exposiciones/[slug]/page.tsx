@@ -184,18 +184,6 @@ export default function ExhibitionDetailPage() {
               </div>
             )}
 
-            {/* Curator */}
-            {exhibition.curator && (
-              <div className="flex items-center gap-2 text-gray-600">
-                <span className="font-medium">
-                  {language === 'en' ? 'Curator' : 'Curador'}:
-                </span>
-                <span>
-                  {language === 'en' && exhibition.curatorEn ? exhibition.curatorEn : exhibition.curator}
-                </span>
-              </div>
-            )}
-
             {/* Categories */}
             {exhibition.categories && exhibition.categories.length > 0 && (
               <div className="flex items-center gap-2">

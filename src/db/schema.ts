@@ -124,6 +124,7 @@ export const publications = pgTable('publications', {
   downloadLink: text('download_link'),
   publishedAt: timestamp('published_at'),
   status: varchar('status', { length: 50 }).default('draft'),
+  displayOrder: integer('display_order').default(0),
 
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -136,6 +137,29 @@ export const aboutContent = pgTable('about_content', {
   content: text('content'),
   title_en: varchar('title_en', { length: 500 }),
   content_en: text('content_en'),
+
+  // PDF Downloads
+  cv_pdf: text('cv_pdf'),
+  cv_pdf_en: text('cv_pdf_en'),
+  cv_button_text: varchar('cv_button_text', { length: 100 }),
+  cv_button_text_en: varchar('cv_button_text_en', { length: 100 }),
+
+  bio_pdf: text('bio_pdf'),
+  bio_pdf_en: text('bio_pdf_en'),
+  bio_button_text: varchar('bio_button_text', { length: 100 }),
+  bio_button_text_en: varchar('bio_button_text_en', { length: 100 }),
+
+  portfolio_pdf: text('portfolio_pdf'),
+  portfolio_pdf_en: text('portfolio_pdf_en'),
+  portfolio_button_text: varchar('portfolio_button_text', { length: 100 }),
+  portfolio_button_text_en: varchar('portfolio_button_text_en', { length: 100 }),
+
+  // Additional Section
+  additional_title: varchar('additional_title', { length: 500 }),
+  additional_title_en: varchar('additional_title_en', { length: 500 }),
+  additional_content: text('additional_content'),
+  additional_content_en: text('additional_content_en'),
+
   lastUpdated: timestamp('last_updated').defaultNow(),
 });
 

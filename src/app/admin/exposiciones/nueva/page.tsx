@@ -28,10 +28,8 @@ export default function NewExhibitionPage() {
     venueEn: '',
     startDate: '',
     endDate: '',
-    curator: '',
-    curatorEn: '',
-    categories: ['Activas'], // Default to "Activas"
-    status: 'draft',
+    categories: [],
+    status: 'published',
     tags: [],
     heroImages: [],
     externalLink: '',
@@ -164,14 +162,13 @@ export default function NewExhibitionPage() {
         venueEn: formData.venueEn,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        curator: formData.curator,
-        curatorEn: formData.curatorEn,
-        publishedAt: formData.publishedAt!,
+        publishedAt: formData.publishedAt || new Date().toISOString(),
         categories: formData.categories,
         status: formData.status as 'published' | 'draft' | 'archived',
         tags: formData.tags || [],
         heroImages: formData.heroImages || [],
-        externalLink: formData.externalLink
+        externalLink: formData.externalLink || undefined,
+        createdAt: formData.createdAt
       };
 
       const savedExhibition = await ExhibitionStorage.create(exhibitionData);
@@ -204,42 +201,47 @@ export default function NewExhibitionPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <ToastNotification
-        show={notification.show}
-        type={notification.type}
-        title={notification.title}
-        message={notification.message}
-        onClose={hideNotification}
-      />
-
-      {/* Header */}
+    <div>
       <div className="mb-8">
-        <Link href="/admin/exposiciones" className="text-gray-600 hover:text-gray-900 mb-4 inline-block">
-          ← Volver a exposiciones
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Nueva Exposición</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Nueva Exposición</h1>
+          <p className="text-gray-600">Crea una nueva exposición para el sitio web</p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Language Toggle */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Idioma</h2>
-            <button
-              type="button"
-              onClick={() => setIsEnglish(!isEnglish)}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                isEnglish
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {isEnglish ? 'English' : 'Español'}
-            </button>
-          </div>
+      {/* Action Buttons - Top */}
+      <div className="flex justify-between items-center mb-8 pt-4 border-b border-gray-200 pb-4">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setIsEnglish(!isEnglish)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            {isEnglish ? 'English' : 'Español'}
+          </button>
         </div>
 
+        <div className="flex gap-4">
+          <Link
+            href="/admin/exposiciones"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            Cancelar
+          </Link>
+          <button
+            type="submit"
+            form="exhibition-form"
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
+          >
+            Crear Exposición
+          </button>
+        </div>
+      </div>
+
+      <form id="exhibition-form" onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Información Básica</h2>
@@ -272,6 +274,30 @@ export default function NewExhibitionPage() {
               />
             </div>
 
+            {!isEnglish && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de Creación
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.createdAt ? formData.createdAt.slice(0, 16) : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      // Agregar segundos y Z para UTC sin conversión de zona horaria
+                      setFormData({ ...formData, createdAt: e.target.value + ':00Z' });
+                    } else {
+                      setFormData({ ...formData, createdAt: undefined });
+                    }
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Controla el orden de visualización. Deja en blanco para usar la fecha actual.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Lugar {isEnglish && '(English)'}
@@ -285,22 +311,6 @@ export default function NewExhibitionPage() {
                 })}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder={isEnglish ? "Exhibition venue" : "Lugar de la exposición"}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Curador {isEnglish && '(English)'}
-              </label>
-              <input
-                type="text"
-                value={isEnglish ? formData.curatorEn : formData.curator}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [isEnglish ? 'curatorEn' : 'curator']: e.target.value
-                })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={isEnglish ? "Curator name" : "Nombre del curador"}
               />
             </div>
 
@@ -368,8 +378,11 @@ export default function NewExhibitionPage() {
         {/* Categories */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Categorías</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            La categoría "Activas" se asigna automáticamente según las fechas de inicio/fin
+          </p>
           <div className="flex flex-wrap gap-3">
-            {categories.map((category) => (
+            {categories.filter(cat => cat.name !== 'Activas').map((category) => (
               <label
                 key={category.id}
                 className="flex items-center cursor-pointer"
@@ -389,6 +402,11 @@ export default function NewExhibitionPage() {
                 </span>
               </label>
             ))}
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              💡 Si la exposición tiene fecha de inicio y no ha terminado, se agregará automáticamente a "Activas" al guardar
+            </p>
           </div>
         </div>
 
@@ -480,22 +498,31 @@ export default function NewExhibitionPage() {
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex justify-end gap-4">
+        {/* Action Buttons - Bottom */}
+        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
           <Link
             href="/admin/exposiciones"
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
           >
             Cancelar
           </Link>
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
             Crear Exposición
           </button>
         </div>
       </form>
+
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export default function NewNewsPage() {
     image: '',
     slug: '',
     categories: [],
-    status: 'draft',
+    status: 'published',
     tags: [],
     publishedAt: new Date().toISOString()
   });
@@ -146,15 +146,17 @@ export default function NewNewsPage() {
         categories: formData.categories || [],
         author: formData.author || 'Tania Candiani',
         status: formData.status as 'published' | 'draft' | 'archived',
-        tags: formData.tags || []
+        tags: formData.tags || [],
+        heroImages: formData.heroImages,
+        createdAt: formData.createdAt
       };
 
       console.log('Debug - Noticia a guardar:', newsItem);
 
       await NewsStorage.save(newsItem);
-      
+
       showSuccess('Noticia Creada', 'La noticia se ha creado exitosamente');
-      
+
       // Limpiar el formulario
       setFormData({
         title: '',
@@ -162,19 +164,26 @@ export default function NewNewsPage() {
         image: '',
         slug: '',
         categories: [],
-        status: 'draft',
+        status: 'published',
         tags: [],
         publishedAt: new Date().toISOString()
       });
-      
+
       // Redirigir a la lista de noticias
       setTimeout(() => {
         router.push('/admin/noticias');
       }, 1500);
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Error creating news:', error);
-      showError('Error', 'Error al crear la noticia. Intenta de nuevo.');
+      const errorMessage = error?.message || 'Error al crear la noticia. Intenta de nuevo.';
+
+      // Check for duplicate slug error
+      if (errorMessage.includes('slug')) {
+        showError('Slug Duplicado', 'Ya existe una noticia con este slug. Por favor, modifica el título o el slug manualmente.');
+      } else {
+        showError('Error', errorMessage);
+      }
     }
   };
 
@@ -244,21 +253,46 @@ export default function NewNewsPage() {
             </div>
 
             {!isEnglish && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Slug
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="se-genera-automaticamente"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Se genera automáticamente desde el título, pero puedes personalizarlo
-                </p>
-              </div>
+              <>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="se-genera-automaticamente"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Se genera automáticamente desde el título, pero puedes personalizarlo
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Creación
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.createdAt ? formData.createdAt.slice(0, 16) : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        // Agregar segundos y Z para UTC sin conversión de zona horaria
+                        setFormData({ ...formData, createdAt: e.target.value + ':00Z' });
+                      } else {
+                        setFormData({ ...formData, createdAt: undefined });
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Se usará la fecha actual si no se especifica"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Controla el orden de visualización. Deja en blanco para usar la fecha actual.
+                  </p>
+                </div>
+              </>
             )}
 
             <div>

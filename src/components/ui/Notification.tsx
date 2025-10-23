@@ -64,12 +64,12 @@ export default function ToastNotification({
   useEffect(() => {
     if (isVisible) {
       setIsAnimating(true);
-      
+
       if (autoClose) {
         const timer = setTimeout(() => {
           handleClose();
         }, duration);
-        
+
         return () => clearTimeout(timer);
       }
     }
@@ -88,9 +88,9 @@ export default function ToastNotification({
   const Icon = styles.icon;
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
+    <div className="fixed top-4 right-4 z-[9999] max-w-sm w-full pointer-events-none">
       <div
-        className={`${styles.bgColor} ${styles.borderColor} border rounded-lg shadow-lg p-4 transition-all duration-200 ${
+        className={`${styles.bgColor} ${styles.borderColor} border rounded-lg shadow-2xl p-4 transition-all duration-300 pointer-events-auto ${
           isAnimating ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
         }`}
       >

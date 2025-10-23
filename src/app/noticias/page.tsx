@@ -464,7 +464,7 @@ function NoticiasContent() {
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3 text-sm text-gray-500">
-                            <time>{formatDate(newsItem.publishedAt)}</time>
+                            <time>{formatDate(newsItem.createdAt || newsItem.publishedAt)}</time>
                             {newsItem.categories && newsItem.categories.length > 0 && (
                               <>
                                 <span>•</span>

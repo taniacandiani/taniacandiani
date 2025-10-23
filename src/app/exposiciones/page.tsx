@@ -21,7 +21,7 @@ function ExposicionesContent() {
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [filteredExhibitions, setFilteredExhibitions] = useState<Exhibition[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>('Activas'); // Default to "Activas"
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // Default to all categories
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [categories, setCategories] = useState<ExhibitionCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -81,7 +81,7 @@ function ExposicionesContent() {
     const year = searchParams.get('year');
     const search = searchParams.get('search');
 
-    setSelectedCategory(category || 'Activas'); // Default to "Activas" if no category
+    setSelectedCategory(category || null); // Default to all categories
     setSelectedYear(year ? parseInt(year) : null);
     setSearchTerm(search || '');
   }, [searchParams]);
@@ -107,16 +107,16 @@ function ExposicionesContent() {
     if (selectedYear) {
       filtered = filtered.filter(e => {
         const startYear = e.startDate ? new Date(e.startDate).getFullYear() : null;
-        const publishedYear = new Date(e.publishedAt).getFullYear();
-        return startYear === selectedYear || publishedYear === selectedYear;
+        const createdYear = e.createdAt ? new Date(e.createdAt).getFullYear() : new Date(e.publishedAt).getFullYear();
+        return startYear === selectedYear || createdYear === selectedYear;
       });
     }
 
     // Sort exhibitions
     filtered = [...filtered].sort((a, b) => {
       if (sortBy === 'date') {
-        const dateA = a.startDate || a.publishedAt;
-        const dateB = b.startDate || b.publishedAt;
+        const dateA = a.startDate || a.createdAt || a.publishedAt;
+        const dateB = b.startDate || b.createdAt || b.publishedAt;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       } else if (sortBy === 'category') {
         const catA = a.categories?.[0] || '';
@@ -168,6 +168,8 @@ function ExposicionesContent() {
     exhibitions.filter(e => e.status === 'published').forEach(e => {
       if (e.startDate) {
         years.add(new Date(e.startDate).getFullYear());
+      } else if (e.createdAt) {
+        years.add(new Date(e.createdAt).getFullYear());
       } else {
         years.add(new Date(e.publishedAt).getFullYear());
       }
@@ -561,7 +563,7 @@ function ExposicionesContent() {
                               </>
                             )}
                             {!exhibition.startDate && (
-                              <time>{formatDate(exhibition.publishedAt)}</time>
+                              <time>{formatDate(exhibition.createdAt || exhibition.publishedAt)}</time>
                             )}
                           </div>
                           {exhibition.venue && (

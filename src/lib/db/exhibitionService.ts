@@ -6,13 +6,51 @@ export class ExhibitionService {
     return await getNile();
   }
 
+  // Helper: Determine if exhibition is active based on dates
+  private static isActiveByDates(startDate: string | null | undefined, endDate: string | null | undefined): boolean {
+    if (!startDate) return false;
+
+    const now = new Date();
+    const start = new Date(startDate);
+
+    // Check if started
+    if (start > now) return false;
+
+    // If no end date, it's permanently active
+    if (!endDate) return true;
+
+    // Check if not ended yet
+    const end = new Date(endDate);
+    return end >= now;
+  }
+
+  // Helper: Add or remove "Activas" category based on dates
+  private static updateActivasCategory(
+    categories: string[] | undefined,
+    startDate: string | null | undefined,
+    endDate: string | null | undefined
+  ): string[] {
+    const cats = categories || [];
+    const isActive = this.isActiveByDates(startDate, endDate);
+
+    // Remove "Activas" if it exists
+    const withoutActivas = cats.filter(c => c !== 'Activas');
+
+    // Add "Activas" if the exhibition is active
+    if (isActive) {
+      return ['Activas', ...withoutActivas];
+    }
+
+    return withoutActivas;
+  }
+
   // Get all exhibitions
   static async getAll(): Promise<Exhibition[]> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM exhibitions
        WHERE status = 'published'
-       ORDER BY start_date DESC, published_at DESC, created_at DESC`
+       ORDER BY start_date DESC, created_at DESC, published_at DESC`
     );
     return result.rows.map(row => this.rowToExhibition(row));
   }
@@ -22,19 +60,20 @@ export class ExhibitionService {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM exhibitions
-       ORDER BY start_date DESC, published_at DESC, created_at DESC`
+       ORDER BY start_date DESC, created_at DESC, published_at DESC`
     );
     return result.rows.map(row => this.rowToExhibition(row));
   }
 
-  // Get active exhibitions (with "Activas" category)
+  // Get active exhibitions (based on dates)
   static async getActive(): Promise<Exhibition[]> {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM exhibitions
-       WHERE categories @> $1::jsonb AND status = 'published'
-       ORDER BY start_date DESC, published_at DESC, created_at DESC`,
-      [JSON.stringify(['Activas'])]
+       WHERE status = 'published'
+       AND start_date IS NOT NULL
+       AND (end_date IS NULL OR end_date >= NOW())
+       ORDER BY start_date DESC, created_at DESC, published_at DESC`
     );
     return result.rows.map(row => this.rowToExhibition(row));
   }
@@ -65,7 +104,7 @@ export class ExhibitionService {
     const result = await nile.db.query(
       `SELECT * FROM exhibitions
        WHERE categories @> $1::jsonb AND status = 'published'
-       ORDER BY start_date DESC, published_at DESC, created_at DESC`,
+       ORDER BY start_date DESC, created_at DESC, published_at DESC`,
       [JSON.stringify([category])]
     );
     return result.rows.map(row => this.rowToExhibition(row));
@@ -76,14 +115,21 @@ export class ExhibitionService {
     const nile = await this.getClient();
     const id = crypto.randomUUID();
 
+    // Automatically add/remove "Activas" based on dates
+    const categories = this.updateActivasCategory(
+      exhibition.categories,
+      exhibition.startDate,
+      exhibition.endDate
+    );
+
     const result = await nile.db.query(
       `INSERT INTO exhibitions (
         id, title, content, image, slug, published_at, categories,
         venue, start_date, end_date, curator, status, tags, hero_images,
-        title_en, content_en, venue_en, curator_en, external_link
+        title_en, content_en, venue_en, curator_en, external_link, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13::jsonb, $14::jsonb,
-        $15, $16, $17, $18, $19
+        $15, $16, $17, $18, $19, COALESCE($20, NOW())
       ) RETURNING *`,
       [
         id,
@@ -92,7 +138,7 @@ export class ExhibitionService {
         exhibition.image ?? null,
         exhibition.slug,
         exhibition.publishedAt ?? new Date().toISOString(),
-        JSON.stringify(exhibition.categories || []),
+        JSON.stringify(categories),
         exhibition.venue ?? null,
         exhibition.startDate ?? null,
         exhibition.endDate ?? null,
@@ -105,6 +151,7 @@ export class ExhibitionService {
         exhibition.venueEn ?? null,
         exhibition.curatorEn ?? null,
         exhibition.externalLink ?? null,
+        exhibition.createdAt ?? null,
       ]
     );
 
@@ -115,6 +162,21 @@ export class ExhibitionService {
   static async update(id: string, exhibition: Partial<Exhibition>): Promise<Exhibition | null> {
     const nile = await this.getClient();
 
+    // Para campos opcionales, convertir cadenas vacías a null
+    const emptyToNull = (value: any) => {
+      if (value === '' || value === undefined) return null;
+      return value;
+    };
+
+    // Automatically add/remove "Activas" based on dates
+    const categories = exhibition.categories
+      ? this.updateActivasCategory(
+          exhibition.categories,
+          exhibition.startDate,
+          exhibition.endDate
+        )
+      : undefined;
+
     const result = await nile.db.query(
       `UPDATE exhibitions SET
         title = COALESCE($2, title),
@@ -123,18 +185,19 @@ export class ExhibitionService {
         slug = COALESCE($5, slug),
         published_at = COALESCE($6, published_at),
         categories = COALESCE($7::jsonb, categories),
-        venue = COALESCE($8, venue),
-        start_date = COALESCE($9, start_date),
-        end_date = COALESCE($10, end_date),
-        curator = COALESCE($11, curator),
+        venue = $8,
+        start_date = $9,
+        end_date = $10,
+        curator = $11,
         status = COALESCE($12, status),
         tags = COALESCE($13::jsonb, tags),
         hero_images = COALESCE($14::jsonb, hero_images),
-        title_en = COALESCE($15, title_en),
-        content_en = COALESCE($16, content_en),
-        venue_en = COALESCE($17, venue_en),
-        curator_en = COALESCE($18, curator_en),
-        external_link = COALESCE($19, external_link),
+        title_en = $15,
+        content_en = $16,
+        venue_en = $17,
+        curator_en = $18,
+        external_link = $19,
+        created_at = COALESCE($20, created_at),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -145,19 +208,20 @@ export class ExhibitionService {
         exhibition.image,
         exhibition.slug,
         exhibition.publishedAt,
-        exhibition.categories ? JSON.stringify(exhibition.categories) : null,
-        exhibition.venue,
-        exhibition.startDate,
-        exhibition.endDate,
-        exhibition.curator,
+        categories ? JSON.stringify(categories) : null,
+        emptyToNull(exhibition.venue),
+        emptyToNull(exhibition.startDate),
+        emptyToNull(exhibition.endDate),
+        emptyToNull(exhibition.curator),
         exhibition.status,
         exhibition.tags ? JSON.stringify(exhibition.tags) : null,
         exhibition.heroImages ? JSON.stringify(exhibition.heroImages) : null,
-        exhibition.titleEn,
-        exhibition.contentEn,
-        exhibition.venueEn,
-        exhibition.curatorEn,
-        exhibition.externalLink,
+        emptyToNull(exhibition.titleEn),
+        emptyToNull(exhibition.contentEn),
+        emptyToNull(exhibition.venueEn),
+        emptyToNull(exhibition.curatorEn),
+        emptyToNull(exhibition.externalLink),
+        exhibition.createdAt,
       ]
     );
 
@@ -196,6 +260,8 @@ export class ExhibitionService {
       venueEn: row.venue_en,
       curatorEn: row.curator_en,
       externalLink: row.external_link,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 }

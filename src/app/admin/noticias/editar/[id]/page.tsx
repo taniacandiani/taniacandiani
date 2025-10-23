@@ -122,7 +122,9 @@ export default function EditNewsPage({ params }: Props) {
         categories: formData.categories || [],
         author: formData.author || 'Tania Candiani',
         status: formData.status || 'draft',
-        tags: formData.tags || []
+        tags: formData.tags || [],
+        createdAt: formData.createdAt,
+        updatedAt: formData.updatedAt
       };
 
       console.log('Noticia a actualizar:', newsItem);
@@ -259,7 +261,29 @@ export default function EditNewsPage({ params }: Props) {
             />
           </div>
 
-
+          {!isEnglish && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de Creación
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.createdAt ? formData.createdAt.slice(0, 16) : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    // Agregar segundos y Z para UTC sin conversión de zona horaria
+                    setFormData({ ...formData, createdAt: e.target.value + ':00Z' });
+                  } else {
+                    setFormData({ ...formData, createdAt: undefined });
+                  }
+                }}
+                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Controla el orden de visualización. Creado el: {formData.createdAt ? new Date(formData.createdAt).toLocaleString('es-ES') : 'N/A'}
+              </p>
+            </div>
+          )}
 
           {/* Contenido completo */}
           <div>

@@ -12,7 +12,7 @@ export class PublicationService {
     const result = await nile.db.query(
       `SELECT * FROM publications
        WHERE status = 'published'
-       ORDER BY published_at DESC, created_at DESC`
+       ORDER BY display_order ASC, published_at DESC`
     );
     return result.rows.map(row => this.rowToPublication(row));
   }
@@ -22,7 +22,7 @@ export class PublicationService {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM publications
-       ORDER BY published_at DESC, created_at DESC`
+       ORDER BY display_order ASC, published_at DESC`
     );
     return result.rows.map(row => this.rowToPublication(row));
   }
@@ -106,6 +106,15 @@ export class PublicationService {
     return result.rows.length > 0;
   }
 
+  // Update publication order
+  static async updateOrder(id: string, displayOrder: number): Promise<void> {
+    const nile = await this.getClient();
+    await nile.db.query(
+      `UPDATE publications SET display_order = $2 WHERE id = $1`,
+      [id, displayOrder]
+    );
+  }
+
   // Helper: Convert DB row to Publication type
   private static rowToPublication(row: any): Publication {
     return {
@@ -118,6 +127,7 @@ export class PublicationService {
       downloadLink: row.download_link,
       publishedAt: row.published_at,
       status: row.status,
+      displayOrder: row.display_order,
     };
   }
 }

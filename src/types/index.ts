@@ -21,6 +21,10 @@ export interface NewsItem {
   // English translations
   titleEn?: string;
   contentEn?: string;
+
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectTab {
@@ -81,6 +85,10 @@ export interface Project {
   commissionedBy_en?: string;
   curator_en?: string;
   location_en?: string;
+
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectMetadata {
@@ -120,6 +128,10 @@ export interface Exhibition {
   contentEn?: string;
   venueEn?: string;
   curatorEn?: string;
+
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ExhibitionCategory {
@@ -151,6 +163,7 @@ export interface Publication {
   publishedAt: string;
   status?: 'published' | 'draft';
   featured?: boolean;
+  displayOrder?: number;
 }
 
 export interface AboutContent {
@@ -159,6 +172,29 @@ export interface AboutContent {
   content: string;
   title_en?: string;
   content_en?: string;
+
+  // PDF Downloads
+  cv_pdf?: string;
+  cv_pdf_en?: string;
+  cv_button_text?: string;
+  cv_button_text_en?: string;
+
+  bio_pdf?: string;
+  bio_pdf_en?: string;
+  bio_button_text?: string;
+  bio_button_text_en?: string;
+
+  portfolio_pdf?: string;
+  portfolio_pdf_en?: string;
+  portfolio_button_text?: string;
+  portfolio_button_text_en?: string;
+
+  // Additional Section
+  additional_title?: string;
+  additional_title_en?: string;
+  additional_content?: string;
+  additional_content_en?: string;
+
   lastUpdated: string;
 }
 

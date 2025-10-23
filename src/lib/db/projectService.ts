@@ -142,13 +142,14 @@ export class ProjectService {
       project.commissionedBy_en || null,
       project.curator_en || null,
       project.location_en || null,
+      project.createdAt || null, // Allow custom createdAt
     ];
 
     // Verificar que no haya valores undefined
     const hasUndefined = queryValues.some((val, idx) => {
       if (val === undefined) {
         console.error(`ERROR: Value at index ${idx} is undefined!`);
-        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en'][idx]}`);
+        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','created_at'][idx]}`);
         return true;
       }
       return false;
@@ -172,7 +173,7 @@ export class ProjectService {
         commissioned_by, curator, location,
         title_en, description_en, project_details_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
-        curator_en, location_en
+        curator_en, location_en, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
@@ -181,7 +182,7 @@ export class ProjectService {
         $20, $21, $22,
         $23, $24, $25,
         $26, $27, $28,
-        $29, $30
+        $29, $30, COALESCE($31, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -255,6 +256,7 @@ export class ProjectService {
         commissioned_by_en = COALESCE($28, commissioned_by_en),
         curator_en = COALESCE($29, curator_en),
         location_en = COALESCE($30, location_en),
+        created_at = COALESCE($31, created_at),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -289,6 +291,7 @@ export class ProjectService {
         project.commissionedBy_en,
         project.curator_en,
         project.location_en,
+        project.createdAt,
       ]
     );
 
@@ -349,6 +352,8 @@ export class ProjectService {
       commissionedBy_en: row.commissioned_by_en,
       curator_en: row.curator_en,
       location_en: row.location_en,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
       tabs: [], // Will be populated separately
     };
   }

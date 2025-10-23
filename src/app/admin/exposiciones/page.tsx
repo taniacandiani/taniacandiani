@@ -7,9 +7,13 @@ import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
+import { generateNewsExcerpt } from '@/lib/utils';
 
 export default function AdminExhibitionsPage() {
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [filteredExhibitions, setFilteredExhibitions] = useState<Exhibition[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const { showSuccess, showError, notification, hideNotification } = useNotification();
 
@@ -21,11 +25,7 @@ export default function AdminExhibitionsPage() {
     try {
       setLoading(true);
       // Get all exhibitions including drafts
-      const response = await fetch('/api/exhibitions?includeAll=true');
-      if (!response.ok) {
-        throw new Error('Failed to fetch exhibitions');
-      }
-      const data = await response.json();
+      const data = await ExhibitionStorage.getAllIncludingDrafts();
       setExhibitions(data);
     } catch (error) {
       console.error('Error fetching exhibitions:', error);
@@ -34,6 +34,33 @@ export default function AdminExhibitionsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let filtered = exhibitions;
+
+    if (searchTerm) {
+      filtered = filtered.filter(e => {
+        const title = (e.title || '').toLowerCase();
+        const content = (e.content || '').toLowerCase();
+        const titleEn = (e.titleEn || '').toLowerCase();
+        const contentEn = (e.contentEn || '').toLowerCase();
+        const venue = (e.venue || '').toLowerCase();
+        const searchLower = searchTerm.toLowerCase();
+
+        return title.includes(searchLower) ||
+               content.includes(searchLower) ||
+               titleEn.includes(searchLower) ||
+               contentEn.includes(searchLower) ||
+               venue.includes(searchLower);
+      });
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(e => e.status === statusFilter);
+    }
+
+    setFilteredExhibitions(filtered);
+  }, [searchTerm, statusFilter, exhibitions]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar esta exposición?')) {
@@ -80,110 +107,136 @@ export default function AdminExhibitionsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <ToastNotification
-        show={notification.show}
-        type={notification.type}
-        title={notification.title}
-        message={notification.message}
-        onClose={hideNotification}
-      />
-
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Exposiciones</h1>
-          <p className="text-gray-600 mt-2">Gestiona las exposiciones del sitio</p>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Exposiciones</h1>
+          <p className="text-sm text-gray-600">
+            Gestiona las exposiciones del sitio web. Las exposiciones con fecha de inicio y que no hayan terminado se muestran en el inicio.
+          </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Link
             href="/admin/exposiciones/categorias"
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
             Gestionar Categorías
           </Link>
           <Link
             href="/admin/exposiciones/nueva"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
-            + Nueva Exposición
+            Nueva Exposición
           </Link>
         </div>
       </div>
 
-      {/* Exhibitions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Título
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fechas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Lugar
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Categorías
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {exhibitions.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  No hay exposiciones aún. <Link href="/admin/exposiciones/nueva" className="text-blue-600 hover:underline">Crear primera exposición</Link>
-                </td>
-              </tr>
-            ) : (
-              exhibitions.map((exhibition) => (
-                <tr key={exhibition.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{exhibition.title}</div>
-                    {exhibition.titleEn && (
-                      <div className="text-xs text-gray-500">{exhibition.titleEn}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {formatDate(exhibition.startDate)}
-                      {exhibition.endDate && ` - ${formatDate(exhibition.endDate)}`}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{exhibition.venue || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {exhibition.categories?.map((cat, index) => (
-                        <span
-                          key={index}
-                          className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(exhibition.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+      {/* Filters */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Buscar exposiciones..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="published">Publicado</option>
+              <option value="draft">Borrador</option>
+              <option value="archived">Archivado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-gray-900">{exhibitions.length}</div>
+          <div className="text-sm text-gray-600">Total exposiciones</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-green-600">
+            {exhibitions.filter(e => e.status === 'published').length}
+          </div>
+          <div className="text-sm text-gray-600">Publicadas</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-yellow-600">
+            {exhibitions.filter(e => e.status === 'draft').length}
+          </div>
+          <div className="text-sm text-gray-600">Borradores</div>
+        </div>
+      </div>
+
+      {/* Exhibitions List */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        {loading ? (
+          <div className="p-12 text-center">
+            <p className="text-gray-500">Cargando exposiciones...</p>
+          </div>
+        ) : filteredExhibitions.length === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-gray-500">No se encontraron exposiciones.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Título</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Categoría</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Estado</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Fecha</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredExhibitions.map((exhibition) => (
+                  <tr key={exhibition.id} className="hover:bg-gray-50">
+                    <td className="py-4 px-6">
+                      <Link href={`/admin/exposiciones/editar/${exhibition.id}`} className="block hover:text-blue-600">
+                        <div className="font-medium text-gray-900 hover:underline">{exhibition.title}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {generateNewsExcerpt(exhibition.content, 80)}
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900">
+                      {exhibition.categories && exhibition.categories.length > 0
+                        ? exhibition.categories.join(', ')
+                        : '-'}
+                    </td>
+                    <td className="py-4 px-6">
+                      {getStatusBadge(exhibition.status)}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900">
+                      {exhibition.startDate && exhibition.endDate ? (
+                        <>{formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}</>
+                      ) : exhibition.startDate ? (
+                        formatDate(exhibition.startDate)
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
                       <Link
                         href={`/exposiciones/${exhibition.slug}`}
@@ -216,12 +269,22 @@ export default function AdminExhibitionsPage() {
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Notification Component */}
+      <ToastNotification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

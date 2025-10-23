@@ -12,7 +12,7 @@ export class NewsService {
     const result = await nile.db.query(
       `SELECT * FROM news
        WHERE status = 'published'
-       ORDER BY published_at DESC, created_at DESC`
+       ORDER BY created_at DESC, published_at DESC`
     );
     return result.rows.map(row => this.rowToNews(row));
   }
@@ -22,7 +22,7 @@ export class NewsService {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM news
-       ORDER BY published_at DESC, created_at DESC`
+       ORDER BY created_at DESC, published_at DESC`
     );
     return result.rows.map(row => this.rowToNews(row));
   }
@@ -53,7 +53,7 @@ export class NewsService {
     const result = await nile.db.query(
       `SELECT * FROM news
        WHERE categories @> $1::jsonb AND status = 'published'
-       ORDER BY published_at DESC, created_at DESC`,
+       ORDER BY created_at DESC, published_at DESC`,
       [JSON.stringify([category])]
     );
     return result.rows.map(row => this.rowToNews(row));
@@ -67,9 +67,9 @@ export class NewsService {
     const result = await nile.db.query(
       `INSERT INTO news (
         id, title, content, image, slug, published_at, categories,
-        author, status, tags, hero_images, title_en, content_en
+        author, status, tags, hero_images, title_en, content_en, created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb, $12, $13
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb, $12, $13, COALESCE($14, NOW())
       ) RETURNING *`,
       [
         id,
@@ -85,6 +85,7 @@ export class NewsService {
         JSON.stringify(news.heroImages || []),
         news.titleEn || null,
         news.contentEn || null,
+        news.createdAt || null,
       ]
     );
 
@@ -109,6 +110,7 @@ export class NewsService {
         hero_images = COALESCE($11::jsonb, hero_images),
         title_en = COALESCE($12, title_en),
         content_en = COALESCE($13, content_en),
+        created_at = COALESCE($14, created_at),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -126,6 +128,7 @@ export class NewsService {
         news.heroImages ? JSON.stringify(news.heroImages) : null,
         news.titleEn,
         news.contentEn,
+        news.createdAt,
       ]
     );
 
@@ -158,6 +161,8 @@ export class NewsService {
       heroImages: row.hero_images || [],
       titleEn: row.title_en,
       contentEn: row.content_en,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 }

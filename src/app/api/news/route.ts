@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NewsService } from '@/lib/db/newsService';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const news = await NewsService.getAll();
+    const searchParams = request.nextUrl.searchParams;
+    const includeAll = searchParams.get('includeAll') === 'true';
+
+    const news = includeAll
+      ? await NewsService.getAllIncludingDrafts()
+      : await NewsService.getAll();
+
     return NextResponse.json(news);
   } catch (error) {
     console.error('Error reading news data:', error);
@@ -19,7 +25,7 @@ export async function POST(request: NextRequest) {
     const existingNewsWithSlug = await NewsService.getBySlug(newsData.slug);
     if (existingNewsWithSlug) {
       return NextResponse.json({
-        error: 'A news item with this slug already exists',
+        error: 'Ya existe una noticia con este slug. Por favor, modifica el título o el slug.',
         slug: newsData.slug
       }, { status: 400 });
     }
@@ -27,8 +33,17 @@ export async function POST(request: NextRequest) {
     const newsItem = await NewsService.create(newsData);
 
     return NextResponse.json({ success: true, id: newsItem.id, slug: newsItem.slug });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error writing news data:', error);
+
+    // Check if it's a duplicate slug error from database
+    if (error?.code === '23505' && error?.constraint === 'news_slug_key') {
+      return NextResponse.json({
+        error: 'Ya existe una noticia con este slug. Por favor, modifica el título o el slug.',
+        slug: newsData.slug
+      }, { status: 400 });
+    }
+
     return NextResponse.json({ error: 'Failed to save news' }, { status: 500 });
   }
 }

@@ -110,12 +110,88 @@ export default function AcercaPage() {
             </div>
 
             {/* About Content */}
-            <div className="prose prose-lg max-w-3xl mb-20">
+            <div className="prose prose-lg max-w-3xl mb-12">
               <RichContent
                 content={language === 'en' && aboutContent.content_en ? aboutContent.content_en : aboutContent.content}
                 className="text-black leading-relaxed"
               />
             </div>
+
+            {/* PDF Download Buttons */}
+            {(aboutContent.cv_pdf || aboutContent.bio_pdf || aboutContent.portfolio_pdf ||
+              aboutContent.cv_pdf_en || aboutContent.bio_pdf_en || aboutContent.portfolio_pdf_en) && (
+              <div className="flex flex-col md:flex-row flex-wrap gap-4 mb-12">
+                {(language === 'en' ? aboutContent.cv_pdf_en : aboutContent.cv_pdf) && (
+                  <a
+                    href={language === 'en' ? aboutContent.cv_pdf_en : aboutContent.cv_pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 bg-black text-white font-medium hover:bg-gray-800 transition-colors rounded-md"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {(language === 'en' ? aboutContent.cv_button_text_en : aboutContent.cv_button_text) ||
+                     (language === 'en' ? 'Download CV' : 'Descargar CV')}
+                  </a>
+                )}
+
+                {(language === 'en' ? aboutContent.bio_pdf_en : aboutContent.bio_pdf) && (
+                  <a
+                    href={language === 'en' ? aboutContent.bio_pdf_en : aboutContent.bio_pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 bg-black text-white font-medium hover:bg-gray-800 transition-colors rounded-md"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {(language === 'en' ? aboutContent.bio_button_text_en : aboutContent.bio_button_text) ||
+                     (language === 'en' ? 'Download Bio' : 'Descargar Bio')}
+                  </a>
+                )}
+
+                {(language === 'en' ? aboutContent.portfolio_pdf_en : aboutContent.portfolio_pdf) && (
+                  <a
+                    href={language === 'en' ? aboutContent.portfolio_pdf_en : aboutContent.portfolio_pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 bg-black text-white font-medium hover:bg-gray-800 transition-colors rounded-md"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {(language === 'en' ? aboutContent.portfolio_button_text_en : aboutContent.portfolio_button_text) ||
+                     (language === 'en' ? 'Download Portfolio' : 'Descargar Portfolio')}
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Additional Section */}
+            {(aboutContent.additional_title || aboutContent.additional_content ||
+              aboutContent.additional_title_en || aboutContent.additional_content_en) && (
+              <div className="mb-20">
+                {(aboutContent.additional_title || aboutContent.additional_title_en) && (
+                  <h2 className="text-2xl md:text-3xl font-medium text-black mb-6">
+                    {language === 'en' && aboutContent.additional_title_en
+                      ? aboutContent.additional_title_en
+                      : aboutContent.additional_title}
+                  </h2>
+                )}
+
+                {(aboutContent.additional_content || aboutContent.additional_content_en) && (
+                  <div className="prose prose-lg max-w-3xl">
+                    <RichContent
+                      content={language === 'en' && aboutContent.additional_content_en
+                        ? aboutContent.additional_content_en
+                        : aboutContent.additional_content || ''}
+                      className="text-black leading-relaxed"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

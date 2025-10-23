@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Publication } from '@/types';
 import { PublicationStorage } from '@/lib/publicationStorage';
 import ImageUploader from '@/components/ui/ImageUploader';
+import FileUploader from '@/components/ui/FileUploader';
 import { useNotification } from '@/components/ui/Notification';
 import ToastNotification from '@/components/ui/Notification';
 
@@ -15,6 +16,7 @@ export default function EditPublicationPage() {
   const { showSuccess, showError, notification, hideNotification } = useNotification();
   const [publication, setPublication] = useState<Publication | null>(null);
   const [isEnglish, setIsEnglish] = useState(false);
+  const [linkType, setLinkType] = useState<'upload' | 'external'>('upload');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -26,6 +28,12 @@ export default function EditPublicationPage() {
           const foundPublication = await PublicationStorage.getById(id);
           if (foundPublication) {
             setPublication(foundPublication);
+            // Detectar si el enlace es de Cloudinary o externo
+            if (foundPublication.downloadLink && foundPublication.downloadLink.includes('cloudinary.com')) {
+              setLinkType('upload');
+            } else if (foundPublication.downloadLink && foundPublication.downloadLink !== '#') {
+              setLinkType('external');
+            }
           } else {
             router.push('/admin/acerca/publicaciones');
           }
@@ -173,17 +181,65 @@ export default function EditPublicationPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Enlace de descarga
-              </label>
-              <input
-                type="text"
-                value={publication.downloadLink}
-                onChange={(e) => setPublication({ ...publication, downloadLink: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="https://ejemplo.com/archivo.pdf o #"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Enlace de descarga
+                </label>
+
+                {/* Selector de tipo de enlace */}
+                <div className="flex gap-4 mb-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="linkType"
+                      value="upload"
+                      checked={linkType === 'upload'}
+                      onChange={() => setLinkType('upload')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Subir archivo</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="linkType"
+                      value="external"
+                      checked={linkType === 'external'}
+                      onChange={() => setLinkType('external')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Enlace externo</span>
+                  </label>
+                </div>
+
+                {/* Mostrar FileUploader o input según selección */}
+                {linkType === 'upload' ? (
+                  <FileUploader
+                    label=""
+                    projectId={publication.id}
+                    currentFile={publication.downloadLink}
+                    onFileUpload={(fileUrl) => setPublication({ ...publication, downloadLink: fileUrl })}
+                    required={false}
+                    contentType="acerca/publicaciones"
+                    acceptPDF={true}
+                    acceptImages={true}
+                  />
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      value={publication.downloadLink}
+                      onChange={(e) => setPublication({ ...publication, downloadLink: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                      placeholder="https://ejemplo.com/archivo.pdf"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ingresa la URL completa del archivo (ej: https://ejemplo.com/archivo.pdf)
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

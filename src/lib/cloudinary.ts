@@ -131,4 +131,54 @@ export async function moveFolderInCloudinary(
   }
 }
 
+/**
+ * Upload file (image or PDF) to Cloudinary
+ * @param file - File as base64 or buffer
+ * @param folder - Folder path in Cloudinary (e.g., "acerca/publicaciones")
+ * @param resourceType - Type of resource: 'image', 'raw' (for PDFs), or 'auto'
+ * @returns Cloudinary upload result with URL and metadata
+ */
+export async function uploadFileToCloudinary(
+  file: string | Buffer,
+  folder: string = 'uploads',
+  resourceType: 'image' | 'raw' | 'auto' = 'auto'
+): Promise<CloudinaryUploadResult> {
+  try {
+    // Determinar el formato del archivo para base64
+    let base64String: string;
+    if (typeof file === 'string') {
+      base64String = file;
+    } else {
+      // Para PDFs y otros archivos no imagen, usar application/pdf
+      const prefix = resourceType === 'image' ? 'data:image/png;base64,' : 'data:application/pdf;base64,';
+      base64String = `${prefix}${file.toString('base64')}`;
+    }
+
+    const result = await cloudinary.uploader.upload(
+      base64String,
+      {
+        folder,
+        resource_type: resourceType,
+        // Para imágenes mantener configuración de calidad
+        ...(resourceType === 'image' && {
+          quality: 'auto:best',
+          fetch_format: 'auto',
+          flags: 'preserve_transparency',
+        }),
+      }
+    );
+
+    return {
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      width: result.width || 0,
+      height: result.height || 0,
+      format: result.format,
+    };
+  } catch (error) {
+    console.error('Error uploading file to Cloudinary:', error);
+    throw new Error('Failed to upload file to Cloudinary');
+  }
+}
+
 export default cloudinary;

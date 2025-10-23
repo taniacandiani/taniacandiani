@@ -441,6 +441,29 @@ export default function NewProjectPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Creación
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.createdAt ? formData.createdAt.slice(0, 16) : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        // Agregar segundos y Z para UTC sin conversión de zona horaria
+                        setFormData({ ...formData, createdAt: e.target.value + ':00Z' });
+                      } else {
+                        setFormData({ ...formData, createdAt: undefined });
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Se usará la fecha actual si no se especifica"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Controla el orden de visualización. Deja en blanco para usar la fecha actual.
+                  </p>
+                </div>
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Categorías * (Selecciona una o más)

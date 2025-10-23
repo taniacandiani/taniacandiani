@@ -19,6 +19,15 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [menuAccordionOpen, setMenuAccordionOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  const toggleExpanded = (href: string) => {
+    setExpandedItems(prev =>
+      prev.includes(href)
+        ? prev.filter(item => item !== href)
+        : [...prev, href]
+    );
+  };
 
   const navigationItems: NavigationItem[] = [
     { href: '/admin', label: 'Dashboard', exact: true },
@@ -39,7 +48,6 @@ export default function AdminLayout({
       { href: '/admin/acerca/publicaciones', label: 'Publicaciones' }
     ]},
     { href: '/admin/contacto', label: 'Contacto' },
-    { href: '/admin/media', label: 'Media' },
   ];
 
   const isActive = (href: string, exact = false) => {
@@ -79,30 +87,49 @@ export default function AdminLayout({
                 </button>
                 {menuAccordionOpen && (
                   <nav className="px-4 pb-4 pt-2 border-t border-gray-200">
-                    <ul className="space-y-2">
+                    <ul className="space-y-1">
                       {navigationItems.map((item) => (
                         <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            onClick={() => setMenuAccordionOpen(false)}
-                            className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                              isActive(item.href, item.exact)
-                                ? 'bg-black text-white'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {item.label}
-                          </Link>
-                          {item.submenu && isActive(item.href) && (
-                            <ul className="mt-1 ml-4 space-y-1">
+                          <div className="flex items-center">
+                            <Link
+                              href={item.href}
+                              onClick={() => setMenuAccordionOpen(false)}
+                              className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                isActive(item.href, item.exact)
+                                  ? 'bg-black text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {item.label}
+                            </Link>
+                            {item.submenu && (
+                              <button
+                                onClick={() => toggleExpanded(item.href)}
+                                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                              >
+                                <svg
+                                  className={`w-4 h-4 text-gray-600 transition-transform ${
+                                    expandedItems.includes(item.href) ? 'rotate-90' : ''
+                                  }`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                          {item.submenu && expandedItems.includes(item.href) && (
+                            <ul className="mt-1 ml-4 space-y-1 pl-4 border-l-2 border-gray-200">
                               {item.submenu.map((subItem) => (
                                 <li key={subItem.href}>
                                   <Link
                                     href={subItem.href}
                                     onClick={() => setMenuAccordionOpen(false)}
-                                    className={`block px-3 py-2 rounded-md text-xs transition-colors ${
+                                    className={`block px-3 py-2 rounded-md text-sm transition-colors ${
                                       pathname === subItem.href
-                                        ? 'bg-gray-800 text-white'
+                                        ? 'bg-gray-200 text-gray-900 font-medium'
                                         : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                   >
@@ -124,28 +151,47 @@ export default function AdminLayout({
               {/* Desktop Sidebar Navigation */}
               <div className="hidden lg:block w-64 flex-shrink-0">
                 <nav className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <ul className="space-y-2">
+                  <ul className="space-y-1">
                     {navigationItems.map((item) => (
                       <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
-                            isActive(item.href, item.exact)
-                              ? 'bg-black text-white'
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                        {item.submenu && isActive(item.href) && (
-                          <ul className="mt-2 ml-4 space-y-1">
+                        <div className="flex items-center">
+                          <Link
+                            href={item.href}
+                            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+                              isActive(item.href, item.exact)
+                                ? 'bg-black text-white'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                          {item.submenu && (
+                            <button
+                              onClick={() => toggleExpanded(item.href)}
+                              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                            >
+                              <svg
+                                className={`w-4 h-4 text-gray-600 transition-transform ${
+                                  expandedItems.includes(item.href) ? 'rotate-90' : ''
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {item.submenu && expandedItems.includes(item.href) && (
+                          <ul className="mt-1 ml-4 space-y-1 pl-4 border-l-2 border-gray-200">
                             {item.submenu.map((subItem) => (
                               <li key={subItem.href}>
                                 <Link
                                   href={subItem.href}
-                                  className={`block px-3 py-2 rounded-md text-xs transition-colors ${
+                                  className={`block px-3 py-2 rounded-md text-sm transition-colors ${
                                     pathname === subItem.href
-                                      ? 'bg-gray-800 text-white'
+                                      ? 'bg-gray-200 text-gray-900 font-medium'
                                       : 'text-gray-600 hover:bg-gray-100'
                                   }`}
                                 >
@@ -181,19 +227,6 @@ export default function AdminLayout({
                       className="block px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors"
                     >
                       + Nueva Noticia
-                    </Link>
-                    <Link
-                      href="/admin/media"
-                      className="block px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
-                    >
-                      📁 Gestionar Media
-                    </Link>
-                    <Link
-                      href="/"
-                      target="_blank"
-                      className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                    >
-                      👁️ Ver Sitio Web
                     </Link>
                   </div>
                 </div>
