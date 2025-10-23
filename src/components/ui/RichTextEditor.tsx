@@ -202,13 +202,16 @@ export default function RichTextEditor({
   // Limpiar contenido cuando cambie el valor desde las props
   // SOLO si el cambio NO viene del editor mismo (evita loops y saltos de cursor)
   useEffect(() => {
-    if (editor && !isUpdatingFromEditor.current && value !== editor.getHTML()) {
+    if (editor && !isUpdatingFromEditor.current) {
       const cleanValue = cleanHTML(value || '');
       const currentContent = editor.getHTML();
 
-      // Solo actualizar si hay un cambio REAL y el editor NO tiene foco
-      if (cleanValue !== currentContent && !editor.isFocused) {
-        editor.commands.setContent(cleanValue, false); // false = no emitir update event
+      // Solo actualizar si hay un cambio REAL
+      if (cleanValue !== currentContent) {
+        // Si el editor no tiene foco o el contenido está vacío, actualizar
+        if (!editor.isFocused || currentContent === '<p></p>' || currentContent === '') {
+          editor.commands.setContent(cleanValue, false); // false = no emitir update event
+        }
       }
     }
   }, [value, editor]);

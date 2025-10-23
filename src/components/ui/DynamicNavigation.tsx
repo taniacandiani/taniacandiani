@@ -30,9 +30,10 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
   // Static navigation items
   const navigationItems = [
     { id: 'nav-1', label: 'Proyectos', label_en: 'Projects', url: '/proyectos', openInNewTab: false, order: 1 },
-    { id: 'nav-2', label: 'Noticias', label_en: 'News', url: '/noticias', openInNewTab: false, order: 2 },
-    { id: 'nav-3', label: 'Acerca', label_en: 'About', url: '/acerca', openInNewTab: false, order: 3 },
-    { id: 'nav-4', label: 'Contacto', label_en: 'Contact', url: '/contacto', openInNewTab: false, order: 4 },
+    { id: 'nav-2', label: 'Exposiciones', label_en: 'Exhibitions', url: '/exposiciones', openInNewTab: false, order: 2 },
+    { id: 'nav-3', label: 'Noticias', label_en: 'News', url: '/noticias', openInNewTab: false, order: 3 },
+    { id: 'nav-4', label: 'Acerca', label_en: 'About', url: '/acerca', openInNewTab: false, order: 4 },
+    { id: 'nav-5', label: 'Contacto', label_en: 'Contact', url: '/contacto', openInNewTab: false, order: 5 },
   ]
 
   const containerClass = orientation === 'horizontal' ? 'flex space-x-8' : 'flex flex-col gap-8'

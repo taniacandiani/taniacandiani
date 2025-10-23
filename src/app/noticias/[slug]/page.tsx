@@ -137,17 +137,32 @@ export default function NoticiaPage({ params }: Props) {
 
   return (
     <MainLayout>
-      <div className="container-mobile py-8 pt-16">
-        {/* Header con Toggle Button y Título alineados */}
-        <div className="mb-16 flex justify-between items-center">
+      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
+        {/* Mobile: Breadcrumb al inicio */}
+        <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">
+          <nav className="text-sm">
+            <Link href="/" className="text-gray-500 hover:text-black">
+              {language === 'en' ? 'Home' : 'Inicio'}
+            </Link>
+            <span className="mx-2 text-gray-400">/</span>
+            <Link href="/noticias" className="text-gray-500 hover:text-black">
+              {language === 'en' ? 'News' : 'Noticias'}
+            </Link>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-black">{title}</span>
+          </nav>
+        </div>
+
+        {/* Header - Solo desktop */}
+        <div className="hidden lg:flex mb-16 justify-between items-center">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setSidebarVisible(!sidebarVisible)}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors flex items-center justify-center cursor-pointer"
               aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
             >
-              <span 
-                className="material-symbols-outlined leading-none -mt-1" 
+              <span
+                className="material-symbols-outlined leading-none -mt-1"
                 style={{ fontSize: '32px' }}
               >
                 thumbnail_bar
@@ -158,8 +173,8 @@ export default function NoticiaPage({ params }: Props) {
         </div>
 
         <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-          {/* Sidebar */}
-          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          {/* Sidebar - Solo desktop */}
+          <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
             sidebarVisible ? 'w-64' : 'w-0'
           }`}>
             <div className="w-64">
@@ -232,8 +247,8 @@ export default function NoticiaPage({ params }: Props) {
               />
             </div>
 
-            {/* Breadcrumb - SECOND */}
-            <div className="mb-8 pb-4 border-b border-gray-200">
+            {/* Breadcrumb - Solo desktop */}
+            <div className="hidden lg:block mb-8 pb-4 border-b border-gray-200">
               <nav className="text-sm">
                 <Link href="/" className="text-gray-500 hover:text-black">
                   {language === 'en' ? 'Home' : 'Inicio'}
@@ -294,67 +309,67 @@ export default function NoticiaPage({ params }: Props) {
 
             {/* Navegación inferior */}
             <div className="border-t border-gray-200">
-              <div className="grid grid-cols-2 pt-8">
+              <div className="grid grid-cols-2 pt-6 lg:pt-8">
                 {/* Noticia Anterior */}
                 {(() => {
                   const { previous } = getNavigationNews();
                   return previous ? (
                     <Link
                       href={`/noticias/${previous.slug}`}
-                      className="px-6 text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left group"
+                      className="px-3 lg:px-6 text-sm lg:text-lg font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left group"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">
+                      <div className="flex items-start lg:items-center gap-1 lg:gap-2">
+                        <span className="material-symbols-outlined text-sm lg:group-hover:-translate-x-1 transition-transform">
                           arrow_back
                         </span>
                         <div>
                           <div className="text-xs text-gray-400 mb-1">
-                            {language === 'en' ? 'Previous News' : 'Noticia Anterior'}
+                            {language === 'en' ? 'Previous' : 'Anterior'}
                           </div>
-                          <div className="font-medium">
+                          <div className="font-medium line-clamp-2">
                             {language === 'en' && previous.titleEn ? previous.titleEn : previous.title}
                           </div>
                         </div>
                       </div>
                     </Link>
                   ) : (
-                    <div className="px-6 text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
+                    <div className="px-3 lg:px-6 text-sm lg:text-lg font-medium text-gray-300 border-r border-gray-200 text-left">
                       <div className="text-xs text-gray-400 mb-1">
-                        {language === 'en' ? 'Previous News' : 'Noticia Anterior'}
+                        {language === 'en' ? 'Previous' : 'Anterior'}
                       </div>
-                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
+                      <div className="text-xs lg:text-base">{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                   );
                 })()}
-                
+
                 {/* Siguiente Noticia */}
                 {(() => {
                   const { next } = getNavigationNews();
                   return next ? (
                     <Link
                       href={`/noticias/${next.slug}`}
-                      className="px-6 text-lg font-medium text-gray-600 hover:text-black text-right group"
+                      className="px-3 lg:px-6 text-sm lg:text-lg font-medium text-gray-600 hover:text-black text-right group"
                     >
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-start lg:items-center justify-end gap-1 lg:gap-2">
                         <div className="text-right">
                           <div className="text-xs text-gray-400 mb-1">
-                            {language === 'en' ? 'Next News' : 'Siguiente Noticia'}
+                            {language === 'en' ? 'Next' : 'Siguiente'}
                           </div>
-                          <div className="font-medium">
+                          <div className="font-medium line-clamp-2">
                             {language === 'en' && next.titleEn ? next.titleEn : next.title}
                           </div>
                         </div>
-                        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                        <span className="material-symbols-outlined text-sm lg:group-hover:translate-x-1 transition-transform">
                           arrow_forward
                         </span>
                       </div>
                     </Link>
                   ) : (
-                    <div className="px-6 text-lg font-medium text-gray-300 text-right">
+                    <div className="px-3 lg:px-6 text-sm lg:text-lg font-medium text-gray-300 text-right">
                       <div className="text-xs text-gray-400 mb-1">
-                        {language === 'en' ? 'Next News' : 'Siguiente Noticia'}
+                        {language === 'en' ? 'Next' : 'Siguiente'}
                       </div>
-                      <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
+                      <div className="text-xs lg:text-base">{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
                   );
                 })()}

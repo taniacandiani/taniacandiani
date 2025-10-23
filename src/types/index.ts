@@ -98,6 +98,39 @@ export interface ProjectCategory {
   descriptionEn?: string;
 }
 
+export interface Exhibition {
+  id: string;
+  title: string;
+  content: string; // Full exhibition content (required)
+  image: string; // Main card image
+  heroImages?: string[]; // Slider images for hero (like projects)
+  slug: string;
+  publishedAt: string;
+  categories?: string[]; // Multiple categories
+  venue?: string; // Exhibition venue
+  startDate?: string; // Exhibition start date
+  endDate?: string; // Exhibition end date
+  curator?: string;
+  status?: 'published' | 'draft' | 'archived';
+  tags?: string[];
+  externalLink?: string; // External exhibition URL
+
+  // English translations
+  titleEn?: string;
+  contentEn?: string;
+  venueEn?: string;
+  curatorEn?: string;
+}
+
+export interface ExhibitionCategory {
+  id: string;
+  name: string;
+  nameEn?: string;
+  count: number;
+  description?: string;
+  descriptionEn?: string;
+}
+
 export interface NewsCategory {
   id: string;
   name: string;

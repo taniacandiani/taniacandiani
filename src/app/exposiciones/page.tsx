@@ -1,69 +1,58 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
-import { NewsItem } from '@/types';
-import { NewsStorage } from '@/lib/newsStorage';
-import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
-import { NewsCategory } from '@/types';
-import { NEWS_CATEGORIES } from '@/data/content';
-import { SAMPLE_NEWS } from '@/data/content';
-import RichContent from '@/components/ui/RichContent';
+import { Exhibition, ExhibitionCategory } from '@/types';
+import { ExhibitionStorage } from '@/lib/exhibitionStorage';
+import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
 import { generateNewsExcerpt } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-function NoticiasContent() {
+type SortOption = 'date' | 'title' | 'category';
+
+function ExposicionesContent() {
   const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [filteredExhibitions, setFilteredExhibitions] = useState<Exhibition[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('Activas'); // Default to "Activas"
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [categories, setCategories] = useState<ExhibitionCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
         setLoading(true);
-        
-        // Migrar noticias existentes a múltiples categorías
-        await NewsStorage.migrateToMultipleCategories();
-        
-        // Initialize with sample news if storage is empty
-        const storedNews = await NewsStorage.getAll();
-        if (storedNews.length === 0) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
-          console.log('Using default news from content.ts');
-          setNews(SAMPLE_NEWS);
-        } else {
-          setNews(storedNews);
-        }
 
-        // Initialize categories
-        const storedCategories = await NewsCategoryStorage.getAll();
-        if (storedCategories.length === 0) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
-          console.log('Using default categories from content.ts');
-          setCategories(NEWS_CATEGORIES);
-        } else {
-          setCategories(storedCategories);
-        }
+        // Migrate exhibitions if needed
+        await ExhibitionStorage.migrateToMultipleCategories();
+
+        // Get all exhibitions
+        const storedExhibitions = await ExhibitionStorage.getAll();
+        setExhibitions(storedExhibitions);
+
+        // Get categories and update counts
+        const storedCategories = await ExhibitionCategoryStorage.getAll();
+
+        // Update category counts based on current exhibitions
+        const updatedCategories = await ExhibitionCategoryStorage.updateCounts();
+        setCategories(updatedCategories);
       } catch (error) {
         console.error('Error initializing data:', error);
-        // Fallback to static content
-        setNews(SAMPLE_NEWS);
-        setCategories(NEWS_CATEGORIES);
+        setExhibitions([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -72,42 +61,39 @@ function NoticiasContent() {
     initializeData();
   }, []);
 
+  // Handle click outside dropdown
   useEffect(() => {
-    const publishedNews = news.filter(n => n.status === 'published');
-    setFilteredNews(publishedNews);
-
-    // Update categories with counts
-    const updateCategoryCounts = async () => {
-      try {
-        const updatedCategories = await NewsCategoryStorage.updateCounts();
-        setCategories(updatedCategories);
-      } catch (error) {
-        console.error('Error updating category counts:', error);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
       }
     };
 
-    updateCategoryCounts();
-  }, [news]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Initialize filters from URL params
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
-    
-    setSelectedCategory(category || null);
+
+    setSelectedCategory(category || 'Activas'); // Default to "Activas" if no category
     setSelectedYear(year ? parseInt(year) : null);
     setSearchTerm(search || '');
   }, [searchParams]);
 
+  // Filter and sort exhibitions
   useEffect(() => {
-    let filtered = news.filter(n => n.status === 'published');
+    let filtered = exhibitions.filter(e => e.status === 'published');
 
     if (searchTerm) {
-      filtered = filtered.filter(n => {
-        // Search in both Spanish and English content
-        const titleToSearch = language === 'en' && n.titleEn ? n.titleEn : n.title;
-        const contentToSearch = language === 'en' && n.contentEn ? n.contentEn : n.content;
+      filtered = filtered.filter(e => {
+        const titleToSearch = language === 'en' && e.titleEn ? e.titleEn : e.title;
+        const contentToSearch = language === 'en' && e.contentEn ? e.contentEn : e.content;
 
         return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
                contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
@@ -115,55 +101,84 @@ function NoticiasContent() {
     }
 
     if (selectedCategory) {
-      filtered = filtered.filter(n => n.categories?.includes(selectedCategory));
+      filtered = filtered.filter(e => e.categories?.includes(selectedCategory));
     }
 
     if (selectedYear) {
-      filtered = filtered.filter(n => new Date(n.publishedAt).getFullYear() === selectedYear);
+      filtered = filtered.filter(e => {
+        const startYear = e.startDate ? new Date(e.startDate).getFullYear() : null;
+        const publishedYear = new Date(e.publishedAt).getFullYear();
+        return startYear === selectedYear || publishedYear === selectedYear;
+      });
     }
 
-    setFilteredNews(filtered);
-  }, [searchTerm, selectedCategory, selectedYear, news, language]);
+    // Sort exhibitions
+    filtered = [...filtered].sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = a.startDate || a.publishedAt;
+        const dateB = b.startDate || b.publishedAt;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      } else if (sortBy === 'category') {
+        const catA = a.categories?.[0] || '';
+        const catB = b.categories?.[0] || '';
+        return catA.localeCompare(catB);
+      } else {
+        const titleA = language === 'en' && a.titleEn ? a.titleEn : a.title;
+        const titleB = language === 'en' && b.titleEn ? b.titleEn : b.title;
+        return titleA.localeCompare(titleB);
+      }
+    });
 
-  // Listen for news updates from admin
+    setFilteredExhibitions(filtered);
+  }, [searchTerm, selectedCategory, selectedYear, exhibitions, language, sortBy]);
+
+  // Listen for exhibition updates from admin
   useEffect(() => {
-    const handleNewsUpdate = async () => {
+    const handleExhibitionUpdate = async () => {
       try {
-        const updatedNews = await NewsStorage.getAll();
-        setNews(updatedNews);
+        const updatedExhibitions = await ExhibitionStorage.getAll();
+        setExhibitions(updatedExhibitions);
       } catch (error) {
-        console.error('Error updating news:', error);
+        console.error('Error updating exhibitions:', error);
       }
     };
 
     const handleCategoriesUpdate = async () => {
       try {
-        const updatedCategories = await NewsCategoryStorage.updateCounts();
+        const updatedCategories = await ExhibitionCategoryStorage.updateCounts();
         setCategories(updatedCategories);
       } catch (error) {
         console.error('Error updating categories:', error);
       }
     };
 
-    window.addEventListener('newsUpdated', handleNewsUpdate);
-    window.addEventListener('newsCategoriesUpdated', handleCategoriesUpdate);
+    window.addEventListener('exhibitionsUpdated', handleExhibitionUpdate);
+    window.addEventListener('exhibitionCategoriesUpdated', handleCategoriesUpdate);
     return () => {
-      window.removeEventListener('newsUpdated', handleNewsUpdate);
-      window.removeEventListener('newsCategoriesUpdated', handleCategoriesUpdate);
+      window.removeEventListener('exhibitionsUpdated', handleExhibitionUpdate);
+      window.removeEventListener('exhibitionCategoriesUpdated', handleCategoriesUpdate);
     };
   }, []);
 
   // Get available years
   const availableYears = useMemo(() => {
-    if (!Array.isArray(news)) return [];
-    
-    const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
-    return years.sort((a, b) => b - a);
-  }, [news]);
+    if (!Array.isArray(exhibitions)) return [];
+
+    const years = new Set<number>();
+    exhibitions.filter(e => e.status === 'published').forEach(e => {
+      if (e.startDate) {
+        years.add(new Date(e.startDate).getFullYear());
+      } else {
+        years.add(new Date(e.publishedAt).getFullYear());
+      }
+    });
+
+    return Array.from(years).sort((a, b) => b - a);
+  }, [exhibitions]);
 
   const updateFilter = (updates: { category?: string | null; year?: number | null; search?: string }) => {
     const params = new URLSearchParams(searchParams);
-    
+
     if (updates.category !== undefined) {
       if (updates.category) {
         params.set('category', updates.category);
@@ -172,7 +187,7 @@ function NoticiasContent() {
       }
       setSelectedCategory(updates.category);
     }
-    
+
     if (updates.year !== undefined) {
       if (updates.year) {
         params.set('year', updates.year.toString());
@@ -181,7 +196,7 @@ function NoticiasContent() {
       }
       setSelectedYear(updates.year);
     }
-    
+
     if (updates.search !== undefined) {
       if (updates.search) {
         params.set('search', updates.search);
@@ -190,8 +205,8 @@ function NoticiasContent() {
       }
       setSearchTerm(updates.search);
     }
-    
-    router.push(`/noticias?${params.toString()}`);
+
+    router.push(`/exposiciones?${params.toString()}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -209,7 +224,6 @@ function NoticiasContent() {
           <div className="flex items-center justify-center min-h-[50vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-              
             </div>
           </div>
         </div>
@@ -236,7 +250,76 @@ function NoticiasContent() {
                 thumbnail_bar
               </span>
             </button>
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h1>
+            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
+              {language === 'en' ? 'EXHIBITIONS' : 'EXPOSICIONES'}
+            </h1>
+          </div>
+
+          {/* Sorting dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 text-sm cursor-pointer"
+            >
+              <span>
+                {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+              </span>
+              <svg
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+              >
+                <path
+                  d="M1 1L6 6L11 1"
+                  stroke="#000000"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-black text-white rounded-sm shadow-lg z-50 min-w-[160px]">
+                <button
+                  onClick={() => {
+                    setSortBy('date');
+                    setDropdownOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
+                    sortBy === 'date' ? 'bg-gray-800' : ''
+                  }`}
+                >
+                  {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('title');
+                    setDropdownOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
+                    sortBy === 'title' ? 'bg-gray-800' : ''
+                  }`}
+                >
+                  {language === 'en' ? 'Order by name' : 'Orden por nombre'}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('category');
+                    setDropdownOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
+                    sortBy === 'category' ? 'bg-gray-800' : ''
+                  }`}
+                >
+                  {language === 'en' ? 'Order by category' : 'Orden por categoría'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -247,7 +330,7 @@ function NoticiasContent() {
             <div className="relative">
               <input
                 type="text"
-                placeholder={language === 'en' ? 'Search news...' : 'Buscar noticias...'}
+                placeholder={language === 'en' ? 'Search exhibitions...' : 'Buscar exposiciones...'}
                 value={searchTerm}
                 onChange={(e) => updateFilter({ search: e.target.value })}
                 className="w-full border-0 border-b border-gray-300 pl-0 pr-7 py-2 text-base bg-transparent placeholder-black"
@@ -365,7 +448,7 @@ function NoticiasContent() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={language === 'en' ? 'Search news...' : 'Buscar noticias...'}
+                    placeholder={language === 'en' ? 'Search exhibitions...' : 'Buscar exposiciones...'}
                     value={searchTerm}
                     onChange={(e) => updateFilter({ search: e.target.value })}
                     className="w-full border-0 border-b border-gray-300 pl-7 pr-0 py-2 text-base bg-transparent placeholder-black"
@@ -373,7 +456,7 @@ function NoticiasContent() {
                 </div>
               </div>
 
-              {/* Categorías */}
+              {/* Categories */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
                 <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
                 <div className="space-y-2">
@@ -405,7 +488,7 @@ function NoticiasContent() {
                 </div>
               </div>
 
-              {/* Años */}
+              {/* Years */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
                 <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
                 <div className="space-y-2">
@@ -439,56 +522,72 @@ function NoticiasContent() {
             </div>
           </div>
 
-          {/* Grid de noticias */}
+          {/* Exhibition grid */}
           <div className={`flex-1 transition-all duration-300 ease-in-out ${
             !sidebarVisible ? '-ml-0' : ''
           }`}>
-            
-            {filteredNews.length === 0 ? (
+
+            {filteredExhibitions.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">{language === 'en' ? 'No news found.' : 'No se encontraron noticias.'}</p>
+                <p className="text-gray-500">
+                  {language === 'en' ? 'No exhibitions found.' : 'No se encontraron exposiciones.'}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredNews.map((newsItem) => (
-                  <article key={newsItem.id} className="group">
-                    <Link href={`/noticias/${newsItem.slug}`}>
+                {filteredExhibitions.map((exhibition) => (
+                  <article key={exhibition.id} className="group">
+                    <Link href={`/exposiciones/${exhibition.slug}`}>
                       <div className="space-y-4">
                         <div className="relative aspect-[2/1] w-full overflow-hidden rounded-md">
                           <Image
-                            src={newsItem.image}
-                            alt={language === 'en' && newsItem.titleEn ? newsItem.titleEn : newsItem.title}
+                            src={exhibition.image || '/placeholder-image.jpg'}
+                            alt={language === 'en' && exhibition.titleEn ? exhibition.titleEn : exhibition.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3 text-sm text-gray-500">
-                            <time>{formatDate(newsItem.publishedAt)}</time>
-                            {newsItem.categories && newsItem.categories.length > 0 && (
+                            {exhibition.startDate && (
                               <>
-                                <span>•</span>
-                                <span>{newsItem.categories.map(catName => {
-                                  const cat = categories.find(c => c.name === catName);
-                                  return language === 'en' && cat?.nameEn ? cat.nameEn : catName;
-                                }).join(', ')}</span>
+                                <time>{formatDate(exhibition.startDate)}</time>
+                                {exhibition.endDate && (
+                                  <>
+                                    <span>-</span>
+                                    <time>{formatDate(exhibition.endDate)}</time>
+                                  </>
+                                )}
                               </>
                             )}
+                            {!exhibition.startDate && (
+                              <time>{formatDate(exhibition.publishedAt)}</time>
+                            )}
                           </div>
+                          {exhibition.venue && (
+                            <p className="text-sm text-gray-600">
+                              {language === 'en' && exhibition.venueEn ? exhibition.venueEn : exhibition.venue}
+                            </p>
+                          )}
                           <h2 className="text-xl font-medium text-black group-hover:text-gray-700 transition-colors">
-                            {language === 'en' && newsItem.titleEn ? newsItem.titleEn : newsItem.title}
+                            {language === 'en' && exhibition.titleEn ? exhibition.titleEn : exhibition.title}
                           </h2>
-                          <div
-                            className="text-black text-sm leading-relaxed"
-                          >
+                          {exhibition.curator && (
+                            <p className="text-sm text-gray-600">
+                              {language === 'en' ? 'Curated by' : 'Curado por'}: {
+                                language === 'en' && exhibition.curatorEn ? exhibition.curatorEn : exhibition.curator
+                              }
+                            </p>
+                          )}
+                          <div className="text-black text-sm leading-relaxed">
                             {generateNewsExcerpt(
-                              language === 'en' && newsItem.contentEn ? newsItem.contentEn : newsItem.content,
+                              language === 'en' && exhibition.contentEn ? exhibition.contentEn : exhibition.content,
                               150
                             )}
                           </div>
                           <div className="pt-2">
                             <span className="text-black text-sm group-hover:underline">
-                              {language === 'en' ? 'Read more →' : 'Leer más →'}
+                              {language === 'en' ? 'View more →' : 'Ver más →'}
                             </span>
                           </div>
                         </div>
@@ -505,7 +604,7 @@ function NoticiasContent() {
   );
 }
 
-function NoticiasPageFallback() {
+function ExposicionesPageFallback() {
   const { language } = useLanguage();
   return (
     <MainLayout>
@@ -513,7 +612,6 @@ function NoticiasPageFallback() {
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            
           </div>
         </div>
       </div>
@@ -521,10 +619,10 @@ function NoticiasPageFallback() {
   );
 }
 
-export default function NoticiasPage() {
+export default function ExposicionesPage() {
   return (
-    <Suspense fallback={<NoticiasPageFallback />}>
-      <NoticiasContent />
+    <Suspense fallback={<ExposicionesPageFallback />}>
+      <ExposicionesContent />
     </Suspense>
   );
 }

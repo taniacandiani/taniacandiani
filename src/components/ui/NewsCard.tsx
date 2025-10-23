@@ -19,22 +19,22 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
   return (
     <article className="flex flex-col h-full" role="article" aria-labelledby={`news-title-${news.id}`}>
-      <div className="border-b border-gray-200 pb-12 h-[300px]">
+      <Link href={`/noticias/${news.slug}`} className="block border-b border-gray-200 pb-4 md:pb-12 h-[300px]">
         <Image
           src={optimizeCloudinaryUrl(news.image, CLOUDINARY_PRESETS.card)}
           alt={`Imagen del artículo: ${title}`}
           width={600}
           height={400}
-          className="w-full h-full object-cover rounded-[5px]"
+          className="w-full h-full object-cover rounded-[5px] cursor-pointer hover:opacity-90 transition-opacity"
           loading="lazy"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-      </div>
+      </Link>
       <div className="flex flex-col flex-1">
         <header>
           <h2
             id={`news-title-${news.id}`}
-            className="text-2xl font-semibold mt-8 mb-4"
+            className="text-2xl font-semibold mt-4 md:mt-8 mb-4"
           >
             {title}
           </h2>
@@ -44,14 +44,14 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         </p>
         <Link
           href={`/noticias/${news.slug}`}
-          className="flex items-center text-2xl pt-5 text-black hover:underline rounded-sm p-1 -m-1 transition-colors mt-auto"
+          className="flex items-center text-2xl pt-5 pb-6 md:pb-0 text-black hover:underline rounded-sm p-1 -m-1 transition-colors mt-auto"
           aria-label={language === 'en' ? `Read more about ${news.title}` : `Leer más sobre ${news.title}`}
         >
-          {language === 'en' ? 'Read More' : 'Leer Más'} 
-          <svg 
-            className="w-4 h-4 ml-2" 
-            fill="none" 
-            stroke="currentColor" 
+          {language === 'en' ? 'Read More' : 'Leer Más'}
+          <svg
+            className="w-4 h-4 ml-2"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
             aria-hidden="true"
           >

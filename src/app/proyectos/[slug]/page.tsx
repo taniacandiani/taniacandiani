@@ -26,6 +26,8 @@ export default function ProjectPage({ params }: Props) {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
   const [isSliderHovered, setIsSliderHovered] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Get localized content
   const getLocalizedContent = (field: keyof Project, fallback: string = '') => {
@@ -98,6 +100,33 @@ export default function ProjectPage({ params }: Props) {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
+  };
+
+  // Touch handlers for swipe
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    }
+    if (isRightSwipe) {
+      prevSlide();
+    }
   };
 
   // Main data loading effect - always runs
@@ -214,10 +243,63 @@ export default function ProjectPage({ params }: Props) {
 
   return (
     <MainLayout>
-      <div className="mx-8 py-8 pt-16">
+      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
+        {/* Mobile: Breadcrumb al inicio */}
+        <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">
+          <nav className="text-sm">
+            <Link href="/" className="text-gray-500 hover:text-black">
+              {language === 'en' ? 'Home' : 'Inicio'}
+            </Link>
+            <span className="mx-2 text-gray-400">/</span>
+            <Link href="/proyectos" className="text-gray-500 hover:text-black">
+              {language === 'en' ? 'Projects' : 'Proyectos'}
+            </Link>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-black">{getLocalizedContent('title')}</span>
+          </nav>
+        </div>
+
+        {/* Mobile: Título y tabs arriba (antes de la imagen) */}
+        <div className="lg:hidden mb-6">
+          <h1 className="text-3xl font-medium mb-4">
+            {getLocalizedContent('title')}
+          </h1>
+
+          {/* Tabs del proyecto en mobile */}
+          {project.tabs && project.tabs.length > 0 && (
+            <div className="space-y-2">
+              <button
+                onClick={() => setActiveProjectTab(-1)}
+                className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                  activeProjectTab === -1
+                    ? 'bg-black text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+                style={{ fontWeight: 600 }}
+              >
+                {getLocalizedContent('title')}
+              </button>
+              {project.tabs.map((tab, index) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveProjectTab(index)}
+                  className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                    activeProjectTab === index
+                      ? 'bg-black text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                  style={{ fontWeight: 600 }}
+                >
+                  {language === 'en' ? (tab.title_en || tab.title) : tab.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-8">
-          {/* Sidebar Izquierdo */}
-          <div className="w-64">
+          {/* Sidebar Izquierdo - Solo desktop */}
+          <div className="hidden lg:block w-64">
             {/* Título y tabs sticky */}
             <div className={`sticky top-32 z-10 ${project.tabs && project.tabs.length > 0 ? 'mb-8' : 'mb-8'}`}>
               <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
@@ -389,6 +471,9 @@ export default function ProjectPage({ params }: Props) {
               className="relative mb-8"
               onMouseEnter={() => setIsSliderHovered(true)}
               onMouseLeave={() => setIsSliderHovered(false)}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             >
               <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
                 <Image
@@ -470,8 +555,8 @@ export default function ProjectPage({ params }: Props) {
               )}
             </div>
 
-            {/* Breadcrumb */}
-            <div className="mb-6 pb-4 border-b border-gray-200">
+            {/* Breadcrumb - Solo desktop */}
+            <div className="hidden lg:block mb-6 pb-4 border-b border-gray-200">
               <nav className="text-sm">
                 <Link href="/" className="text-gray-500 hover:text-black">
                   {language === 'en' ? 'Home' : 'Inicio'}
@@ -485,8 +570,8 @@ export default function ProjectPage({ params }: Props) {
               </nav>
             </div>
 
-            {/* Título del proyecto */}
-            <div className="mb-8">
+            {/* Título del proyecto - Solo desktop */}
+            <div className="hidden lg:block mb-8">
               <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>
                 {(() => {
                   // Si hay un tab seleccionado, mostrar el título del tab
@@ -531,7 +616,7 @@ export default function ProjectPage({ params }: Props) {
               <div className="grid grid-cols-3 border-b border-gray-200 mb-6">
                 <button
                   onClick={() => setActiveTab('detalles')}
-                  className={`px-6 pt-8 pb-6 text-lg font-medium border-r border-gray-200 ${
+                  className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
                     activeTab === 'detalles'
                       ? 'border-b-2 border-b-black text-black bg-gray-50'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
@@ -541,7 +626,7 @@ export default function ProjectPage({ params }: Props) {
                 </button>
                 <button
                   onClick={() => setActiveTab('ficha')}
-                  className={`px-6 pt-8 pb-6 text-lg font-medium border-r border-gray-200 ${
+                  className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
                     activeTab === 'ficha'
                       ? 'border-b-2 border-b-black text-black bg-gray-50'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
@@ -551,10 +636,10 @@ export default function ProjectPage({ params }: Props) {
                 </button>
                 <button
                   onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
-                  className="px-6 pt-8 pb-6 text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-2 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-xs lg:text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-1 lg:gap-2 cursor-pointer"
                 >
                   <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
                     picture_as_pdf
                   </span>
                 </button>
@@ -656,7 +741,8 @@ export default function ProjectPage({ params }: Props) {
 
             {/* Navegación inferior */}
             <div className="border-t border-gray-200">
-              <div className="grid grid-cols-3 pt-8">
+              {/* Desktop: 3 columnas con PDF en el centro */}
+              <div className="hidden lg:grid grid-cols-3 pt-8">
                 {/* Proyecto Anterior */}
                 {(() => {
                   const { previous } = getNavigationProjects();
@@ -688,7 +774,7 @@ export default function ProjectPage({ params }: Props) {
                     </div>
                   );
                 })()}
-                
+
                 {/* Descargar (Centro) */}
                 <button
                   onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
@@ -699,7 +785,7 @@ export default function ProjectPage({ params }: Props) {
                     picture_as_pdf
                   </span>
                 </button>
-                
+
                 {/* Siguiente Proyecto */}
                 {(() => {
                   const { next } = getNavigationProjects();
@@ -729,7 +815,74 @@ export default function ProjectPage({ params }: Props) {
                       </div>
                       <div>{language === 'en' ? 'Not available' : 'No disponible'}</div>
                     </div>
-                    );
+                  );
+                })()}
+              </div>
+
+              {/* Mobile: 2 columnas sin PDF */}
+              <div className="lg:hidden grid grid-cols-2 pt-6">
+                {/* Proyecto Anterior */}
+                {(() => {
+                  const { previous } = getNavigationProjects();
+                  return previous ? (
+                    <Link
+                      href={`/proyectos/${previous.slug}`}
+                      className="px-3 text-sm font-medium text-gray-600 hover:text-black border-r border-gray-200 text-left"
+                    >
+                      <div className="flex items-start gap-1">
+                        <span className="material-symbols-outlined text-sm">
+                          arrow_back
+                        </span>
+                        <div>
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Previous' : 'Anterior'}
+                          </div>
+                          <div className="font-medium line-clamp-2">
+                            {language === 'en' && previous.title_en ? previous.title_en : previous.title}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-3 text-sm font-medium text-gray-300 border-r border-gray-200 text-left">
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Previous' : 'Anterior'}
+                      </div>
+                      <div className="text-xs">{language === 'en' ? 'Not available' : 'No disponible'}</div>
+                    </div>
+                  );
+                })()}
+
+                {/* Siguiente Proyecto */}
+                {(() => {
+                  const { next } = getNavigationProjects();
+                  return next ? (
+                    <Link
+                      href={`/proyectos/${next.slug}`}
+                      className="px-3 text-sm font-medium text-gray-600 hover:text-black text-right"
+                    >
+                      <div className="flex items-start justify-end gap-1">
+                        <div className="text-right">
+                          <div className="text-xs text-gray-400 mb-1">
+                            {language === 'en' ? 'Next' : 'Siguiente'}
+                          </div>
+                          <div className="font-medium line-clamp-2">
+                            {language === 'en' && next.title_en ? next.title_en : next.title}
+                          </div>
+                        </div>
+                        <span className="material-symbols-outlined text-sm">
+                          arrow_forward
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-3 text-sm font-medium text-gray-300 text-right">
+                      <div className="text-xs text-gray-400 mb-1">
+                        {language === 'en' ? 'Next' : 'Siguiente'}
+                      </div>
+                      <div className="text-xs">{language === 'en' ? 'Not available' : 'No disponible'}</div>
+                    </div>
+                  );
                 })()}
               </div>
             </div>

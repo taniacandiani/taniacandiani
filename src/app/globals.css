@@ -71,10 +71,16 @@
     font-display: swap;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'DINNextLTPro', sans-serif;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 
@@ -86,13 +92,17 @@ body {
   font-weight: 400;
   line-height: 1.6;
   margin-left: -4px;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 /* Responsive adjustments for hero h2 */
 @media (max-width: 768px) {
   .hero-section h2 {
-    font-size: clamp(2.5rem, 8vw, 4rem);
-    margin-left: -2px;
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+    margin-left: 0;
+    line-height: 1.2;
   }
 }
 
@@ -106,7 +116,7 @@ body {
 /* Responsive adjustments for main h3 */
 @media (max-width: 768px) {
   .main-section h3 {
-    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-size: clamp(2.5rem, 8vw, 4rem);
   }
 }
 
@@ -194,6 +204,12 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Placeholder negro para búsqueda */
+.placeholder-black::placeholder {
+  color: #000000;
+  opacity: 1;
 }
 
 

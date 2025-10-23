@@ -10,15 +10,15 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, hasNavbarOffset = true }: MainLayoutProps) {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className={hasNavbarOffset ? 'pt-24' : ''}>
+      <main className={`relative flex-grow ${hasNavbarOffset ? 'pt-24' : ''}`}>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
       </main>
       <Footer />
       <GoToTopButton />
-    </>
+    </div>
   );
 } 

@@ -5,17 +5,20 @@ import type { Metadata } from 'next';
 import Section from '@/components/Section';
 import Hero from '@/components/Hero';
 import NewsCard from '@/components/ui/NewsCard';
+import ExhibitionCard from '@/components/ui/ExhibitionCard';
 import MainLayout from '@/components/MainLayout';
 import { HERO_SLIDES, PROJECTS, SAMPLE_NEWS } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { NewsStorage } from '@/lib/newsStorage';
-import { Slide, NewsItem } from '@/types';
+import { ExhibitionStorage } from '@/lib/exhibitionStorage';
+import { Slide, NewsItem, Exhibition } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Home() {
   const { language } = useLanguage();
   const [heroSlides, setHeroSlides] = useState<Slide[]>(HERO_SLIDES);
   const [homeNews, setHomeNews] = useState<NewsItem[]>([]);
+  const [activeExhibitions, setActiveExhibitions] = useState<Exhibition[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -60,13 +63,18 @@ export default function Home() {
         // Get news for home
         const newsForHome = await NewsStorage.getForHome();
         setHomeNews(newsForHome);
-        
+
+        // Get active exhibitions for home
+        const exhibitions = await ExhibitionStorage.getActive();
+        setActiveExhibitions(exhibitions);
+
         setIsInitialized(true);
       } catch (error) {
         console.error('Error initializing data:', error);
         // Fallback to static content
         setHeroSlides(HERO_SLIDES);
         setHomeNews(SAMPLE_NEWS.slice(0, 3));
+        setActiveExhibitions([]);
       } finally {
         setLoading(false);
       }
@@ -83,6 +91,15 @@ export default function Home() {
         setHomeNews(newsForHome);
       } catch (error) {
         console.error('Error updating news:', error);
+      }
+    };
+
+    const handleExhibitionsUpdate = async () => {
+      try {
+        const exhibitions = await ExhibitionStorage.getActive();
+        setActiveExhibitions(exhibitions);
+      } catch (error) {
+        console.error('Error updating exhibitions:', error);
       }
     };
 
@@ -107,9 +124,11 @@ export default function Home() {
 
     window.addEventListener('newsUpdated', handleNewsUpdate);
     window.addEventListener('projectsUpdated', handleProjectsUpdate);
+    window.addEventListener('exhibitionsUpdated', handleExhibitionsUpdate);
     return () => {
       window.removeEventListener('newsUpdated', handleNewsUpdate);
       window.removeEventListener('projectsUpdated', handleProjectsUpdate);
+      window.removeEventListener('exhibitionsUpdated', handleExhibitionsUpdate);
     };
   }, []);
 
@@ -158,8 +177,21 @@ export default function Home() {
       <div>
         <Hero slides={heroSlides} autoPlay={true} interval={6000} />
 
-        <Section as="main">
-          <div className="main-section py-40">
+        <Section as="main" indented>
+          <div className="main-section py-12 sm:py-20 lg:py-40">
+            {/* Exhibitions Section */}
+            {activeExhibitions.length > 0 && (
+              <>
+                <h3 className="font-medium text-black mb-12">{language === 'en' ? 'EXHIBITIONS' : 'EXPOSICIONES'}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                  {activeExhibitions.map((exhibition) => (
+                    <ExhibitionCard key={exhibition.id} exhibition={exhibition} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* News Section */}
             <h3 className="font-medium text-black mb-12">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

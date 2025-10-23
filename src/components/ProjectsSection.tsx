@@ -24,6 +24,8 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
+  const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Initialize filters from URL params
@@ -115,32 +117,47 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   }, [projects, filterState]);
 
   return (
-    <div className="container-mobile py-8 pt-16">
-      {/* Header con Toggle Button y Título alineados */}
-      <div className="mb-16 flex justify-between items-center">
+    <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
+      {/* Header */}
+      <div className="mb-8 lg:mb-16 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <button 
+          {/* Toggle sidebar button - solo desktop */}
+          <button
             onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors flex items-center justify-center cursor-pointer"
+            className="hidden lg:flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
-            <span 
-              className="material-symbols-outlined leading-none -mt-1" 
+            <span
+              className="material-symbols-outlined leading-none -mt-1"
               style={{ fontSize: '32px' }}
             >
               thumbnail_bar
             </span>
           </button>
+
+          {/* Botón de cambio de vista - a la izquierda en mobile */}
+          <button
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            className="lg:hidden flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
+          >
+            <span
+              className="material-symbols-outlined transition-all duration-300 ease-in-out"
+              style={{ fontSize: '32px' }}
+            >
+              {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
+            </span>
+          </button>
+
           <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'PROJECTS' : 'PROYECTOS'}</h1>
         </div>
         <div className="flex items-center gap-4">
-          {/* Botón de cambio de vista */}
+          {/* Botón de cambio de vista - solo desktop */}
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="flex items-center gap-2 text-sm cursor-pointer  hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
+            className="hidden lg:flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
           >
-            <span 
-              className="material-symbols-outlined transition-all duration-300 ease-in-out" 
+            <span
+              className="material-symbols-outlined transition-all duration-300 ease-in-out"
               style={{ fontSize: '32px' }}
             >
               {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
@@ -216,38 +233,52 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
         </div>
       </div>
 
-      <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-        {/* Sidebar */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          sidebarVisible ? 'w-64' : 'w-0'
-        }`}>
-          <div className="w-64">
-            
-            {/* Búsqueda */}
-            <div className="mb-8">
-              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Search' : 'Búsqueda'}</h4>
-              <input
-                type="text"
-                placeholder={language === 'en' ? 'Search projects...' : 'Buscar proyectos...'}
-                value={filterState.searchTerm}
-                onChange={(e) => updateFilter({ searchTerm: e.target.value })}
-                className="w-full border-0 border-b border-gray-300 px-0 py-2 text-base   bg-transparent"
-                aria-label={language === 'en' ? 'Search projects by title, category or description' : 'Buscar proyectos por título, categoría o descripción'}
-              />
-            </div>
+      {/* Mobile Filters - Acordeones arriba */}
+      <div className="lg:hidden mb-8 space-y-4">
+        {/* Búsqueda - siempre visible */}
+        <div className="pb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={language === 'en' ? 'Search projects...' : 'Buscar proyectos...'}
+              value={filterState.searchTerm}
+              onChange={(e) => updateFilter({ searchTerm: e.target.value })}
+              className="w-full border-0 border-b border-gray-300 pl-0 pr-7 py-2 text-base bg-transparent placeholder-black"
+            />
+            <svg
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 text-black"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
 
-          {/* Categorías */}
-          <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-            <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
-            <div className="space-y-2">
+        {/* Categorías Accordion */}
+        <div className="border-b border-gray-300">
+          <button
+            onClick={() => setCategoriesAccordionOpen(!categoriesAccordionOpen)}
+            className="w-full flex justify-between items-center py-3 text-left"
+          >
+            <h4 className="text-lg font-medium">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
+            <svg
+              className={`w-5 h-5 transition-transform ${categoriesAccordionOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {categoriesAccordionOpen && (
+            <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedCategory: null })}
-                className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                  filterState.selectedCategory === null
-                    ? 'text-black'
-                    : 'text-gray-500 hover:text-black'
+                className={`block w-full text-left py-1 text-base ${
+                  filterState.selectedCategory === null ? 'text-black font-medium' : 'text-gray-500'
                 }`}
-                aria-pressed={filterState.selectedCategory === null}
               >
                 {language === 'en' ? 'All categories' : 'Todas las categorías'}
               </button>
@@ -255,31 +286,40 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 <button
                   key={category.id}
                   onClick={() => updateFilter({ selectedCategory: category.name })}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                    filterState.selectedCategory === category.name
-                      ? 'text-black'
-                      : 'text-gray-500 hover:text-black'
+                  className={`block w-full text-left py-1 text-base ${
+                    filterState.selectedCategory === category.name ? 'text-black font-medium' : 'text-gray-500'
                   }`}
-                  aria-pressed={filterState.selectedCategory === category.name}
                 >
                   {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                 </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Años */}
-          <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-            <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
-            <div className="space-y-2">
+        {/* Año Accordion */}
+        <div className="border-b border-gray-300">
+          <button
+            onClick={() => setYearAccordionOpen(!yearAccordionOpen)}
+            className="w-full flex justify-between items-center py-3 text-left"
+          >
+            <h4 className="text-lg font-medium">{language === 'en' ? 'Year' : 'Año'}</h4>
+            <svg
+              className={`w-5 h-5 transition-transform ${yearAccordionOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {yearAccordionOpen && (
+            <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedYear: null })}
-                className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                  filterState.selectedYear === null
-                    ? 'text-black'
-                    : 'text-gray-500 hover:text-black'
+                className={`block w-full text-left py-1 text-base ${
+                  filterState.selectedYear === null ? 'text-black font-medium' : 'text-gray-500'
                 }`}
-                aria-pressed={filterState.selectedYear === null}
               >
                 {language === 'en' ? 'All years' : 'Todos los años'}
               </button>
@@ -287,18 +327,96 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 <button
                   key={year}
                   onClick={() => updateFilter({ selectedYear: year })}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                    filterState.selectedYear === year
-                      ? 'text-black'
-                      : 'text-gray-500 hover:text-black'
+                  className={`block w-full text-left py-1 text-base ${
+                    filterState.selectedYear === year ? 'text-black font-medium' : 'text-gray-500'
                   }`}
-                  aria-pressed={filterState.selectedYear === year}
                 >
                   {year}
                 </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+
+      <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
+        {/* Desktop Sidebar */}
+        <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+          sidebarVisible ? 'w-64' : 'w-0'
+        }`}>
+          <div className="w-64">
+            {/* Búsqueda */}
+            <div className="mb-8">
+              <div className="relative">
+                <svg
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder={language === 'en' ? 'Search projects...' : 'Buscar proyectos...'}
+                  value={filterState.searchTerm}
+                  onChange={(e) => updateFilter({ searchTerm: e.target.value })}
+                  className="w-full border-0 border-b border-gray-300 pl-7 pr-0 py-2 text-base bg-transparent placeholder-black"
+                />
+              </div>
+            </div>
+
+            {/* Categorías */}
+            <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
+              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
+              <div className="space-y-2">
+                <button
+                  onClick={() => updateFilter({ selectedCategory: null })}
+                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    filterState.selectedCategory === null ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {language === 'en' ? 'All categories' : 'Todas las categorías'}
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => updateFilter({ selectedCategory: category.name })}
+                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      filterState.selectedCategory === category.name ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Años */}
+            <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
+              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
+              <div className="space-y-2">
+                <button
+                  onClick={() => updateFilter({ selectedYear: null })}
+                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    filterState.selectedYear === null ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {language === 'en' ? 'All years' : 'Todos los años'}
+                </button>
+                {availableYears.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => updateFilter({ selectedYear: year })}
+                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      filterState.selectedYear === year ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -149,6 +149,45 @@ export const contactContent = pgTable('contact_content', {
   lastUpdated: timestamp('last_updated').defaultNow(),
 });
 
+// Exhibitions Table
+export const exhibitions = pgTable('exhibitions', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  title: varchar('title', { length: 500 }).notNull(),
+  content: text('content').notNull(),
+  image: text('image'),
+  slug: varchar('slug', { length: 255 }).notNull().unique(),
+  publishedAt: timestamp('published_at'),
+  categories: jsonb('categories').$type<string[]>(),
+  venue: varchar('venue', { length: 500 }),
+  startDate: timestamp('start_date'),
+  endDate: timestamp('end_date'),
+  curator: varchar('curator', { length: 255 }),
+  status: varchar('status', { length: 50 }).default('draft'),
+  tags: jsonb('tags').$type<string[]>(),
+  heroImages: jsonb('hero_images').$type<string[]>(),
+  externalLink: text('external_link'),
+
+  // English translations
+  titleEn: varchar('title_en', { length: 500 }),
+  contentEn: text('content_en'),
+  venueEn: varchar('venue_en', { length: 500 }),
+  curatorEn: varchar('curator_en', { length: 255 }),
+
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Exhibition Categories Table
+export const exhibitionCategories = pgTable('exhibition_categories', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  nameEn: varchar('name_en', { length: 255 }),
+  description: text('description'),
+  descriptionEn: text('description_en'),
+  count: integer('count').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Export types
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
@@ -161,3 +200,6 @@ export type NewsCategory = typeof newsCategories.$inferSelect;
 export type Publication = typeof publications.$inferSelect;
 export type AboutContent = typeof aboutContent.$inferSelect;
 export type ContactContent = typeof contactContent.$inferSelect;
+export type Exhibition = typeof exhibitions.$inferSelect;
+export type NewExhibition = typeof exhibitions.$inferInsert;
+export type ExhibitionCategory = typeof exhibitionCategories.$inferSelect;
