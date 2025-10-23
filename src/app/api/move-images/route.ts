@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { moveProjectImages } from '@/lib/cloudinaryUtils';
+// NOTE: moveProjectImages was moved to server-side cloudinary.ts
+// This endpoint is deprecated and should not be used
+// import { moveProjectImages } from '@/lib/cloudinaryUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,22 +22,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // DEPRECATED: This endpoint is no longer in use
     // Move images from temp folder to final folder
-    const newUrls = await moveProjectImages(imageUrls, tempFolder, finalFolder);
-
-    return NextResponse.json({
-      success: true,
-      newUrls,
-      message: `${newUrls.length} imágenes movidas exitosamente`
-    });
+    // const newUrls = await moveProjectImages(imageUrls, tempFolder, finalFolder);
+    return NextResponse.json(
+      { error: 'Este endpoint está deprecado. Las imágenes se manejan directamente desde el admin.' },
+      { status: 410 }
+    );
   } catch (error: any) {
-    console.error('Error moving images:', error);
+    console.error('Error in deprecated endpoint:', error);
     return NextResponse.json(
       {
-        error: 'Error al mover las imágenes',
+        error: 'Este endpoint está deprecado.',
         details: error.message
       },
-      { status: 500 }
+      { status: 410 }
     );
   }
 }

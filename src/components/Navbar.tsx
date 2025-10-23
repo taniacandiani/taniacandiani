@@ -18,7 +18,7 @@ export default function Navbar() {
     <nav className="fixed top-0 w-full bg-white z-[9999] shadow-sm" role="navigation" aria-label="Navegación principal">
       <div className="px-4 sm:px-6 lg:px-8 py-8 flex justify-between items-center">
         {/* Logo a la izquierda */}
-        <div className="flex-1 xl:flex-initial">
+        <div className="flex-1">
           <Link
             href="/"
             className="text-lg sm:text-xl md:text-2xl xl:text-4xl font-medium tracking-widest whitespace-nowrap"
@@ -28,7 +28,7 @@ export default function Navbar() {
         </div>
 
         {/* Navigation items al centro - solo desktop grande (xl+) */}
-        <div className="hidden xl:flex items-center gap-8 flex-1 justify-center flex-shrink-0">
+        <div className="hidden xl:flex items-center gap-8 flex-1 justify-center">
           {NAVIGATION_ITEMS.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
@@ -46,7 +46,7 @@ export default function Navbar() {
         </div>
 
         {/* Social links + Language selector + Hamburger - a la derecha */}
-        <div className="flex items-center gap-3 sm:gap-4 xl:flex-1 justify-end">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 justify-end">
           <a
             href={SOCIAL_LINKS.instagram}
             className="text-xl sm:text-2xl hover:text-gray-600 transition-colors duration-200 rounded-sm p-1"
