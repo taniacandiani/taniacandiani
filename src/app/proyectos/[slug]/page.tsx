@@ -609,7 +609,7 @@ export default function ProjectPage({ params }: Props) {
 
             {/* Título del proyecto - Solo desktop */}
             <div className="hidden lg:block mb-8">
-              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '8rem', lineHeight: 1 }}>
+              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '6rem', lineHeight: 1 }}>
                 {(() => {
                   // Si hay un tab seleccionado, mostrar el título del tab
                   if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
