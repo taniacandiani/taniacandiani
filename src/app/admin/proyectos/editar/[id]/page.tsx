@@ -89,17 +89,23 @@ export default function EditProjectPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl+Shift+S para guardar
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 's') {
+      // Usar tanto 's' como 'S' para mayor compatibilidad
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
+        e.stopPropagation();
         const form = document.getElementById('project-form') as HTMLFormElement;
         if (form && !saving) {
+          console.log('Shortcut triggered: Save');
           form.requestSubmit();
         }
       }
 
       // Cmd/Ctrl+Shift+E para cambiar idioma
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'e') {
+      // Usar tanto 'e' como 'E' para mayor compatibilidad
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
         e.preventDefault();
+        e.stopPropagation();
+        console.log('Shortcut triggered: Change language');
         setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es');
       }
     };
