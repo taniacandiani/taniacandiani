@@ -33,16 +33,30 @@ export default function RichContent({ content, className = '' }: RichContentProp
       console.log('Content was HTML-encoded, decoded to:', processed.substring(0, 200));
     }
 
-    // Actualizar URLs de Vimeo para agregar parámetros que ocultan el título y autor
+    // Actualizar URLs de Vimeo para agregar/corregir parámetros
+    // Reemplazar TODAS las URLs de Vimeo con los parámetros correctos
     processed = processed.replace(
-      /https:\/\/player\.vimeo\.com\/video\/(\d+)(\?[^"]*)?"/g,
-      (match, videoId, queryString) => {
-        // Si ya tiene parámetros, verificar si ya están los que necesitamos
-        if (queryString && queryString.includes('title=0')) {
-          return match; // Ya tiene los parámetros, no modificar
+      /https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?"?/g,
+      (match, videoId) => {
+        // Siempre usar los parámetros correctos, sin importar lo que tenía antes
+        // autoplay=0: No reproducir automáticamente
+        // autopause=0: No pausar cuando se pierde el foco
+        // background=0: Permitir controles normales
+        // Eliminamos player_id y app_id que causan problemas
+        return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&autoplay=0&background=0"`;
+      }
+    );
+
+    // Asegurar que los iframes de Vimeo tengan los atributos allow necesarios
+    processed = processed.replace(
+      /<iframe([^>]*src="https:\/\/player\.vimeo\.com[^"]*")([^>]*)>/g,
+      (match, srcPart, restPart) => {
+        // Si ya tiene el atributo allow, no modificar
+        if (restPart.includes('allow=')) {
+          return match;
         }
-        // Agregar parámetros para ocultar título, autor, etc.
-        return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479"`;
+        // Agregar atributo allow para permitir autoplay, fullscreen, etc.
+        return `<iframe${srcPart} allow="autoplay; fullscreen; picture-in-picture; clipboard-write"${restPart}>`;
       }
     );
 
