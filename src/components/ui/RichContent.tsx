@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 interface RichContentProps {
   content: string;
@@ -8,16 +8,13 @@ interface RichContentProps {
 }
 
 export default function RichContent({ content, className = '' }: RichContentProps) {
-  const [processedContent, setProcessedContent] = useState('');
-
-  useEffect(() => {
+  const processedContent = useMemo(() => {
     if (!content) {
-      setProcessedContent('');
-      return;
+      return '';
     }
 
-    // Debug: Ver qué contenido estamos recibiendo
-    console.log('RichContent received content:', content.substring(0, 200));
+    // Debug: Ver qué contenido estamos recibiendo (solo se ejecuta cuando content cambia)
+    console.log('RichContent processing content:', content.substring(0, 200));
 
     // Decodificar entidades HTML si el contenido está escapado
     const decodeHTMLEntities = (text: string): string => {
@@ -36,27 +33,42 @@ export default function RichContent({ content, className = '' }: RichContentProp
     // Actualizar URLs de Vimeo para agregar/corregir parámetros
     // Reemplazar TODAS las URLs de Vimeo con los parámetros correctos
     processed = processed.replace(
-      /https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?"?/g,
+      /src="https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?"/g,
       (match, videoId) => {
-        // Siempre usar los parámetros correctos, sin importar lo que tenía antes
-        // autoplay=0: No reproducir automáticamente
-        // autopause=0: No pausar cuando se pierde el foco
-        // background=0: Permitir controles normales
-        // Eliminamos player_id y app_id que causan problemas
-        return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&autoplay=0&background=0"`;
+        // Parámetros optimizados para evitar pausa automática:
+        // title=0, byline=0, portrait=0: Ocultar información del video
+        // autopause=0: CRÍTICO - No pausar cuando el iframe pierde el foco
+        // muted=0: No silenciar (permite reproducción normal)
+        // loop=0: No repetir en bucle
+        // controls=1: Mostrar controles del reproductor
+        console.log(`Transforming Vimeo URL for video ID: ${videoId}`);
+        return `src="https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&autopause=0&muted=0&loop=0&controls=1"`;
       }
     );
 
-    // Asegurar que los iframes de Vimeo tengan los atributos allow necesarios
+    // Asegurar que los iframes de Vimeo tengan los atributos necesarios
     processed = processed.replace(
       /<iframe([^>]*src="https:\/\/player\.vimeo\.com[^"]*")([^>]*)>/g,
       (match, srcPart, restPart) => {
-        // Si ya tiene el atributo allow, no modificar
-        if (restPart.includes('allow=')) {
-          return match;
+        let newIframe = `<iframe${srcPart}`;
+
+        // Agregar frameborder="0" si no existe (mejor compatibilidad)
+        if (!restPart.includes('frameborder')) {
+          newIframe += ' frameborder="0"';
         }
-        // Agregar atributo allow para permitir autoplay, fullscreen, etc.
-        return `<iframe${srcPart} allow="autoplay; fullscreen; picture-in-picture; clipboard-write"${restPart}>`;
+
+        // Agregar atributo allow (incluye fullscreen, evitando el warning de allowfullscreen)
+        if (!restPart.includes('allow=')) {
+          newIframe += ' allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"';
+        }
+
+        // Solo agregar allowfullscreen si NO tiene el atributo allow (para compatibilidad legacy)
+        if (!restPart.includes('allow=') && !restPart.includes('allowfullscreen') && !restPart.includes('allowFullScreen')) {
+          newIframe += ' allowfullscreen';
+        }
+
+        newIframe += restPart + '>';
+        return newIframe;
       }
     );
 
@@ -89,7 +101,7 @@ export default function RichContent({ content, className = '' }: RichContentProp
       }
     }
 
-    setProcessedContent(processed);
+    return processed;
   }, [content]);
 
   if (!processedContent) {

@@ -45,7 +45,24 @@ export default function ProjectCard({ project, priority = false }: ProjectCardPr
 
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>{project.categories?.join(', ') || (language === 'en' ? 'No category' : 'Sin categoría')}</span>
+            <span>
+              {(() => {
+                if (!project.categories || project.categories.length === 0) {
+                  return language === 'en' ? 'No category' : 'Sin categoría';
+                }
+
+                const maxCategories = 3;
+                const displayCategories = project.categories.slice(0, maxCategories);
+                const remainingCount = project.categories.length - maxCategories;
+
+                let text = displayCategories.join(', ');
+                if (remainingCount > 0) {
+                  text += ` +${remainingCount}`;
+                }
+
+                return text;
+              })()}
+            </span>
             <span>•</span>
             <span>{project.year}</span>
           </div>
