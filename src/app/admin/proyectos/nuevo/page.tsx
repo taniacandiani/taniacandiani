@@ -262,6 +262,10 @@ export default function NewProjectPage() {
       additionalImage: '',
       projectDetails: '',
       technicalSheet: '',
+      pdfUrl: '',
+      pdfButtonText: '',
+      pdfButtonText_en: '',
+      videoUrl: '',
       title_en: '',
       projectDetails_en: '',
       technicalSheet_en: ''
@@ -1280,6 +1284,167 @@ export default function NewProjectPage() {
                           : 'Write the technical sheet for this tab...'}
                         height={200}
                       />
+                    </div>
+
+                    {/* Documento PDF del Tab */}
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Documento PDF</h4>
+                        <span className="text-xs font-medium text-gray-600">
+                          Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(!formData.title || !tab.title) ? (
+                          <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p className="mt-3 text-sm font-medium text-gray-600">
+                              {editingLanguage === 'es' ? 'Documento PDF' : 'PDF Document'}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {!formData.title
+                                ? 'Ingresa un título para el proyecto arriba'
+                                : 'Ingresa un título para este tab arriba'}
+                            </p>
+                          </div>
+                        ) : (
+                          (() => {
+                            const tabSlug = tab.title
+                              .toLowerCase()
+                              .normalize('NFD')
+                              .replace(/[\u0300-\u036f]/g, '')
+                              .replace(/[^a-z0-9\s]/g, '')
+                              .trim()
+                              .replace(/\s+/g, '-');
+                            const tabFolder = `${getProjectFolder()}/${tabSlug}`;
+
+                            return (
+                              <ImageUploader
+                                label={editingLanguage === 'es' ? 'Subir Documento PDF' : 'Upload PDF Document'}
+                                projectId={tabSlug}
+                                currentImage={tab.pdfUrl}
+                                onImageUpload={(fileUrl) => updateTab(activeTabIndex, 'pdfUrl', fileUrl)}
+                                required={false}
+                                contentType={tabFolder}
+                                accept=".pdf"
+                              />
+                            );
+                          })()
+                        )}
+
+                        {tab.pdfUrl && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              {editingLanguage === 'es' ? 'Texto del Botón PDF' : 'PDF Button Text'}
+                            </label>
+                            <input
+                              type="text"
+                              value={editingLanguage === 'es' ? (tab.pdfButtonText || '') : (tab.pdfButtonText_en || '')}
+                              onChange={(e) => updateTab(
+                                activeTabIndex,
+                                editingLanguage === 'es' ? 'pdfButtonText' : 'pdfButtonText_en',
+                                e.target.value
+                              )}
+                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                              placeholder={editingLanguage === 'es' ? 'Ej: Descargar catálogo' : 'Ex: Download catalog'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {editingLanguage === 'es'
+                                ? 'Este texto aparecerá en el botón que abre el PDF'
+                                : 'This text will appear on the button that opens the PDF'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Video del Tab */}
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Video del Tab</h4>
+                        <span className="text-xs font-medium text-gray-600">
+                          Campo compartido entre idiomas
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            URL del Video (YouTube o Vimeo)
+                          </label>
+                          <input
+                            type="text"
+                            value={tab.videoUrl || ''}
+                            onChange={(e) => updateTab(activeTabIndex, 'videoUrl', e.target.value)}
+                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Pega aquí el enlace completo del video de YouTube o Vimeo. Se mostrará embebido en este tab.
+                          </p>
+                        </div>
+
+                        {/* Vista previa del video */}
+                        {tab.videoUrl && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              Vista Previa del Video
+                            </label>
+                            <div className="max-w-md">
+                              {(() => {
+                                const url = tab.videoUrl;
+
+                                // YouTube
+                                const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                                const youtubeMatch = url.match(youtubeRegex);
+                                if (youtubeMatch) {
+                                  const videoId = youtubeMatch[1];
+                                  return (
+                                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                      <iframe
+                                        className="absolute top-0 left-0 w-full h-full rounded"
+                                        src={`https://www.youtube.com/embed/${videoId}`}
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                      />
+                                    </div>
+                                  );
+                                }
+
+                                // Vimeo
+                                const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
+                                const vimeoMatch = url.match(vimeoRegex);
+                                if (vimeoMatch) {
+                                  const videoId = vimeoMatch[1];
+                                  return (
+                                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                      <iframe
+                                        className="absolute top-0 left-0 w-full h-full rounded"
+                                        src={`https://player.vimeo.com/video/${videoId}`}
+                                        title="Vimeo video player"
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                      />
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="bg-gray-100 rounded p-3 text-xs text-gray-600">
+                                    URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -68,6 +68,14 @@ export const projectTabs = pgTable('project_tabs', {
   projectDetails: text('project_details'),
   technicalSheet: text('technical_sheet'),
 
+  // PDF Document (new fields)
+  pdfUrl: text('pdf_url'),
+  pdfButtonText: varchar('pdf_button_text', { length: 255 }),
+  pdfButtonTextEn: varchar('pdf_button_text_en', { length: 255 }),
+
+  // Video Embed (new field)
+  videoUrl: text('video_url'),
+
   // English translations
   titleEn: varchar('title_en', { length: 500 }),
   projectDetailsEn: text('project_details_en'),

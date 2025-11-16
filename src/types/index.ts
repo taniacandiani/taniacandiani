@@ -38,6 +38,15 @@ export interface ProjectTab {
   additionalImage?: string;
   projectDetails?: string;
   technicalSheet?: string;
+
+  // PDF Document (new fields)
+  pdfUrl?: string;
+  pdfButtonText?: string;
+  pdfButtonText_en?: string;
+
+  // Video Embed (new field)
+  videoUrl?: string;
+
   title_en?: string;
   projectDetails_en?: string;
   technicalSheet_en?: string;
