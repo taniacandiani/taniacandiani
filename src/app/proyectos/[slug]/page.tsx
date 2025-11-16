@@ -217,9 +217,10 @@ export default function ProjectPage({ params }: Props) {
     };
   }, [params]);
 
-  // Reset slider position when switching tabs
+  // Reset slider position and content tab when switching project tabs
   useEffect(() => {
     setCurrentSlide(0);
+    setActiveTab('detalles'); // Resetear a "detalles" cuando cambia de tab de proyecto
   }, [activeProjectTab]);
 
   // Auto-rotate del slider - pausar cuando hover
@@ -626,37 +627,58 @@ export default function ProjectPage({ params }: Props) {
 
             {/* Tabs */}
             <div className="mb-8">
-              <div className="grid grid-cols-3 border-b border-gray-200 mb-6">
-                <button
-                  onClick={() => setActiveTab('detalles')}
-                  className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
-                    activeTab === 'detalles'
-                      ? 'border-b-2 border-b-black text-black bg-gray-50'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {language === 'en' ? 'Project Details' : 'Detalles del Proyecto'}
-                </button>
-                <button
-                  onClick={() => setActiveTab('ficha')}
-                  className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
-                    activeTab === 'ficha'
-                      ? 'border-b-2 border-b-black text-black bg-gray-50'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {language === 'en' ? 'Technical Sheet' : 'Ficha Técnica'}
-                </button>
-                <button
-                  onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
-                  className="px-2 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-xs lg:text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-1 lg:gap-2 cursor-pointer"
-                >
-                  <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                    picture_as_pdf
-                  </span>
-                </button>
-              </div>
+              {(() => {
+                // Determinar si hay contenido en la ficha técnica
+                let hasTechnicalSheet = false;
+                if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                  const tab = project.tabs[activeProjectTab];
+                  const content = language === 'en'
+                    ? (tab.technicalSheet_en || tab.technicalSheet)
+                    : tab.technicalSheet;
+                  hasTechnicalSheet = !!(content && content.trim() !== '');
+                } else {
+                  const content = language === 'en'
+                    ? (project.technicalSheet_en || project.technicalSheet)
+                    : project.technicalSheet;
+                  hasTechnicalSheet = !!(content && content.trim() !== '');
+                }
+
+                return (
+                  <div className={`grid ${hasTechnicalSheet ? 'grid-cols-3' : 'grid-cols-2'} border-b border-gray-200 mb-6`}>
+                    <button
+                      onClick={() => setActiveTab('detalles')}
+                      className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
+                        activeTab === 'detalles'
+                          ? 'border-b-2 border-b-black text-black bg-gray-50'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {language === 'en' ? 'Project Details' : 'Detalles del Proyecto'}
+                    </button>
+                    {hasTechnicalSheet && (
+                      <button
+                        onClick={() => setActiveTab('ficha')}
+                        className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
+                          activeTab === 'ficha'
+                            ? 'border-b-2 border-b-black text-black bg-gray-50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {language === 'en' ? 'Technical Sheet' : 'Ficha Técnica'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => window.open(`/api/projects/${project.id}/pdf?lang=${language}`, '_blank')}
+                      className="px-2 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-xs lg:text-lg font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-1 lg:gap-2 cursor-pointer"
+                    >
+                      <span>{language === 'en' ? 'Download PDF' : 'Descargar PDF'}</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                        picture_as_pdf
+                      </span>
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Contenido de los tabs */}
               <div className="text-base text-black leading-relaxed pt-8 pb-8">

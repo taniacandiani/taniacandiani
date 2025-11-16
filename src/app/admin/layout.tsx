@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 
 interface NavigationItem {
@@ -20,6 +20,17 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [menuAccordionOpen, setMenuAccordionOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [editingLanguage, setEditingLanguage] = useState<'es' | 'en'>('es');
+
+  // Escuchar cambios de idioma desde las páginas hijas
+  useEffect(() => {
+    const handleLanguageChange = (e: CustomEvent<{ language: 'es' | 'en' }>) => {
+      setEditingLanguage(e.detail.language);
+    };
+
+    window.addEventListener('editingLanguageChanged', handleLanguageChange as EventListener);
+    return () => window.removeEventListener('editingLanguageChanged', handleLanguageChange as EventListener);
+  }, []);
 
   const toggleExpanded = (href: string) => {
     setExpandedItems(prev =>
@@ -234,7 +245,11 @@ export default function AdminLayout({
 
               {/* Main Content */}
               <div className="flex-1 min-w-0 lg:min-w-[800px]">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[400px] lg:min-h-[600px] p-4 lg:p-6">
+                <div className={`rounded-lg shadow-sm border min-h-[400px] lg:min-h-[600px] p-4 lg:p-6 transition-colors duration-300 ${
+                  editingLanguage === 'en'
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+                }`}>
                   {children}
                 </div>
               </div>
