@@ -944,58 +944,49 @@ export default function EditProjectPage() {
                       }}
                     />
 
-                    {/* Mostrar imágenes del hero del tab */}
-                    {tab.heroImages && tab.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        {tab.heroImages.filter(img => img && img.trim() !== '').map((image, imgIndex) => (
-                          <div key={imgIndex} className="flex items-start gap-4 p-3 border border-gray-200 rounded">
-                            <img
-                              src={image}
-                              alt={`Tab ${tabIndex + 1} Hero ${imgIndex + 1}`}
-                              className="w-24 h-24 object-cover rounded"
-                            />
-                            <div className="flex-1">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {editingLanguage === 'es'
-                                  ? `Descripción imagen ${imgIndex + 1} (opcional)`
-                                  : `Image ${imgIndex + 1} description (optional)`}
-                              </label>
-                              <textarea
-                                value={
-                                  editingLanguage === 'es'
-                                    ? (tab.heroImageDescriptions?.[imgIndex] || '')
-                                    : (tab.heroImageDescriptions_en?.[imgIndex] || '')
-                                }
-                                onChange={(e) => {
-                                  const newTabs = [...(project.tabs || [])];
-                                  const currentTab = newTabs[tabIndex];
-                                  const field = editingLanguage === 'es'
-                                    ? 'heroImageDescriptions'
-                                    : 'heroImageDescriptions_en';
-                                  const descriptions = [...(currentTab[field] || [])];
-                                  descriptions[imgIndex] = e.target.value;
-                                  currentTab[field] = descriptions;
-                                  setProject({ ...project, tabs: newTabs });
-                                }}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-black"
-                                placeholder={editingLanguage === 'es'
-                                  ? 'Descripción de la imagen...'
-                                  : 'Image description...'}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeTabHeroImage(tabIndex, imgIndex)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Mostrar imágenes del hero del tab con reordenamiento */}
+                    <ReorderableImageList
+                      images={tab.heroImages || ['']}
+                      descriptions={tab.heroImageDescriptions}
+                      descriptionsEn={tab.heroImageDescriptions_en}
+                      editingLanguage={editingLanguage}
+                      onReorder={(newImages, newDescriptions, newDescriptionsEn) => {
+                        const newTabs = [...(project.tabs || [])];
+                        newTabs[tabIndex] = {
+                          ...newTabs[tabIndex],
+                          heroImages: newImages,
+                          heroImageDescriptions: newDescriptions,
+                          heroImageDescriptions_en: newDescriptionsEn
+                        };
+                        setProject({ ...project, tabs: newTabs });
+                      }}
+                      onRemove={(index) => {
+                        const newTabs = [...(project.tabs || [])];
+                        const currentTab = newTabs[tabIndex];
+                        const newHeroImages = currentTab.heroImages?.filter((_, i) => i !== index) || [];
+                        const newDescriptions = currentTab.heroImageDescriptions?.filter((_, i) => i !== index) || [];
+                        const newDescriptionsEn = currentTab.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                        newTabs[tabIndex] = {
+                          ...currentTab,
+                          heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                          heroImageDescriptions: newDescriptions,
+                          heroImageDescriptions_en: newDescriptionsEn
+                        };
+                        setProject({ ...project, tabs: newTabs });
+                      }}
+                      onDescriptionChange={(index, value, language) => {
+                        const newTabs = [...(project.tabs || [])];
+                        const currentTab = newTabs[tabIndex];
+                        const field = language === 'es' ? 'heroImageDescriptions' : 'heroImageDescriptions_en';
+                        const descriptions = [...(currentTab[field] || [])];
+                        while (descriptions.length <= index) {
+                          descriptions.push('');
+                        }
+                        descriptions[index] = value;
+                        newTabs[tabIndex] = { ...currentTab, [field]: descriptions };
+                        setProject({ ...project, tabs: newTabs });
+                      }}
+                    />
                   </div>
 
                   {/* Imagen Secundaria del Tab */}

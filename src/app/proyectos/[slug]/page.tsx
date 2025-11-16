@@ -217,6 +217,11 @@ export default function ProjectPage({ params }: Props) {
     };
   }, [params]);
 
+  // Reset slider position when switching tabs
+  useEffect(() => {
+    setCurrentSlide(0);
+  }, [activeProjectTab]);
+
   // Auto-rotate del slider - pausar cuando hover
   useEffect(() => {
     if (sliderImages.length > 1 && !isSliderHovered) {
@@ -476,30 +481,38 @@ export default function ProjectPage({ params }: Props) {
               onTouchEnd={onTouchEnd}
             >
               <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
-                <Image
-                  src={sliderImages[currentSlide]}
-                  alt={`${project.title} - Slide ${currentSlide + 1}`}
-                  fill
-                  className="object-cover"
-                />
+                {sliderImages[currentSlide] && sliderImages[currentSlide].trim() !== '' ? (
+                  <Image
+                    src={sliderImages[currentSlide]}
+                    alt={`${project.title} - Slide ${currentSlide + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">Sin imagen</span>
+                  </div>
+                )}
 
                 {/* Descripción de la imagen actual */}
                 {(() => {
-                  const descriptions = language === 'en' && project.heroImageDescriptions_en
-                    ? project.heroImageDescriptions_en
-                    : project.heroImageDescriptions;
+                  // Determinar si estamos viendo un tab o el proyecto principal
+                  let descriptions: string[] | undefined;
+
+                  if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                    // Usar descripciones del tab activo
+                    const tab = project.tabs[activeProjectTab];
+                    descriptions = language === 'en' && tab.heroImageDescriptions_en
+                      ? tab.heroImageDescriptions_en
+                      : tab.heroImageDescriptions;
+                  } else {
+                    // Usar descripciones del proyecto principal
+                    descriptions = language === 'en' && project.heroImageDescriptions_en
+                      ? project.heroImageDescriptions_en
+                      : project.heroImageDescriptions;
+                  }
 
                   const currentDescription = descriptions?.[currentSlide];
-
-                  // Debug
-                  console.log('Slider Debug:', {
-                    currentSlide,
-                    descriptions,
-                    currentDescription,
-                    language,
-                    hasDescriptions: !!project.heroImageDescriptions,
-                    hasDescriptions_en: !!project.heroImageDescriptions_en
-                  });
 
                   if (currentDescription && currentDescription.trim() !== '') {
                     return (
