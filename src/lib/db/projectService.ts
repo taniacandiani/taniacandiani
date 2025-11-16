@@ -142,6 +142,10 @@ export class ProjectService {
       project.commissionedBy_en || null,
       project.curator_en || null,
       project.location_en || null,
+      project.pdfUrl || null,
+      project.pdfButtonText || null,
+      project.pdfButtonText_en || null,
+      project.videoUrl || null,
       project.createdAt || null, // Allow custom createdAt
     ];
 
@@ -149,7 +153,7 @@ export class ProjectService {
     const hasUndefined = queryValues.some((val, idx) => {
       if (val === undefined) {
         console.error(`ERROR: Value at index ${idx} is undefined!`);
-        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','created_at'][idx]}`);
+        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','created_at'][idx]}`);
         return true;
       }
       return false;
@@ -173,7 +177,7 @@ export class ProjectService {
         commissioned_by, curator, location,
         title_en, description_en, project_details_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
-        curator_en, location_en, created_at
+        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
@@ -182,7 +186,7 @@ export class ProjectService {
         $20, $21, $22,
         $23, $24, $25,
         $26, $27, $28,
-        $29, $30, COALESCE($31, NOW())
+        $29, $30, $31, $32, $33, $34, COALESCE($35, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -225,75 +229,98 @@ export class ProjectService {
   static async update(id: string, project: Partial<Project>): Promise<Project | null> {
     const nile = await this.getClient();
 
+    // Debug logging para PDF y Video
+    console.log('=== UPDATE Project ===');
+    console.log('Project ID:', id);
+    console.log('pdfUrl en project:', project.pdfUrl);
+    console.log('videoUrl en project:', project.videoUrl);
+    console.log('pdfUrl está en project?', 'pdfUrl' in project);
+    console.log('videoUrl está en project?', 'videoUrl' in project);
+
+    // Build update query with direct assignment - allows setting fields to null
     const result = await nile.db.query(
       `UPDATE projects SET
-        title = COALESCE($2, title),
-        image = COALESCE($3, image),
-        year = COALESCE($4, year),
-        description = COALESCE($5, description),
-        slug = COALESCE($6, slug),
-        categories = COALESCE($7::jsonb, categories),
-        tags = COALESCE($8::jsonb, tags),
-        featured = COALESCE($9, featured),
-        status = COALESCE($10, status),
-        hero_images = COALESCE($11::jsonb, hero_images),
-        hero_image_descriptions = COALESCE($12::jsonb, hero_image_descriptions),
-        hero_image_descriptions_en = COALESCE($13::jsonb, hero_image_descriptions_en),
-        show_in_home_hero = COALESCE($14, show_in_home_hero),
-        hero_description = COALESCE($15, hero_description),
-        project_details = COALESCE($16, project_details),
-        technical_sheet = COALESCE($17, technical_sheet),
-        download_link = COALESCE($18, download_link),
-        additional_image = COALESCE($19, additional_image),
-        commissioned_by = COALESCE($20, commissioned_by),
-        curator = COALESCE($21, curator),
-        location = COALESCE($22, location),
-        title_en = COALESCE($23, title_en),
-        description_en = COALESCE($24, description_en),
-        project_details_en = COALESCE($25, project_details_en),
-        technical_sheet_en = COALESCE($26, technical_sheet_en),
-        hero_description_en = COALESCE($27, hero_description_en),
-        commissioned_by_en = COALESCE($28, commissioned_by_en),
-        curator_en = COALESCE($29, curator_en),
-        location_en = COALESCE($30, location_en),
-        created_at = COALESCE($31, created_at),
+        title = $2,
+        image = $3,
+        year = $4,
+        description = $5,
+        slug = $6,
+        categories = $7::jsonb,
+        tags = $8::jsonb,
+        featured = $9,
+        status = $10,
+        hero_images = $11::jsonb,
+        hero_image_descriptions = $12::jsonb,
+        hero_image_descriptions_en = $13::jsonb,
+        show_in_home_hero = $14,
+        hero_description = $15,
+        project_details = $16,
+        technical_sheet = $17,
+        download_link = $18,
+        additional_image = $19,
+        commissioned_by = $20,
+        curator = $21,
+        location = $22,
+        title_en = $23,
+        description_en = $24,
+        project_details_en = $25,
+        technical_sheet_en = $26,
+        hero_description_en = $27,
+        commissioned_by_en = $28,
+        curator_en = $29,
+        location_en = $30,
+        pdf_url = $31,
+        pdf_button_text = $32,
+        pdf_button_text_en = $33,
+        video_url = $34,
+        created_at = $35,
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
       [
         id,
-        project.title,
-        project.image,
-        project.year,
-        project.description,
-        project.slug,
-        project.categories ? JSON.stringify(project.categories) : null,
-        project.tags ? JSON.stringify(project.tags) : null,
-        project.featured,
-        project.status,
-        project.heroImages ? JSON.stringify(project.heroImages) : null,
-        project.heroImageDescriptions ? JSON.stringify(project.heroImageDescriptions) : null,
-        project.heroImageDescriptions_en ? JSON.stringify(project.heroImageDescriptions_en) : null,
-        project.showInHomeHero,
-        project.heroDescription || null,
-        project.projectDetails || null,
-        project.technicalSheet || null,
-        project.downloadLink || null,
-        project.additionalImage || null, // Convertir cadena vacía a null
-        project.commissionedBy || null,
-        project.curator || null,
-        project.location || null,
-        project.title_en || null,
-        project.description_en || null,
-        project.projectDetails_en || null,
-        project.technicalSheet_en || null,
-        project.heroDescription_en || null,
-        project.commissionedBy_en || null,
-        project.curator_en || null,
-        project.location_en || null,
-        project.createdAt,
+        project.title !== undefined ? project.title : 'KEEP_EXISTING',
+        project.image !== undefined ? project.image : 'KEEP_EXISTING',
+        project.year !== undefined ? project.year : -999999,
+        project.description !== undefined ? project.description : 'KEEP_EXISTING',
+        project.slug !== undefined ? project.slug : 'KEEP_EXISTING',
+        project.categories !== undefined ? (project.categories ? JSON.stringify(project.categories) : null) : 'KEEP_EXISTING',
+        project.tags !== undefined ? (project.tags ? JSON.stringify(project.tags) : null) : 'KEEP_EXISTING',
+        project.featured !== undefined ? project.featured : null,
+        project.status !== undefined ? project.status : 'KEEP_EXISTING',
+        project.heroImages !== undefined ? (project.heroImages ? JSON.stringify(project.heroImages) : null) : 'KEEP_EXISTING',
+        project.heroImageDescriptions !== undefined ? (project.heroImageDescriptions ? JSON.stringify(project.heroImageDescriptions) : null) : 'KEEP_EXISTING',
+        project.heroImageDescriptions_en !== undefined ? (project.heroImageDescriptions_en ? JSON.stringify(project.heroImageDescriptions_en) : null) : 'KEEP_EXISTING',
+        project.showInHomeHero !== undefined ? project.showInHomeHero : null,
+        project.heroDescription !== undefined ? (project.heroDescription || null) : 'KEEP_EXISTING',
+        project.projectDetails !== undefined ? (project.projectDetails || null) : 'KEEP_EXISTING',
+        project.technicalSheet !== undefined ? (project.technicalSheet || null) : 'KEEP_EXISTING',
+        project.downloadLink !== undefined ? (project.downloadLink || null) : 'KEEP_EXISTING',
+        project.additionalImage !== undefined ? (project.additionalImage || null) : 'KEEP_EXISTING',
+        project.commissionedBy !== undefined ? (project.commissionedBy || null) : 'KEEP_EXISTING',
+        project.curator !== undefined ? (project.curator || null) : 'KEEP_EXISTING',
+        project.location !== undefined ? (project.location || null) : 'KEEP_EXISTING',
+        project.title_en !== undefined ? (project.title_en || null) : 'KEEP_EXISTING',
+        project.description_en !== undefined ? (project.description_en || null) : 'KEEP_EXISTING',
+        project.projectDetails_en !== undefined ? (project.projectDetails_en || null) : 'KEEP_EXISTING',
+        project.technicalSheet_en !== undefined ? (project.technicalSheet_en || null) : 'KEEP_EXISTING',
+        project.heroDescription_en !== undefined ? (project.heroDescription_en || null) : 'KEEP_EXISTING',
+        project.commissionedBy_en !== undefined ? (project.commissionedBy_en || null) : 'KEEP_EXISTING',
+        project.curator_en !== undefined ? (project.curator_en || null) : 'KEEP_EXISTING',
+        project.location_en !== undefined ? (project.location_en || null) : 'KEEP_EXISTING',
+        'pdfUrl' in project ? (project.pdfUrl || null) : 'KEEP_EXISTING',
+        'pdfButtonText' in project ? (project.pdfButtonText || null) : 'KEEP_EXISTING',
+        'pdfButtonText_en' in project ? (project.pdfButtonText_en || null) : 'KEEP_EXISTING',
+        'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING',
+        project.createdAt !== undefined ? project.createdAt : null,
       ]
     );
+
+    // Debug: Log what's being sent for PDF and Video
+    const pdfValue = 'pdfUrl' in project ? (project.pdfUrl || null) : 'KEEP_EXISTING';
+    const videoValue = 'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING';
+    console.log('Valor enviado para pdf_url (param $31):', pdfValue);
+    console.log('Valor enviado para video_url (param $34):', videoValue);
 
     if (result.rows.length > 0) {
       // Update tabs if provided
@@ -352,6 +379,10 @@ export class ProjectService {
       commissionedBy_en: row.commissioned_by_en,
       curator_en: row.curator_en,
       location_en: row.location_en,
+      pdfUrl: row.pdf_url,
+      pdfButtonText: row.pdf_button_text,
+      pdfButtonText_en: row.pdf_button_text_en,
+      videoUrl: row.video_url,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       tabs: [], // Will be populated separately

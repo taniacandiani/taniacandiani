@@ -26,6 +26,14 @@ export const projects = pgTable('projects', {
   downloadLink: text('download_link'),
   additionalImage: text('additional_image'),
 
+  // PDF Document
+  pdfUrl: text('pdf_url'),
+  pdfButtonText: varchar('pdf_button_text', { length: 255 }),
+  pdfButtonTextEn: varchar('pdf_button_text_en', { length: 255 }),
+
+  // Video Embed
+  videoUrl: text('video_url'),
+
   // Metadata
   commissionedBy: varchar('commissioned_by', { length: 255 }),
   curator: varchar('curator', { length: 255 }),

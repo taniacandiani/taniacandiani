@@ -32,16 +32,20 @@ export default function ImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
-    // Validar tipo de archivo
-    if (!file.type.startsWith('image/')) {
-      return { valid: false, error: 'Solo se permiten archivos de imagen' };
+    // Validar tipo de archivo - ahora aceptamos imágenes y PDFs
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+
+    if (!isImage && !isPDF) {
+      return { valid: false, error: 'Solo se permiten archivos de imagen o PDF' };
     }
 
-    // Validar tamaño (20MB máximo)
-    const maxSize = 20 * 1024 * 1024;
+    // Validar tamaño (20MB máximo para imágenes, 50MB para PDFs)
+    const maxSize = isPDF ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
     if (file.size > maxSize) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      return { valid: false, error: `Tamaño: ${fileSizeMB}MB (máximo 20MB)` };
+      const maxSizeMB = isPDF ? 50 : 20;
+      return { valid: false, error: `Tamaño: ${fileSizeMB}MB (máximo ${maxSizeMB}MB)` };
     }
 
     return { valid: true };
@@ -208,7 +212,7 @@ export default function ImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         multiple={multiple}
         onChange={handleFileInput}
         className="hidden"
@@ -235,7 +239,7 @@ export default function ImageUploader({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <span>Subir Nueva Imagen</span>
+          <span>Subir Archivo</span>
         </button>
       </div>
       
@@ -283,10 +287,10 @@ export default function ImageUploader({
             </div>
             <div className="text-sm text-gray-600">
               <p className="font-medium">
-                {multiple ? 'Arrastra múltiples imágenes aquí o haz clic para seleccionar' : 'Arrastra una imagen aquí o haz clic para seleccionar'}
+                {multiple ? 'Arrastra múltiples archivos aquí o haz clic para seleccionar' : 'Arrastra un archivo aquí o haz clic para seleccionar'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                PNG, JPG, GIF hasta 20MB
+                Imágenes: PNG, JPG, GIF hasta 20MB | PDF hasta 50MB
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Las imágenes se subirán con la máxima calidad posible (hasta 4000px)

@@ -29,6 +29,49 @@ export default function ProjectPage({ params }: Props) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
+  // Function to process video URL and generate embed
+  const getVideoEmbed = (url: string) => {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      return (
+        <div className="relative" style={{ paddingBottom: '40%', maxWidth: '1000px', width: '100%', marginLeft: 0, marginRight: 'auto' }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            className="absolute top-0 left-0 w-full h-full rounded-lg"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    // Vimeo
+    const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)/;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch) {
+      const videoId = vimeoMatch[1];
+      return (
+        <div className="relative" style={{ paddingBottom: '40%', maxWidth: '1000px', width: '100%', marginLeft: 0, marginRight: 'auto' }}>
+          <iframe
+            src={`https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479`}
+            className="absolute top-0 left-0 w-full h-full rounded-lg"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   // Get localized content
   const getLocalizedContent = (field: keyof Project, fallback: string = '') => {
     if (!project) return fallback;
@@ -398,46 +441,67 @@ export default function ProjectPage({ params }: Props) {
               )}
 
               {/* Información adicional */}
-              {(project.commissionedBy || project.curator || project.location || project.year ||
-                project.commissionedBy_en || project.curator_en || project.location_en) && (
-                <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                  <h4 className="projects-h4 text-lg font-normal mb-4">
-                    {language === 'en' ? 'Information' : 'Información'}
-                  </h4>
-                  {(project.commissionedBy || project.commissionedBy_en) && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">
-                        {language === 'en' ? 'Commissioned by:' : 'Comisionado por:'}
-                      </span><br />
-                      {getLocalizedContent('commissionedBy')}
-                    </div>
-                  )}
-                  {(project.curator || project.curator_en) && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">
-                        {language === 'en' ? 'Curator:' : 'Curador/a:'}
-                      </span><br />
-                      {getLocalizedContent('curator')}
-                    </div>
-                  )}
-                  {(project.location || project.location_en) && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">
-                        {language === 'en' ? 'Location:' : 'Ubicación:'}
-                      </span><br />
-                      {getLocalizedContent('location')}
-                    </div>
-                  )}
-                  {project.year && (
-                    <div className="text-base text-gray-600 py-1">
-                      <span className="font-medium">
-                        {language === 'en' ? 'Year:' : 'Año:'}
-                      </span><br />
-                      {project.year}
-                    </div>
-                  )}
-                </div>
-              )}
+              {(() => {
+                // Verificar qué campos tienen contenido real para el idioma actual
+                const hasCommissioned = language === 'en'
+                  ? project.commissionedBy_en && project.commissionedBy_en.trim() !== ''
+                  : project.commissionedBy && project.commissionedBy.trim() !== '';
+
+                const hasCurator = language === 'en'
+                  ? project.curator_en && project.curator_en.trim() !== ''
+                  : project.curator && project.curator.trim() !== '';
+
+                const hasLocation = language === 'en'
+                  ? project.location_en && project.location_en.trim() !== ''
+                  : project.location && project.location.trim() !== '';
+
+                const hasYear = project.year && project.year > 0;
+
+                // Solo mostrar la sección si hay al menos un campo con contenido
+                const hasAnyInfo = hasCommissioned || hasCurator || hasLocation || hasYear;
+
+                if (!hasAnyInfo) return null;
+
+                return (
+                  <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
+                    <h4 className="projects-h4 text-lg font-normal mb-4">
+                      {language === 'en' ? 'Information' : 'Información'}
+                    </h4>
+                    {hasCommissioned && (
+                      <div className="text-base text-gray-600 py-1">
+                        <span className="font-medium">
+                          {language === 'en' ? 'Commissioned by:' : 'Comisionado por:'}
+                        </span><br />
+                        {getLocalizedContent('commissionedBy')}
+                      </div>
+                    )}
+                    {hasCurator && (
+                      <div className="text-base text-gray-600 py-1">
+                        <span className="font-medium">
+                          {language === 'en' ? 'Curator:' : 'Curador/a:'}
+                        </span><br />
+                        {getLocalizedContent('curator')}
+                      </div>
+                    )}
+                    {hasLocation && (
+                      <div className="text-base text-gray-600 py-1">
+                        <span className="font-medium">
+                          {language === 'en' ? 'Location:' : 'Ubicación:'}
+                        </span><br />
+                        {getLocalizedContent('location')}
+                      </div>
+                    )}
+                    {hasYear && (
+                      <div className="text-base text-gray-600 py-1">
+                        <span className="font-medium">
+                          {language === 'en' ? 'Year:' : 'Año:'}
+                        </span><br />
+                        {project.year}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Categorías */}
               <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
@@ -715,7 +779,31 @@ export default function ProjectPage({ params }: Props) {
                           ? (tab.projectDetails_en || tab.projectDetails)
                           : tab.projectDetails;
                         return content ? (
-                          <RichContent content={content} />
+                          <>
+                            <RichContent content={content} />
+                            {/* PDF Button for tabs - usar el PDF del proyecto principal */}
+                            {project.pdfUrl && (
+                              <div className="mt-8 mb-4">
+                                <a
+                                  href={project.pdfUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block px-6 py-3 bg-black text-white border-2 border-black font-medium rounded-lg transition-all duration-300 hover:bg-white hover:text-black"
+                                >
+                                  📄 {language === 'en'
+                                    ? (project.pdfButtonText_en || project.pdfButtonText || 'View Document')
+                                    : (project.pdfButtonText || 'Ver Documento')
+                                  }
+                                </a>
+                              </div>
+                            )}
+                            {/* Video Embed */}
+                            {project.videoUrl && (
+                              <div className="mt-8 mb-8" style={{ marginLeft: 0, marginRight: 'auto' }}>
+                                {getVideoEmbed(project.videoUrl)}
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <p>{language === 'en' ? 'Project details not available.' : 'Detalles del proyecto no disponibles.'}</p>
                         );
@@ -723,7 +811,31 @@ export default function ProjectPage({ params }: Props) {
                       // Si no hay tab seleccionado, mostrar el contenido principal
                       const content = getLocalizedContent('projectDetails');
                       return content ? (
-                        <RichContent content={content} />
+                        <>
+                          <RichContent content={content} />
+                          {/* PDF Button */}
+                          {project.pdfUrl && (
+                            <div className="mt-8 mb-4">
+                              <a
+                                href={project.pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block px-6 py-3 bg-black text-white border-2 border-black font-medium rounded-lg transition-all duration-300 hover:bg-white hover:text-black"
+                              >
+                                📄 {language === 'en'
+                                  ? (project.pdfButtonText_en || project.pdfButtonText || 'View Document')
+                                  : (project.pdfButtonText || 'Ver Documento')
+                                }
+                              </a>
+                            </div>
+                          )}
+                          {/* Video Embed */}
+                          {project.videoUrl && (
+                            <div className="mt-8 mb-8" style={{ marginLeft: 0, marginRight: 'auto' }}>
+                              {getVideoEmbed(project.videoUrl)}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p>{language === 'en' ? 'Project details not available.' : 'Detalles del proyecto no disponibles.'}</p>
                       );

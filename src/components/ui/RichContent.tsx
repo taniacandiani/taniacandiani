@@ -172,6 +172,61 @@ export default function RichContent({ content, className = '' }: RichContentProp
           object-fit: cover;
         }
 
+        /* PDF Embed Container */
+        .rich-content .pdf-embed-container {
+          margin: 2rem 0;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #fff;
+        }
+
+        .rich-content .pdf-embed-header {
+          padding: 12px 16px;
+          background: #f3f4f6;
+          border-bottom: 1px solid #e5e7eb;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .rich-content .pdf-embed-container iframe {
+          width: 100%;
+          height: 600px;
+          border: none;
+          display: block;
+        }
+
+        .rich-content .pdf-embed-footer {
+          padding: 12px 16px;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+          text-align: center;
+        }
+
+        .rich-content .pdf-embed-footer a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+
+        /* Legacy PDF wrapper support */
+        .rich-content .pdf-wrapper {
+          position: relative;
+          width: 100%;
+          padding-bottom: 141.42%;
+          margin: 2rem 0;
+        }
+
+        .rich-content .pdf-wrapper iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          background: #f9f9f9;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
           .rich-content .video-wrapper,

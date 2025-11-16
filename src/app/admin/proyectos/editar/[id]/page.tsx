@@ -169,6 +169,11 @@ export default function EditProjectPage() {
         commissionedBy: project.commissionedBy,
         curator: project.curator,
         location: project.location,
+        // Video y PDF - convertir cadenas vacías a null explícitamente
+        videoUrl: project.videoUrl && project.videoUrl.trim() ? project.videoUrl.trim() : null,
+        pdfUrl: project.pdfUrl && project.pdfUrl.trim() ? project.pdfUrl.trim() : null,
+        pdfButtonText: project.pdfButtonText && project.pdfButtonText.trim() ? project.pdfButtonText.trim() : null,
+        pdfButtonText_en: project.pdfButtonText_en && project.pdfButtonText_en.trim() ? project.pdfButtonText_en.trim() : null,
         // Campos en inglés
         title_en: project.title_en,
         description_en: project.description_en,
@@ -755,6 +760,184 @@ export default function EditProjectPage() {
                 height={250}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Documento PDF */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Documento PDF</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <ImageUploader
+                label={editingLanguage === 'es' ? 'Subir Documento PDF' : 'Upload PDF Document'}
+                projectId={project.slug}
+                currentImage={project.pdfUrl}
+                onImageUpload={(fileUrl) => setProject({ ...project, pdfUrl: fileUrl || '' })}
+                required={false}
+                contentType={`proyectos/${project.slug}`}
+                accept=".pdf"
+              />
+            </div>
+
+            {project.pdfUrl && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {editingLanguage === 'es' ? 'PDF Actual:' : 'Current PDF:'}
+                    </p>
+                    <a
+                      href={project.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline break-all"
+                    >
+                      {project.pdfUrl}
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProject({
+                        ...project,
+                        pdfUrl: '',
+                        pdfButtonText: '',
+                        pdfButtonText_en: ''
+                      });
+                    }}
+                    className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                  >
+                    {editingLanguage === 'es' ? 'Eliminar PDF' : 'Remove PDF'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {project.pdfUrl && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editingLanguage === 'es' ? 'Texto del Botón PDF' : 'PDF Button Text'}
+                </label>
+                <input
+                  type="text"
+                  value={editingLanguage === 'es' ? (project.pdfButtonText || '') : (project.pdfButtonText_en || '')}
+                  onChange={(e) => setProject({
+                    ...project,
+                    [editingLanguage === 'es' ? 'pdfButtonText' : 'pdfButtonText_en']: e.target.value
+                  })}
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder={editingLanguage === 'es' ? 'Ej: Descargar catálogo' : 'Ex: Download catalog'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {editingLanguage === 'es'
+                    ? 'Este texto aparecerá en el botón que abre el PDF'
+                    : 'This text will appear on the button that opens the PDF'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Video Embed */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Video del Proyecto</h2>
+            <span className="text-sm font-medium text-gray-600">
+              Campo compartido entre idiomas
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                URL del Video (YouTube o Vimeo)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={project.videoUrl || ''}
+                  onChange={(e) => setProject({ ...project, videoUrl: e.target.value })}
+                  className="flex-1 bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
+                />
+                {project.videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setProject({ ...project, videoUrl: '' })}
+                    className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Pega aquí el enlace completo del video de YouTube o Vimeo. Se mostrará embebido en la página del proyecto.
+              </p>
+            </div>
+
+            {/* Video Preview */}
+            {project.videoUrl && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vista Previa del Video
+                </label>
+                <div className="max-w-2xl">
+                  {(() => {
+                    const url = project.videoUrl;
+
+                    // YouTube
+                    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                    const youtubeMatch = url.match(youtubeRegex);
+                    if (youtubeMatch) {
+                      const videoId = youtubeMatch[1];
+                      return (
+                        <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
+                          <iframe
+                            className="absolute top-0 left-0 w-full h-full rounded-lg"
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            title="YouTube video player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      );
+                    }
+
+                    // Vimeo
+                    const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
+                    const vimeoMatch = url.match(vimeoRegex);
+                    if (vimeoMatch) {
+                      const videoId = vimeoMatch[1];
+                      return (
+                        <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
+                          <iframe
+                            className="absolute top-0 left-0 w-full h-full rounded-lg"
+                            src={`https://player.vimeo.com/video/${videoId}`}
+                            title="Vimeo video player"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-600">
+                        URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

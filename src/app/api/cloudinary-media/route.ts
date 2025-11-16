@@ -15,7 +15,7 @@ interface CloudinaryResource {
 interface MediaFile {
   name: string;
   path: string;
-  type: 'image';
+  type: 'image' | 'document';
   size?: string;
   lastModified?: string;
   width?: number;
@@ -67,10 +67,35 @@ function organizeByFolders(resources: CloudinaryResource[]): MediaFolder[] {
     }
 
     const folder = folderMap.get(folderPath)!;
+
+    // Determinar el tipo de archivo de forma más robusta
+    const publicIdLower = resource.public_id?.toLowerCase() || '';
+    const urlLower = resource.secure_url?.toLowerCase() || '';
+
+    // Verificar si es PDF por múltiples criterios
+    const isPdf = resource.format === 'pdf' ||
+                  publicIdLower.endsWith('.pdf') ||
+                  publicIdLower.endsWith('pdf') ||
+                  publicIdLower.includes('pdf/') ||
+                  urlLower.includes('.pdf') ||
+                  urlLower.includes('/raw/');
+
+    // Si no tiene formato definido, intentar deducirlo
+    let fileFormat = resource.format;
+    if (!fileFormat && isPdf) {
+      fileFormat = 'pdf';
+    } else if (!fileFormat) {
+      // Intentar obtener la extensión del public_id o URL
+      const extensionMatch = resource.public_id?.match(/\.([^.]+)$/);
+      if (extensionMatch) {
+        fileFormat = extensionMatch[1];
+      }
+    }
+
     folder.files.push({
-      name: `${fileName}.${resource.format}`,
+      name: `${fileName}${fileFormat ? '.' + fileFormat : ''}`,
       path: resource.secure_url,
-      type: 'image',
+      type: isPdf ? 'document' : 'image',
       size: formatFileSize(resource.bytes),
       lastModified: new Date(resource.created_at).toISOString().split('T')[0],
       width: resource.width,
@@ -125,19 +150,59 @@ function organizeByFolders(resources: CloudinaryResource[]): MediaFolder[] {
 export async function GET(request: NextRequest) {
   try {
     // Obtener todas las imágenes de Cloudinary
-    const result = await cloudinary.api.resources({
+    const imageResult = await cloudinary.api.resources({
       type: 'upload',
       resource_type: 'image',
       max_results: 500, // Ajustar según necesidad
       prefix: '', // Obtener todas las imágenes
     });
 
-    const resources: CloudinaryResource[] = result.resources.map((r: any) => ({
+    // Obtener todos los PDFs de Cloudinary
+    let rawResult = { resources: [] };
+    try {
+      rawResult = await cloudinary.api.resources({
+        type: 'upload',
+        resource_type: 'raw',
+        max_results: 500, // Ajustar según necesidad
+        prefix: '', // Obtener todos los archivos raw
+      });
+    } catch (error) {
+      console.error('Error fetching raw resources:', error);
+      // Continuar con solo las imágenes si falla la obtención de recursos raw
+    }
+
+    // Procesar todos los recursos raw y determinar si son PDFs
+    const processedRawResources = rawResult.resources.map((r: any) => {
+      // Si no tiene formato pero tiene .pdf en el public_id, marcarlo como PDF
+      if (!r.format && r.public_id) {
+        const publicIdLower = r.public_id.toLowerCase();
+        if (publicIdLower.includes('.pdf') || publicIdLower.endsWith('pdf')) {
+          r.format = 'pdf';
+        }
+      }
+      return r;
+    });
+
+    // Combinar imágenes y archivos raw (que incluyen PDFs)
+    const allResources = [
+      ...imageResult.resources,
+      ...processedRawResources
+    ];
+
+    console.log('Image resources found:', imageResult.resources.length);
+    console.log('Raw resources found:', rawResult.resources.length);
+    console.log('Raw resources details:', processedRawResources.map((r: any) => ({
+      public_id: r.public_id,
+      format: r.format,
+      resource_type: r.resource_type
+    })));
+
+    const resources: CloudinaryResource[] = allResources.map((r: any) => ({
       public_id: r.public_id,
       secure_url: r.secure_url,
       format: r.format,
-      width: r.width,
-      height: r.height,
+      width: r.width || 0,
+      height: r.height || 0,
       bytes: r.bytes,
       created_at: r.created_at,
       folder: r.folder || 'root'

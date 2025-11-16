@@ -262,8 +262,46 @@ export default function RichTextEditor({
     setShowMediaSelector(true);
   };
 
-  const handleMediaSelect = (imageUrl: string) => {
-    editor.chain().focus().setImage({ src: imageUrl }).run();
+  const handleMediaSelect = (fileUrl: string) => {
+    // Verificar si es un PDF por la URL
+    if (fileUrl.toLowerCase().endsWith('.pdf')) {
+      // Pedir al usuario el texto del botón
+      const buttonText = window.prompt('Nombre del documento PDF:', 'Documento PDF');
+
+      if (buttonText) {
+        // Insertar un botón customizable para el PDF
+        const pdfButtonHtml = `
+          <a
+            href="${fileUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pdf-button"
+            contenteditable="false"
+            style="
+              display: inline-block;
+              padding: 10px 20px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: 500;
+              margin: 8px 4px;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4);
+              cursor: pointer;
+            "
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px 0 rgba(102, 126, 234, 0.6)';"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px 0 rgba(102, 126, 234, 0.4)';"
+          >
+            📄 ${buttonText}
+          </a>
+        `;
+        editor.commands.insertContent(pdfButtonHtml);
+      }
+    } else {
+      // Es una imagen, insertar normalmente
+      editor.chain().focus().setImage({ src: fileUrl }).run();
+    }
     setShowMediaSelector(false);
   };
 
@@ -352,6 +390,23 @@ export default function RichTextEditor({
         }
         .resize-handle:hover {
           background-color: #374151;
+        }
+        .ProseMirror .pdf-button {
+          display: inline-block !important;
+          padding: 10px 20px !important;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+          color: white !important;
+          text-decoration: none !important;
+          border-radius: 6px !important;
+          font-weight: 500 !important;
+          margin: 8px 4px !important;
+          transition: all 0.3s ease !important;
+          box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4) !important;
+          cursor: pointer !important;
+        }
+        .ProseMirror .pdf-button:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.6) !important;
         }
       `}</style>
 
@@ -482,7 +537,7 @@ export default function RichTextEditor({
           onClick={addImage}
           onMouseDown={(e) => e.preventDefault()}
           className="p-2 rounded hover:bg-gray-200"
-          title="Agregar imagen desde Cloudinary"
+          title="Agregar imagen o PDF desde Cloudinary"
         >
           🖼️
         </button>

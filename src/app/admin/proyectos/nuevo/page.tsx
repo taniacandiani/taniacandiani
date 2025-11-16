@@ -54,6 +54,12 @@ export default function NewProjectPage() {
     location: '',
     tags: [],
     tabs: [],
+    // PDF fields
+    pdfUrl: '',
+    pdfButtonText: '',
+    pdfButtonText_en: '',
+    // Video field
+    videoUrl: '',
     // English fields
     title_en: '',
     projectDetails_en: '',
@@ -723,6 +729,153 @@ export default function NewProjectPage() {
                     height={250}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Documento PDF */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Documento PDF</h2>
+                <span className="text-sm font-medium text-gray-600">
+                  Editando en: {editingLanguage === 'es' ? 'Español' : 'English'}
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  {!formData.title ? (
+                    <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="mt-4 text-sm font-medium text-gray-600">
+                        {editingLanguage === 'es' ? 'Documento PDF' : 'PDF Document'}
+                      </p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Ingresa un título para el proyecto arriba para poder subir archivos
+                      </p>
+                    </div>
+                  ) : (
+                    <ImageUploader
+                      label={editingLanguage === 'es' ? 'Subir Documento PDF' : 'Upload PDF Document'}
+                      projectId={getProjectFolder()?.split('/').pop() || 'proyecto'}
+                      currentImage={formData.pdfUrl}
+                      onImageUpload={(fileUrl) => setFormData({ ...formData, pdfUrl: fileUrl || '' })}
+                      required={false}
+                      contentType={getProjectFolder() || 'proyectos'}
+                      accept=".pdf"
+                    />
+                  )}
+                </div>
+
+                {formData.pdfUrl && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {editingLanguage === 'es' ? 'Texto del Botón PDF' : 'PDF Button Text'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLanguage === 'es' ? (formData.pdfButtonText || '') : (formData.pdfButtonText_en || '')}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        [editingLanguage === 'es' ? 'pdfButtonText' : 'pdfButtonText_en']: e.target.value
+                      })}
+                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                      placeholder={editingLanguage === 'es' ? 'Ej: Descargar catálogo' : 'Ex: Download catalog'}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {editingLanguage === 'es'
+                        ? 'Este texto aparecerá en el botón que abre el PDF'
+                        : 'This text will appear on the button that opens the PDF'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Video Embed */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Video del Proyecto</h2>
+                <span className="text-sm font-medium text-gray-600">
+                  Campo compartido entre idiomas
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL del Video (YouTube o Vimeo)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.videoUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pega aquí el enlace completo del video de YouTube o Vimeo. Se mostrará embebido en la página del proyecto.
+                  </p>
+                </div>
+
+                {/* Video Preview */}
+                {formData.videoUrl && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vista Previa del Video
+                    </label>
+                    <div className="max-w-2xl">
+                      {(() => {
+                        const url = formData.videoUrl;
+
+                        // YouTube
+                        const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                        const youtubeMatch = url.match(youtubeRegex);
+                        if (youtubeMatch) {
+                          const videoId = youtubeMatch[1];
+                          return (
+                            <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                src={`https://www.youtube.com/embed/${videoId}`}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Vimeo
+                        const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
+                        const vimeoMatch = url.match(vimeoRegex);
+                        if (vimeoMatch) {
+                          const videoId = vimeoMatch[1];
+                          return (
+                            <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                src={`https://player.vimeo.com/video/${videoId}`}
+                                title="Vimeo video player"
+                                frameBorder="0"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-600">
+                            URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

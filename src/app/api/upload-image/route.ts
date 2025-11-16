@@ -12,14 +12,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 });
     }
 
-    // Validar tipo de archivo
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Solo se permiten archivos de imagen' }, { status: 400 });
+    // Validar tipo de archivo - ahora aceptamos imágenes y PDFs
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+
+    if (!isImage && !isPDF) {
+      return NextResponse.json({ error: 'Solo se permiten archivos de imagen o PDF' }, { status: 400 });
     }
 
-    // Validar tamaño (20MB máximo)
-    if (file.size > 20 * 1024 * 1024) {
-      return NextResponse.json({ error: 'La imagen debe ser menor a 20MB' }, { status: 400 });
+    // Validar tamaño (20MB para imágenes, 50MB para PDFs)
+    const maxSize = isPDF ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = isPDF ? 50 : 20;
+      return NextResponse.json({ error: `El archivo debe ser menor a ${maxSizeMB}MB` }, { status: 400 });
     }
 
     const originalName = file.name;
@@ -29,94 +34,100 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Procesar imagen con Sharp - Máxima calidad para portafolio de arte
+    // Procesar archivo según su tipo
     let processedBuffer: Buffer;
     let mimeType: string;
 
-    // Para un portafolio de arte, mantenemos la máxima calidad posible
-    // Solo redimensionamos si la imagen es extremadamente grande
-    const MAX_DIMENSION = 4000; // Aumentado de 2000 a 4000 píxeles para mejor calidad
-
-    // Obtener dimensiones de la imagen original
-    const imageInfo = await sharp(buffer).metadata();
-    const needsResize = (imageInfo.width && imageInfo.width > MAX_DIMENSION) ||
-                        (imageInfo.height && imageInfo.height > MAX_DIMENSION);
-
-    if (extension === 'jpg' || extension === 'jpeg') {
-      // JPEG con calidad máxima (100% para evitar pérdida de calidad)
-      const sharpInstance = sharp(buffer);
-
-      if (needsResize) {
-        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
-          fit: 'inside',
-          withoutEnlargement: true,
-          kernel: sharp.kernel.lanczos3 // Mejor algoritmo de interpolación
-        });
-      }
-
-      processedBuffer = await sharpInstance
-        .jpeg({
-          quality: 100, // Máxima calidad
-          progressive: true,
-          mozjpeg: true // Usar mozjpeg para mejor compresión sin pérdida de calidad
-        })
-        .toBuffer();
-      mimeType = 'image/jpeg';
-    } else if (extension === 'png') {
-      // PNG con mejor compresión sin pérdida de calidad
-      const sharpInstance = sharp(buffer);
-
-      if (needsResize) {
-        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
-          fit: 'inside',
-          withoutEnlargement: true,
-          kernel: sharp.kernel.lanczos3
-        });
-      }
-
-      processedBuffer = await sharpInstance
-        .png({
-          compressionLevel: 6, // Balanceado (0-9, donde 9 es máxima compresión pero más lento)
-          quality: 100,
-          effort: 7 // Mayor esfuerzo en compresión sin pérdida
-        })
-        .toBuffer();
-      mimeType = 'image/png';
-    } else if (extension === 'webp') {
-      // WebP con alta calidad
-      const sharpInstance = sharp(buffer);
-
-      if (needsResize) {
-        sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
-          fit: 'inside',
-          withoutEnlargement: true,
-          kernel: sharp.kernel.lanczos3
-        });
-      }
-
-      processedBuffer = await sharpInstance
-        .webp({
-          quality: 95, // Alta calidad para WebP
-          lossless: false, // Usar compresión con pérdida controlada
-          effort: 6 // Mayor esfuerzo en compresión
-        })
-        .toBuffer();
-      mimeType = 'image/webp';
+    // Si es PDF, no procesar con Sharp
+    if (isPDF) {
+      processedBuffer = buffer;
+      mimeType = 'application/pdf';
     } else {
-      // Para otros formatos, mantener sin cambios si es posible
-      if (needsResize) {
-        processedBuffer = await sharp(buffer)
-          .resize(MAX_DIMENSION, MAX_DIMENSION, {
+      // Para imágenes, procesar con Sharp - Máxima calidad para portafolio de arte
+      // Solo redimensionamos si la imagen es extremadamente grande
+      const MAX_DIMENSION = 4000; // Aumentado de 2000 a 4000 píxeles para mejor calidad
+
+      // Obtener dimensiones de la imagen original
+      const imageInfo = await sharp(buffer).metadata();
+      const needsResize = (imageInfo.width && imageInfo.width > MAX_DIMENSION) ||
+                          (imageInfo.height && imageInfo.height > MAX_DIMENSION);
+
+      if (extension === 'jpg' || extension === 'jpeg') {
+        // JPEG con calidad máxima (100% para evitar pérdida de calidad)
+        const sharpInstance = sharp(buffer);
+
+        if (needsResize) {
+          sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
+            fit: 'inside',
+            withoutEnlargement: true,
+            kernel: sharp.kernel.lanczos3 // Mejor algoritmo de interpolación
+          });
+        }
+
+        processedBuffer = await sharpInstance
+          .jpeg({
+            quality: 100, // Máxima calidad
+            progressive: true,
+            mozjpeg: true // Usar mozjpeg para mejor compresión sin pérdida de calidad
+          })
+          .toBuffer();
+        mimeType = 'image/jpeg';
+      } else if (extension === 'png') {
+        // PNG con mejor compresión sin pérdida de calidad
+        const sharpInstance = sharp(buffer);
+
+        if (needsResize) {
+          sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
             fit: 'inside',
             withoutEnlargement: true,
             kernel: sharp.kernel.lanczos3
+          });
+        }
+
+        processedBuffer = await sharpInstance
+          .png({
+            compressionLevel: 6, // Balanceado (0-9, donde 9 es máxima compresión pero más lento)
+            quality: 100,
+            effort: 7 // Mayor esfuerzo en compresión sin pérdida
           })
           .toBuffer();
+        mimeType = 'image/png';
+      } else if (extension === 'webp') {
+        // WebP con alta calidad
+        const sharpInstance = sharp(buffer);
+
+        if (needsResize) {
+          sharpInstance.resize(MAX_DIMENSION, MAX_DIMENSION, {
+            fit: 'inside',
+            withoutEnlargement: true,
+            kernel: sharp.kernel.lanczos3
+          });
+        }
+
+        processedBuffer = await sharpInstance
+          .webp({
+            quality: 95, // Alta calidad para WebP
+            lossless: false, // Usar compresión con pérdida controlada
+            effort: 6 // Mayor esfuerzo en compresión
+          })
+          .toBuffer();
+        mimeType = 'image/webp';
       } else {
-        // No procesar, usar buffer original
-        processedBuffer = buffer;
+        // Para otros formatos, mantener sin cambios si es posible
+        if (needsResize) {
+          processedBuffer = await sharp(buffer)
+            .resize(MAX_DIMENSION, MAX_DIMENSION, {
+              fit: 'inside',
+              withoutEnlargement: true,
+              kernel: sharp.kernel.lanczos3
+            })
+            .toBuffer();
+        } else {
+          // No procesar, usar buffer original
+          processedBuffer = buffer;
+        }
+        mimeType = file.type;
       }
-      mimeType = file.type;
     }
 
     const finalSize = processedBuffer.length;

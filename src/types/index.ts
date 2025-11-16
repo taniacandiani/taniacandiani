@@ -64,6 +64,14 @@ export interface Project {
   downloadLink?: string; // PDF download link
   additionalImage?: string; // Bottom image
 
+  // PDF Document
+  pdfUrl?: string; // URL del PDF en Cloudinary
+  pdfButtonText?: string; // Texto del botón PDF en español
+  pdfButtonText_en?: string; // Texto del botón PDF en inglés
+
+  // Video Embed
+  videoUrl?: string; // URL del video de YouTube o Vimeo
+
   // Hero display options
   showInHomeHero?: boolean; // Checkbox to show in home hero
   heroDescription?: string; // Custom description for home hero (HOME page only)

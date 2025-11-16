@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiFolder, FiFile, FiImage, FiTrash2, FiEye, FiUpload, FiX } from 'react-icons/fi';
+import { FiFolder, FiFile, FiImage, FiTrash2, FiEye, FiUpload, FiX, FiFileText } from 'react-icons/fi';
 
 interface MediaFile {
   name: string;
@@ -103,11 +103,12 @@ export default function MediaSelector({
   const getFileIcon = (file: MediaFile) => {
     if (file.type === 'folder') return <FiFolder className="h-6 w-6 text-blue-500" />;
     if (file.type === 'image') return <FiImage className="h-6 w-6 text-green-500" />;
+    if (file.type === 'document') return <FiFileText className="h-6 w-6 text-red-500" />;
     return <FiFile className="h-6 w-6 text-gray-500" />;
   };
 
   const handleFileClick = (file: MediaFile) => {
-    if (file.type === 'image') {
+    if (file.type === 'image' || file.type === 'document') {
       setSelectedFile(file);
     }
   };
@@ -120,14 +121,20 @@ export default function MediaSelector({
   };
 
   const handleUpload = async () => {
-    const folderName = (document.getElementById('uploadFolderName') as HTMLInputElement)?.value;
+    let folderName = (document.getElementById('uploadFolderName') as HTMLInputElement)?.value;
     const files = (document.getElementById('uploadFiles') as HTMLInputElement)?.files;
-    
+
+    // Si no se especifica un nombre de carpeta, usar la carpeta actual o el contentType por defecto
     if (!folderName?.trim()) {
-      alert('Por favor ingresa un nombre para la carpeta');
-      return;
+      if (currentPath && currentPath !== 'root' && currentPath !== '/uploads') {
+        // Usar la carpeta actual como destino
+        folderName = currentPath.split('/').pop() || contentType;
+      } else {
+        // Usar el contentType como carpeta por defecto
+        folderName = contentType;
+      }
     }
-    
+
     if (!files || files.length === 0) {
       alert('Por favor selecciona al menos un archivo');
       return;
@@ -199,7 +206,8 @@ export default function MediaSelector({
       );
     }
 
-    return allFiles.filter(file => file.type === 'image');
+    // Incluir tanto imágenes como documentos (PDFs)
+    return allFiles.filter(file => file.type === 'image' || file.type === 'document');
   };
 
   if (!isOpen) return null;
@@ -288,7 +296,11 @@ export default function MediaSelector({
                     onClick={() => setSelectedFile(file)}
                   >
                     <div className="flex items-center space-x-3">
-                      <FiImage className="h-5 w-5 text-green-500" />
+                      {file.type === 'document' ? (
+                        <FiFileText className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <FiImage className="h-5 w-5 text-green-500" />
+                      )}
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{file.name}</p>
                         <p className="text-xs text-gray-500">{file.path}</p>
@@ -401,14 +413,24 @@ export default function MediaSelector({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre de la Carpeta
+                    Nombre de la Carpeta <span className="text-gray-400 text-xs">(Opcional)</span>
                   </label>
                   <input
                     type="text"
                     id="uploadFolderName"
-                    placeholder="nombre-descriptivo"
+                    placeholder={
+                      currentPath && currentPath !== 'root' && currentPath !== '/uploads'
+                        ? `Carpeta actual: ${currentPath.split('/').pop()}`
+                        : `Por defecto: ${contentType}`
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {currentPath && currentPath !== 'root' && currentPath !== '/uploads'
+                      ? `Si dejas vacío se guardará en: ${currentPath.split('/').pop()}`
+                      : `Si dejas vacío se guardará en: ${contentType}`
+                    }
+                  </p>
                 </div>
                 
                 <div>
@@ -419,7 +441,7 @@ export default function MediaSelector({
                     type="file"
                     id="uploadFiles"
                     multiple
-                    accept="image/*"
+                    accept="image/*,application/pdf"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                     disabled={uploading}
                   />
