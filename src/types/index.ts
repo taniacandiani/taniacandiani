@@ -41,6 +41,8 @@ export interface ProjectTab {
 
   // PDF Document (new fields)
   pdfUrl?: string;
+  pdfTitle?: string;
+  pdfTitle_en?: string;
   pdfButtonText?: string;
   pdfButtonText_en?: string;
 

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
+// Configurar el límite de tamaño para permitir archivos de hasta 50MB
+export const maxDuration = 60; // Tiempo máximo de ejecución en segundos
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();

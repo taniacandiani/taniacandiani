@@ -70,6 +70,8 @@ export const projectTabs = pgTable('project_tabs', {
 
   // PDF Document (new fields)
   pdfUrl: text('pdf_url'),
+  pdfTitle: varchar('pdf_title', { length: 500 }),
+  pdfTitleEn: varchar('pdf_title_en', { length: 500 }),
   pdfButtonText: varchar('pdf_button_text', { length: 255 }),
   pdfButtonTextEn: varchar('pdf_button_text_en', { length: 255 }),
 

@@ -12,6 +12,7 @@ interface ImageUploaderProps {
   multiple?: boolean;
   onImagesUpload?: (imageUrls: string[]) => void;
   contentType?: string; // 'proyectos', 'noticias', 'acerca', etc.
+  accept?: string; // Para especificar tipos de archivo aceptados
 }
 
 export default function ImageUploader({
@@ -22,7 +23,8 @@ export default function ImageUploader({
   required = false,
   multiple = false,
   onImagesUpload,
-  contentType = 'proyectos'
+  contentType = 'proyectos',
+  accept
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -212,7 +214,7 @@ export default function ImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept={accept || "image/*,application/pdf"}
         multiple={multiple}
         onChange={handleFileInput}
         className="hidden"
@@ -290,7 +292,10 @@ export default function ImageUploader({
                 {multiple ? 'Arrastra múltiples archivos aquí o haz clic para seleccionar' : 'Arrastra un archivo aquí o haz clic para seleccionar'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Imágenes: PNG, JPG, GIF hasta 20MB | PDF hasta 50MB
+                {accept === '.pdf'
+                  ? 'Solo archivos PDF hasta 50MB'
+                  : 'Imágenes: PNG, JPG, GIF hasta 20MB | PDF hasta 50MB'
+                }
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Las imágenes se subirán con la máxima calidad posible (hasta 4000px)

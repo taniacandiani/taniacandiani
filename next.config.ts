@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     loader: 'default',
   },
+  // Configuración para permitir archivos grandes (PDFs de hasta 50MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.

@@ -289,6 +289,8 @@ export default function EditProjectPage() {
       projectDetails: '',
       technicalSheet: '',
       pdfUrl: '',
+      pdfTitle: '',
+      pdfTitle_en: '',
       pdfButtonText: '',
       pdfButtonText_en: '',
       videoUrl: '',

@@ -410,6 +410,8 @@ export class ProjectService {
       projectDetails: row.project_details,
       technicalSheet: row.technical_sheet,
       pdfUrl: row.pdf_url,
+      pdfTitle: row.pdf_title,
+      pdfTitle_en: row.pdf_title_en,
       pdfButtonText: row.pdf_button_text,
       pdfButtonText_en: row.pdf_button_text_en,
       videoUrl: row.video_url,
@@ -429,14 +431,14 @@ export class ProjectService {
           id, project_id, tab_order, title,
           hero_images, hero_image_descriptions, hero_image_descriptions_en,
           additional_image, project_details, technical_sheet,
-          pdf_url, pdf_button_text, pdf_button_text_en, video_url,
+          pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_url,
           title_en, project_details_en, technical_sheet_en
         ) VALUES (
           $1, $2, $3, $4,
           $5::jsonb, $6::jsonb, $7::jsonb,
           $8, $9, $10,
-          $11, $12, $13, $14,
-          $15, $16, $17
+          $11, $12, $13, $14, $15, $16,
+          $17, $18, $19
         )`,
         [
           crypto.randomUUID(),
@@ -450,6 +452,8 @@ export class ProjectService {
           tab.projectDetails || null,
           tab.technicalSheet || null,
           tab.pdfUrl || null,
+          tab.pdfTitle || null,
+          tab.pdfTitle_en || null,
           tab.pdfButtonText || null,
           tab.pdfButtonText_en || null,
           tab.videoUrl || null,
