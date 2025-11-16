@@ -223,6 +223,29 @@ export default function ProjectPage({ params }: Props) {
     setActiveTab('detalles'); // Resetear a "detalles" cuando cambia de tab de proyecto
   }, [activeProjectTab]);
 
+  // Asegurar que el tab activo sea válido (no mostrar ficha si no hay contenido)
+  useEffect(() => {
+    if (project && activeTab === 'ficha') {
+      let hasTechnicalSheet = false;
+
+      if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+        const tab = project.tabs[activeProjectTab];
+        const hasSpanishContent = !!(tab.technicalSheet && tab.technicalSheet.trim() !== '');
+        const hasEnglishContent = !!(tab.technicalSheet_en && tab.technicalSheet_en.trim() !== '');
+        hasTechnicalSheet = hasSpanishContent || hasEnglishContent;
+      } else {
+        const hasSpanishContent = !!(project.technicalSheet && project.technicalSheet.trim() !== '');
+        const hasEnglishContent = !!(project.technicalSheet_en && project.technicalSheet_en.trim() !== '');
+        hasTechnicalSheet = hasSpanishContent || hasEnglishContent;
+      }
+
+      // Si no hay ficha técnica y estamos en el tab de ficha, cambiar a detalles
+      if (!hasTechnicalSheet) {
+        setActiveTab('detalles');
+      }
+    }
+  }, [activeTab, activeProjectTab, project]);
+
   // Auto-rotate del slider - pausar cuando hover
   useEffect(() => {
     if (sliderImages.length > 1 && !isSliderHovered) {
@@ -628,19 +651,19 @@ export default function ProjectPage({ params }: Props) {
             {/* Tabs */}
             <div className="mb-8">
               {(() => {
-                // Determinar si hay contenido en la ficha técnica
+                // Determinar si hay contenido en la ficha técnica en CUALQUIERA de los dos idiomas
                 let hasTechnicalSheet = false;
                 if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
                   const tab = project.tabs[activeProjectTab];
-                  const content = language === 'en'
-                    ? (tab.technicalSheet_en || tab.technicalSheet)
-                    : tab.technicalSheet;
-                  hasTechnicalSheet = !!(content && content.trim() !== '');
+                  // Verificar si hay contenido en español O en inglés
+                  const hasSpanishContent = !!(tab.technicalSheet && tab.technicalSheet.trim() !== '');
+                  const hasEnglishContent = !!(tab.technicalSheet_en && tab.technicalSheet_en.trim() !== '');
+                  hasTechnicalSheet = hasSpanishContent || hasEnglishContent;
                 } else {
-                  const content = language === 'en'
-                    ? (project.technicalSheet_en || project.technicalSheet)
-                    : project.technicalSheet;
-                  hasTechnicalSheet = !!(content && content.trim() !== '');
+                  // Verificar si hay contenido en español O en inglés
+                  const hasSpanishContent = !!(project.technicalSheet && project.technicalSheet.trim() !== '');
+                  const hasEnglishContent = !!(project.technicalSheet_en && project.technicalSheet_en.trim() !== '');
+                  hasTechnicalSheet = hasSpanishContent || hasEnglishContent;
                 }
 
                 return (

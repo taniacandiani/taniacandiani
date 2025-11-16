@@ -85,7 +85,7 @@ export default function EditProjectPage() {
     }));
   }, [editingLanguage]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - usar capture phase para tener prioridad sobre TipTap
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl+Shift+S para guardar
@@ -93,25 +93,35 @@ export default function EditProjectPage() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         const form = document.getElementById('project-form') as HTMLFormElement;
         if (form && !saving) {
           console.log('Shortcut triggered: Save');
           form.requestSubmit();
         }
+        return false;
       }
 
-      // Cmd/Ctrl+Shift+E para cambiar idioma
-      // Usar tanto 'e' como 'E' para mayor compatibilidad
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+      // Shift+Cmd+E (Mac) o Ctrl+Shift+E (Windows) para cambiar idioma
+      // E de "English/Español"
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && (e.key === 'e' || e.key === 'E')) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         console.log('Shortcut triggered: Change language');
         setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es');
+        // Forzar que el editor pierda el foco para que el cambio de idioma se aplique
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur) {
+          activeElement.blur();
+        }
+        return false;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Usar capture phase (true) para capturar el evento ANTES que TipTap
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [editingLanguage, saving]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -378,7 +388,7 @@ export default function EditProjectPage() {
             type="button"
             onClick={() => setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es')}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
-            title="Atajo: Cmd/Ctrl+Shift+E"
+            title="Atajo: Shift+Cmd+E (Mac) / Ctrl+Shift+E (Windows)"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
@@ -585,49 +595,52 @@ export default function EditProjectPage() {
         {/* Imágenes */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h2>
-          
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <div className="space-y-4">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Imagen del Hero * <span className="text-red-500">*</span>
-                    </label>
-                    
-                    {/* Botón para agregar imágenes del hero desde Media */}
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => openMediaSelector('hero', 0)}
-                        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
-                      >
-                        <div className="text-gray-400 mb-4">
-                          <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p className="font-medium">Seleccionar imagen del Hero</p>
-                          <p className="text-xs text-gray-500 mt-1">Haz clic para elegir una imagen del Media</p>
-                        </div>
-                      </button>
-                      
-                      <div className="text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const currentHeroImages = project.heroImages || [''];
-                            const lastIndex = currentHeroImages.filter(img => img && img.trim() !== '').length;
-                            openMediaSelector('hero', lastIndex);
-                          }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                        >
-                          + Agregar otra imagen del Hero
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Mostrar imágenes del hero con drag and drop */}
-                    <ReorderableImageList
+
+          {/* Imagen del Hero */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Imagen del Hero * <span className="text-red-500">*</span>
+            </label>
+
+            {/* Botón de subir imagen - siempre visible */}
+            <ImageUploader
+              label=""
+              projectId={project.slug}
+              currentImage=""
+              multiple={true}
+              onImagesUpload={(imageUrls) => {
+                if (imageUrls.length > 0) {
+                  const newHeroImages = [...(project.heroImages || [''])];
+                  const validImages = newHeroImages.filter(img => img && img.trim() !== '');
+                  const updatedImages = [...validImages, ...imageUrls];
+
+                  // Actualizar descripciones para las nuevas imágenes
+                  const currentDescriptions = project.heroImageDescriptions || [];
+                  const currentDescriptionsEn = project.heroImageDescriptions_en || [];
+                  const newDescriptions = [...currentDescriptions];
+                  const newDescriptionsEn = [...currentDescriptionsEn];
+
+                  while (newDescriptions.length < updatedImages.length) {
+                    newDescriptions.push('');
+                  }
+                  while (newDescriptionsEn.length < updatedImages.length) {
+                    newDescriptionsEn.push('');
+                  }
+
+                  setProject({
+                    ...project,
+                    heroImages: updatedImages,
+                    heroImageDescriptions: newDescriptions,
+                    heroImageDescriptions_en: newDescriptionsEn
+                  });
+                }
+              }}
+              required={false}
+              contentType={`proyectos/${project.slug}`}
+            />
+
+            {/* Mostrar imágenes del hero con drag and drop */}
+            <ReorderableImageList
                       images={project.heroImages || ['']}
                       descriptions={project.heroImageDescriptions}
                       descriptionsEn={project.heroImageDescriptions_en}
@@ -667,59 +680,44 @@ export default function EditProjectPage() {
                         setProject({ ...project, [field]: descriptions });
                       }}
                     />
-                  </div>
-                </div>
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Imagen Secundaria
-                  </label>
+          {/* Imagen Secundaria */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Imagen Secundaria
+            </label>
 
-                  {project.additionalImage ? (
-                    <div className="space-y-3">
-                      <img
-                        src={project.additionalImage}
-                        alt="Imagen secundaria"
-                        className="w-32 h-32 object-cover rounded-lg border"
-                      />
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => openMediaSelector('secondary')}
-                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                        >
-                          Cambiar Imagen
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setProject({ ...project, additionalImage: '' })}
-                          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openMediaSelector('secondary')}
-                      className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-gray-400"
-                    >
-                      <div className="text-gray-400 mb-4">
-                        <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        <p className="font-medium">Seleccionar imagen del Media</p>
-                        <p className="text-xs text-gray-500 mt-1">Haz clic para elegir una imagen existente</p>
-                      </div>
-                    </button>
-                  )}
-                </div>
+            {/* Botón de subir imagen secundaria - siempre visible */}
+            <ImageUploader
+              label=""
+              projectId={project.slug}
+              currentImage=""
+              onImageUpload={(imageUrl) => {
+                setProject({ ...project, additionalImage: imageUrl });
+              }}
+              required={false}
+              contentType={`proyectos/${project.slug}`}
+            />
+
+            {/* Mostrar imagen secundaria si existe */}
+            {project.additionalImage && (
+              <div className="mt-4">
+                <img
+                  src={project.additionalImage}
+                  alt="Imagen secundaria"
+                  className="w-full max-w-md h-auto object-cover rounded-lg border border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => setProject({ ...project, additionalImage: '' })}
+                  className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                >
+                  Eliminar Imagen Secundaria
+                </button>
               </div>
-
-          
+            )}
+          </div>
         </div>
 
         {/* Contenido */}

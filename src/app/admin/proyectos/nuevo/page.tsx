@@ -90,6 +90,51 @@ export default function NewProjectPage() {
     initializeCategories();
   }, []);
 
+  // Notificar al layout cuando cambia el idioma
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('editingLanguageChanged', {
+      detail: { language: editingLanguage }
+    }));
+  }, [editingLanguage]);
+
+  // Keyboard shortcuts - usar capture phase para tener prioridad sobre TipTap
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Shift+S para guardar
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const form = document.getElementById('project-form') as HTMLFormElement;
+        if (form) {
+          console.log('Shortcut triggered: Save');
+          form.requestSubmit();
+        }
+        return false;
+      }
+
+      // Shift+Cmd+E (Mac) o Ctrl+Shift+E (Windows) para cambiar idioma
+      // E de "English/Español"
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        console.log('Shortcut triggered: Change language');
+        setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es');
+        // Forzar que el editor pierda el foco para que el cambio de idioma se aplique
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur) {
+          activeElement.blur();
+        }
+        return false;
+      }
+    };
+
+    // Usar capture phase (true) para capturar el evento ANTES que TipTap
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [editingLanguage]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -300,11 +345,13 @@ export default function NewProjectPage() {
             type="button"
             onClick={() => setEditingLanguage(editingLanguage === 'es' ? 'en' : 'es')}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+            title="Atajo: Shift+Cmd+E (Mac) / Ctrl+Shift+E (Windows)"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
             </svg>
-            {editingLanguage === 'es' ? 'English' : 'Español'}
+            <span>{editingLanguage === 'es' ? 'English' : 'Español'}</span>
+            <span className="ml-2 text-xs text-gray-400">⇧⌘E</span>
           </button>
         </div>
 

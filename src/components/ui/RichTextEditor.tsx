@@ -131,6 +131,12 @@ export default function RichTextEditor({
         style: 'white-space: pre-wrap;',
       },
       handleKeyDown: (view, event) => {
+        // Override Shift+Cmd+E / Ctrl+Shift+E para permitir cambio de idioma
+        // Este shortcut no debe ser manejado por TipTap
+        if ((event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && (event.key === 'e' || event.key === 'E')) {
+          // No manejar este evento - dejar que lo maneje el componente padre
+          return false;
+        }
         // Permitir que Enter funcione naturalmente
         return false;
       },
@@ -215,6 +221,20 @@ export default function RichTextEditor({
       }
     }
   }, [value, editor]);
+
+  // Escuchar evento de cambio de idioma para actualizar el contenido
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      // Cuando cambia el idioma, el editor pierde el foco automáticamente
+      // Esto permite que el contenido se actualice con el nuevo idioma
+      if (editor) {
+        editor.commands.blur();
+      }
+    };
+
+    window.addEventListener('editingLanguageChanged', handleLanguageChange);
+    return () => window.removeEventListener('editingLanguageChanged', handleLanguageChange);
+  }, [editor]);
 
   if (!isClient || !editor) {
     return (
