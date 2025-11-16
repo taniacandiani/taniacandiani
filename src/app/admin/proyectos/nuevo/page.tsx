@@ -577,9 +577,12 @@ export default function NewProjectPage() {
                     descriptionsEn={formData.heroImageDescriptions_en}
                     editingLanguage={editingLanguage}
                     onReorder={(newImages, newDescriptions, newDescriptionsEn) => {
+                      // Actualizar también formData.image con la primera heroImage
+                      const firstImage = newImages.find(img => img && img.trim() !== '') || '';
                       setFormData({
                         ...formData,
                         heroImages: newImages,
+                        image: firstImage, // Sincronizar con la primera imagen
                         heroImageDescriptions: newDescriptions,
                         heroImageDescriptions_en: newDescriptionsEn
                       });
@@ -588,9 +591,12 @@ export default function NewProjectPage() {
                       const newHeroImages = formData.heroImages?.filter((_, i) => i !== index) || [];
                       const newDescriptions = formData.heroImageDescriptions?.filter((_, i) => i !== index) || [];
                       const newDescriptionsEn = formData.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                      // Actualizar formData.image con la nueva primera imagen
+                      const firstImage = newHeroImages.find(img => img && img.trim() !== '') || '';
                       setFormData({
                         ...formData,
                         heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                        image: firstImage, // Sincronizar con la primera imagen
                         heroImageDescriptions: newDescriptions,
                         heroImageDescriptions_en: newDescriptionsEn
                       });

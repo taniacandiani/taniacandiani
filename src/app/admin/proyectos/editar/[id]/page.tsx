@@ -591,9 +591,12 @@ export default function EditProjectPage() {
                       descriptionsEn={project.heroImageDescriptions_en}
                       editingLanguage={editingLanguage}
                       onReorder={(newImages, newDescriptions, newDescriptionsEn) => {
+                        // Actualizar también project.image con la primera heroImage
+                        const firstImage = newImages.find(img => img && img.trim() !== '') || '';
                         setProject({
                           ...project,
                           heroImages: newImages,
+                          image: firstImage, // Sincronizar con la primera imagen
                           heroImageDescriptions: newDescriptions,
                           heroImageDescriptions_en: newDescriptionsEn
                         });
@@ -602,9 +605,12 @@ export default function EditProjectPage() {
                         const newHeroImages = project.heroImages?.filter((_, i) => i !== index) || [];
                         const newDescriptions = project.heroImageDescriptions?.filter((_, i) => i !== index) || [];
                         const newDescriptionsEn = project.heroImageDescriptions_en?.filter((_, i) => i !== index) || [];
+                        // Actualizar project.image con la nueva primera imagen
+                        const firstImage = newHeroImages.find(img => img && img.trim() !== '') || '';
                         setProject({
                           ...project,
                           heroImages: newHeroImages.length > 0 ? newHeroImages : [''],
+                          image: firstImage, // Sincronizar con la primera imagen
                           heroImageDescriptions: newDescriptions,
                           heroImageDescriptions_en: newDescriptionsEn
                         });
