@@ -118,7 +118,7 @@ export function optimizeCloudinaryUrl(
 export const CLOUDINARY_PRESETS = {
   hero: {
     width: 1920,
-    quality: 'auto:eco',
+    quality: 'auto:good', // Cambiado de eco a good para mejor calidad en hero
     format: 'auto',
     crop: 'limit',
     dpr: 'auto'
@@ -132,14 +132,21 @@ export const CLOUDINARY_PRESETS = {
   } as CloudinaryTransformOptions,
   card: {
     width: 600,
-    quality: 'auto:eco',
+    quality: 'auto:low', // Cambiado de eco a low para cards (no necesitan tanta calidad)
+    format: 'auto',
+    crop: 'limit',
+    dpr: 'auto'
+  } as CloudinaryTransformOptions,
+  slider: {
+    width: 1600,
+    quality: 'auto:good', // Nuevo preset para sliders de proyecto
     format: 'auto',
     crop: 'limit',
     dpr: 'auto'
   } as CloudinaryTransformOptions,
   fullscreen: {
     width: 2048,
-    quality: 'auto:good',
+    quality: 'auto:best', // Cambiado a best para visualización fullscreen
     format: 'auto',
     crop: 'limit',
     dpr: 'auto'

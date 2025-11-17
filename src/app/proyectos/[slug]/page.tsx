@@ -11,6 +11,7 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { optimizeCloudinaryUrl, CLOUDINARY_PRESETS } from '@/lib/cloudinaryUtils';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -173,49 +174,49 @@ export default function ProjectPage({ params }: Props) {
     }
   };
 
-  // Main data loading effect - always runs
+  // Main data loading effect - optimizado con llamadas paralelas
   useEffect(() => {
     async function loadProject() {
       try {
         // Await params to get the slug
         const { slug } = await params;
-        
-        // Initialize with existing projects if storage is empty
-        const storedProjects = await ProjectStorage.getAll();
-        if (storedProjects.length === 0) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
+
+        // Paralelizar todas las llamadas API
+        const [storedProjects, publishedProjects, storedCategories, foundProject] = await Promise.all([
+          ProjectStorage.getAll().catch(() => []),
+          ProjectStorage.getPublished().catch(() => []),
+          CategoryStorage.getAll().catch(() => []),
+          ProjectStorage.getBySlug(slug).catch(() => null)
+        ]);
+
+        // Set all projects for sidebar
+        if (publishedProjects.length > 0) {
+          setAllProjects(publishedProjects);
+        } else if (storedProjects.length === 0) {
           console.log('Using default projects from content.ts');
           setAllProjects(PROJECTS);
-        } else {
-          // Get all projects for sidebar
-          const projects = await ProjectStorage.getPublished();
-          setAllProjects(projects);
         }
-        
-        // Initialize with existing categories if storage is empty
-        const storedCategories = await CategoryStorage.getAll();
-        if (storedCategories.length === 0) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
+
+        // Set categories
+        if (storedCategories.length > 0) {
+          // Update categories count in background (no await)
+          CategoryStorage.updateCounts().then(updatedCategories => {
+            setCategories(updatedCategories);
+          });
+        } else {
           console.log('Using default categories from content.ts');
           setCategories(PROJECT_CATEGORIES);
-        } else {
-          // Update categories count based on current projects
-          const updatedCategories = await CategoryStorage.updateCounts();
-          setCategories(updatedCategories);
         }
-        
-        // Find project by slug
-        const foundProject = await ProjectStorage.getBySlug(slug) || 
-                             PROJECTS.find(p => p.slug === slug);
-        
-        if (!foundProject) {
+
+        // Check if project was found
+        const project = foundProject || PROJECTS.find(p => p.slug === slug);
+
+        if (!project) {
           notFound();
           return;
         }
-        
-        setProject(foundProject);
+
+        setProject(project);
       } catch (error) {
         console.error('Error loading project:', error);
         notFound();
@@ -647,9 +648,12 @@ export default function ProjectPage({ params }: Props) {
                   <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
                 {sliderImages[currentSlide] && sliderImages[currentSlide].trim() !== '' ? (
                   <Image
-                    src={sliderImages[currentSlide]}
+                    src={optimizeCloudinaryUrl(sliderImages[currentSlide], CLOUDINARY_PRESETS.slider)}
                     alt={`${project.title} - Slide ${currentSlide + 1}`}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
+                    quality={85}
+                    loading={currentSlide === 0 ? "eager" : "lazy"}
                     className="object-cover"
                   />
                 ) : (

@@ -7,6 +7,7 @@ import Hero from '@/components/Hero';
 import NewsCard from '@/components/ui/NewsCard';
 import ExhibitionCard from '@/components/ui/ExhibitionCard';
 import MainLayout from '@/components/MainLayout';
+import { HeroSkeleton, NewsCardSkeleton, ExhibitionCardSkeleton } from '@/components/ui/Skeleton';
 import { HERO_SLIDES, PROJECTS, SAMPLE_NEWS } from '@/data/content';
 import { ProjectStorage } from '@/lib/projectStorage';
 import { NewsStorage } from '@/lib/newsStorage';
@@ -20,63 +21,80 @@ export default function Home() {
   const [homeNews, setHomeNews] = useState<NewsItem[]>([]);
   const [activeExhibitions, setActiveExhibitions] = useState<Exhibition[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Estados de carga separados para renderizado progresivo
+  const [heroLoading, setHeroLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [exhibitionsLoading, setExhibitionsLoading] = useState(true);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        setLoading(true);
-        
-        // Initialize with existing projects if storage is empty
-        const storedProjects = await ProjectStorage.getAll();
-        if (storedProjects.length === 0 && !isInitialized) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
-          console.log('Using default projects from content.ts');
-        }
-        
-        // Initialize with existing news if storage is empty
-        const storedNews = await NewsStorage.getAll();
-        if (storedNews.length === 0 && !isInitialized) {
-          // Note: saveAll is not implemented in the new async version
-          // We'll rely on the JSON files for now
-          console.log('Using default news from content.ts');
-        }
+        // Cargar hero primero (prioridad alta)
+        ProjectStorage.getFeatured()
+          .then(featuredProjects => {
+            if (featuredProjects.length > 0) {
+              const projectSlides: Slide[] = featuredProjects.map(project => ({
+                image: project.heroImages?.[0] || project.image,
+                title: project.title,
+                text: project.heroDescription || project.description
+              }));
+              setHeroSlides(projectSlides);
+            }
+            setHeroLoading(false);
+          })
+          .catch(error => {
+            console.error('Error loading hero:', error);
+            setHeroSlides(HERO_SLIDES);
+            setHeroLoading(false);
+          });
 
-        // Get featured projects for hero
-        const featuredProjects = await ProjectStorage.getFeatured();
-        
-        if (featuredProjects.length > 0) {
-          const projectSlides: Slide[] = featuredProjects.map(project => ({
-            image: project.heroImages?.[0] || project.image,
-            title: project.title,
-            text: project.heroDescription || project.description
-          }));
-          
-          // Only show featured projects, no static slides
-          setHeroSlides(projectSlides);
-        } else {
-          // Fallback to static slides if no projects are featured
-          setHeroSlides(HERO_SLIDES);
-        }
+        // Cargar exhibitions (prioridad media)
+        ExhibitionStorage.getActive()
+          .then(exhibitions => {
+            setActiveExhibitions(exhibitions);
+            setExhibitionsLoading(false);
+          })
+          .catch(error => {
+            console.error('Error loading exhibitions:', error);
+            setActiveExhibitions([]);
+            setExhibitionsLoading(false);
+          });
 
-        // Get news for home
-        const newsForHome = await NewsStorage.getForHome();
-        setHomeNews(newsForHome);
+        // Cargar news (prioridad media)
+        NewsStorage.getForHome()
+          .then(newsForHome => {
+            setHomeNews(newsForHome);
+            setNewsLoading(false);
+          })
+          .catch(error => {
+            console.error('Error loading news:', error);
+            setHomeNews(SAMPLE_NEWS.slice(0, 3));
+            setNewsLoading(false);
+          });
 
-        // Get active exhibitions for home
-        const exhibitions = await ExhibitionStorage.getActive();
-        setActiveExhibitions(exhibitions);
+        // Verificar si storage está vacío (baja prioridad)
+        Promise.all([
+          ProjectStorage.getAll().catch(() => []),
+          NewsStorage.getAll().catch(() => [])
+        ]).then(([storedProjects, storedNews]) => {
+          if (storedProjects.length === 0 && !isInitialized) {
+            console.log('Using default projects from content.ts');
+          }
+          if (storedNews.length === 0 && !isInitialized) {
+            console.log('Using default news from content.ts');
+          }
+          setIsInitialized(true);
+        });
 
-        setIsInitialized(true);
       } catch (error) {
         console.error('Error initializing data:', error);
         // Fallback to static content
         setHeroSlides(HERO_SLIDES);
         setHomeNews(SAMPLE_NEWS.slice(0, 3));
         setActiveExhibitions([]);
-      } finally {
-        setLoading(false);
+        setHeroLoading(false);
+        setNewsLoading(false);
+        setExhibitionsLoading(false);
       }
     };
 
@@ -156,18 +174,7 @@ export default function Home() {
     }
   };
 
-  if (loading) {
-    return (
-      <MainLayout hasNavbarOffset={false}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
+  // Renderizado progresivo - ya no hay pantalla de carga bloqueante
   return (
     <MainLayout hasNavbarOffset={false}>
       <script
@@ -175,12 +182,26 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <div>
-        <Hero slides={heroSlides} autoPlay={true} interval={6000} />
+        {/* Hero Section con skeleton mientras carga */}
+        {heroLoading ? (
+          <HeroSkeleton />
+        ) : (
+          <Hero slides={heroSlides} autoPlay={true} interval={6000} />
+        )}
 
         <Section as="main" indented>
           <div className="main-section py-12 sm:py-20 lg:py-40">
-            {/* Exhibitions Section */}
-            {activeExhibitions.length > 0 && (
+            {/* Exhibitions Section con skeleton */}
+            {exhibitionsLoading ? (
+              <>
+                <h3 className="font-medium text-black mb-12">{language === 'en' ? 'EXHIBITIONS' : 'EXPOSICIONES'}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                  {[1, 2, 3].map((i) => (
+                    <ExhibitionCardSkeleton key={i} />
+                  ))}
+                </div>
+              </>
+            ) : activeExhibitions.length > 0 ? (
               <>
                 <h3 className="font-medium text-black mb-12">{language === 'en' ? 'EXHIBITIONS' : 'EXPOSICIONES'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
@@ -189,19 +210,28 @@ export default function Home() {
                   ))}
                 </div>
               </>
-            )}
+            ) : null}
 
-            {/* News Section */}
+            {/* News Section con skeleton */}
             <h3 className="font-medium text-black mb-12">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {homeNews.length > 0 ? (
+              {newsLoading ? (
+                // Mostrar skeletons mientras carga
+                [1, 2, 3].map((i) => (
+                  <NewsCardSkeleton key={i} />
+                ))
+              ) : homeNews.length > 0 ? (
+                // Mostrar noticias cuando estén cargadas
                 homeNews.map((news) => (
                   <NewsCard key={news.id} news={news} />
                 ))
               ) : (
+                // Mensaje cuando no hay noticias
                 <div className="col-span-3 text-center py-12">
-                  <p className="text-gray-500">{language === 'en' ? 'No news available at this time.' : 'No hay noticias disponibles en este momento.'}</p>
+                  <p className="text-gray-500">
+                    {language === 'en' ? 'No news available at this time.' : 'No hay noticias disponibles en este momento.'}
+                  </p>
                 </div>
               )}
             </div>

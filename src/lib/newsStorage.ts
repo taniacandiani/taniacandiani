@@ -1,29 +1,75 @@
 import { NewsItem } from '@/types';
 
 export class NewsStorage {
-  static async getAll(): Promise<NewsItem[]> {
+  // Caché en memoria con tiempo de vida de 5 minutos
+  private static cache: {
+    all: { data: NewsItem[] | null; timestamp: number };
+    allIncludingDrafts: { data: NewsItem[] | null; timestamp: number };
+  } = {
+    all: { data: null, timestamp: 0 },
+    allIncludingDrafts: { data: null, timestamp: 0 }
+  };
+  private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  // Invalidar caché cuando se modifica data
+  private static invalidateCache(): void {
+    this.cache = {
+      all: { data: null, timestamp: 0 },
+      allIncludingDrafts: { data: null, timestamp: 0 }
+    };
+  }
+
+  static async getAll(forceRefresh: boolean = false): Promise<NewsItem[]> {
     try {
+      // Verificar si el caché es válido
+      const now = Date.now();
+      if (!forceRefresh &&
+          this.cache.all.data &&
+          (now - this.cache.all.timestamp) < this.CACHE_DURATION) {
+        return this.cache.all.data;
+      }
+
       const response = await fetch('/api/news');
       if (!response.ok) {
         throw new Error('Failed to fetch news');
       }
-      return await response.json();
+      const news = await response.json();
+
+      // Actualizar caché
+      this.cache.all = { data: news, timestamp: now };
+
+      return news;
     } catch (error) {
       console.error('Error fetching news:', error);
-      return [];
+      // Si hay error y tenemos caché, devolver caché aunque esté expirado
+      return this.cache.all.data || [];
     }
   }
 
-  static async getAllIncludingDrafts(): Promise<NewsItem[]> {
+  static async getAllIncludingDrafts(forceRefresh: boolean = false): Promise<NewsItem[]> {
     try {
+      // Verificar si el caché es válido
+      const now = Date.now();
+      if (!forceRefresh &&
+          this.cache.allIncludingDrafts.data &&
+          (now - this.cache.allIncludingDrafts.timestamp) < this.CACHE_DURATION) {
+        return this.cache.allIncludingDrafts.data;
+      }
+
       const response = await fetch('/api/news?includeAll=true');
       if (!response.ok) {
         throw new Error('Failed to fetch news');
       }
-      return await response.json();
+      const news = await response.json();
+
+      // Actualizar caché
+      this.cache.allIncludingDrafts = { data: news, timestamp: now };
+
+      return news;
     } catch (error) {
       console.error('Error fetching news:', error);
-      return [];
+      // Si hay error y tenemos caché, devolver caché aunque esté expirado
+      return this.cache.allIncludingDrafts.data || [];
     }
   }
 
@@ -56,13 +102,16 @@ export class NewsStorage {
         },
         body: JSON.stringify(newsItem),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(`Failed to save news: ${errorMessage}`);
       }
-      
+
+      // Invalidar caché después de guardar
+      this.invalidateCache();
+
       // Dispatch custom event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('newsUpdated'));
@@ -82,13 +131,16 @@ export class NewsStorage {
         },
         body: JSON.stringify(newsItem),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(`Failed to update news: ${errorMessage}`);
       }
-      
+
+      // Invalidar caché después de actualizar
+      this.invalidateCache();
+
       // Dispatch custom event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('newsUpdated'));
@@ -104,11 +156,14 @@ export class NewsStorage {
       const response = await fetch(`/api/news?id=${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete news');
       }
-      
+
+      // Invalidar caché después de eliminar
+      this.invalidateCache();
+
       // Dispatch custom event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('newsUpdated'));

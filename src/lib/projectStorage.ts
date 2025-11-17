@@ -1,17 +1,47 @@
 import { Project } from '@/types';
 
 export class ProjectStorage {
-  static async getAll(): Promise<Project[]> {
+  // Caché en memoria con tiempo de vida de 5 minutos
+  private static cache: { data: Project[] | null; timestamp: number } = {
+    data: null,
+    timestamp: 0
+  };
+  private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  static async getAll(forceRefresh: boolean = false): Promise<Project[]> {
     try {
+      // Verificar si el caché es válido
+      const now = Date.now();
+      if (!forceRefresh &&
+          this.cache.data &&
+          (now - this.cache.timestamp) < this.CACHE_DURATION) {
+        return this.cache.data;
+      }
+
       const response = await fetch('/api/projects');
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
-      return await response.json();
+
+      const projects = await response.json();
+
+      // Actualizar caché
+      this.cache = {
+        data: projects,
+        timestamp: now
+      };
+
+      return projects;
     } catch (error) {
       console.error('Error fetching projects:', error);
-      return [];
+      // Si hay error y tenemos caché, devolver caché aunque esté expirado
+      return this.cache.data || [];
     }
+  }
+
+  // Invalidar caché cuando se modifica data
+  private static invalidateCache(): void {
+    this.cache = { data: null, timestamp: 0 };
   }
 
   static async getById(id: string): Promise<Project | null> {
@@ -43,13 +73,16 @@ export class ProjectStorage {
         },
         body: JSON.stringify(project),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(`Failed to save project: ${errorMessage}`);
       }
-      
+
+      // Invalidar caché después de guardar
+      this.invalidateCache();
+
       // Dispatch event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('projectsUpdated'));
@@ -69,13 +102,16 @@ export class ProjectStorage {
         },
         body: JSON.stringify(project),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(`Failed to update project: ${errorMessage}`);
       }
-      
+
+      // Invalidar caché después de actualizar
+      this.invalidateCache();
+
       // Dispatch event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('projectsUpdated'));
@@ -91,11 +127,14 @@ export class ProjectStorage {
       const response = await fetch(`/api/projects?id=${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete project');
       }
-      
+
+      // Invalidar caché después de eliminar
+      this.invalidateCache();
+
       // Dispatch event to notify other components
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('projectsUpdated'));
