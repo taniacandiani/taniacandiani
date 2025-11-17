@@ -25,8 +25,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
-  const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
+  const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Initialize filters from URL params
@@ -119,27 +118,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
   return (
     <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
-      {/* Header */}
-      <div className="mb-8 lg:mb-16 flex justify-between items-center">
+      {/* Header - Solo mobile */}
+      <div className="mb-8 lg:hidden flex justify-between items-center">
         <div className="flex items-center gap-3">
-          {/* Toggle sidebar button - solo desktop */}
-          <button
-            onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="hidden lg:flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
-            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
-          >
-            <span
-              className="material-symbols-outlined leading-none -mt-1"
-              style={{ fontSize: '32px' }}
-            >
-              thumbnail_bar
-            </span>
-          </button>
-
           {/* Botón de cambio de vista - a la izquierda en mobile */}
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="lg:hidden flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
+            className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
           >
             <span
               className="material-symbols-outlined transition-all duration-300 ease-in-out"
@@ -152,47 +137,34 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'PROJECTS' : 'PROYECTOS'}</h1>
         </div>
         <div className="flex items-center gap-4">
-          {/* Botón de cambio de vista - solo desktop */}
-          <button
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="hidden lg:flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all duration-300 ease-in-out hover:scale-105"
-          >
-            <span
-              className="material-symbols-outlined transition-all duration-300 ease-in-out"
-              style={{ fontSize: '32px' }}
-            >
-              {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
-            </span>
-          </button>
-          
-          {/* Dropdown de ordenamiento */}
+          {/* Dropdown de ordenamiento - mobile */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 text-sm cursor-pointer "
+              className="flex items-center gap-2 text-sm cursor-pointer"
             >
               <span>
                 {filterState.sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
                 {filterState.sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
                 {filterState.sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
               </span>
-              <svg 
-                width="12" 
-                height="8" 
-                viewBox="0 0 12 8" 
-                fill="none" 
+              <svg
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
                 className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
               >
-                <path 
-                  d="M1 1L6 6L11 1" 
-                  stroke="#000000" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
+                <path
+                  d="M1 1L6 6L11 1"
+                  stroke="#000000"
+                  strokeWidth="2"
+                  strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
             </button>
-            
+
             {dropdownOpen && (
               <div className="absolute right-0 top-full mt-2 bg-black text-white rounded-sm shadow-lg z-50 min-w-[160px]">
                 <button
@@ -260,12 +232,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
         {/* Categorías Accordion */}
         <div className="border-b border-gray-300">
           <button
-            onClick={() => setCategoriesAccordionOpen(!categoriesAccordionOpen)}
+            onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
             className="w-full flex justify-between items-center py-3 text-left"
           >
             <h4 className="text-lg font-medium">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
             <svg
-              className={`w-5 h-5 transition-transform ${categoriesAccordionOpen ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${activeAccordion === 'categories' ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -273,7 +245,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          {categoriesAccordionOpen && (
+          {activeAccordion === 'categories' && (
             <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedCategory: null })}
@@ -301,12 +273,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
         {/* Año Accordion */}
         <div className="border-b border-gray-300">
           <button
-            onClick={() => setYearAccordionOpen(!yearAccordionOpen)}
+            onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
             className="w-full flex justify-between items-center py-3 text-left"
           >
             <h4 className="text-lg font-medium">{language === 'en' ? 'Year' : 'Año'}</h4>
             <svg
-              className={`w-5 h-5 transition-transform ${yearAccordionOpen ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${activeAccordion === 'year' ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -314,7 +286,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          {yearAccordionOpen && (
+          {activeAccordion === 'year' && (
             <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedYear: null })}
@@ -340,17 +312,68 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
         </div>
       </div>
 
+      {/* Toggle y Título - fixed position */}
+      <div className="hidden lg:block fixed top-40 left-8 z-50">
+        <div className="flex items-center gap-4">
+          {/* Toggle button primero */}
+          <button
+            onClick={() => setSidebarVisible(!sidebarVisible)}
+            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+          >
+            <span
+              className="material-symbols-outlined leading-none -mt-1"
+              style={{ fontSize: '32px' }}
+            >
+              thumbnail_bar
+            </span>
+          </button>
+
+          {/* Título PROYECTOS con animación fade */}
+          <h1
+            className={`text-2xl font-medium tracking-widest text-black transition-all duration-300 ease-in-out ${
+              sidebarVisible
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 -translate-x-4 pointer-events-none'
+            }`}
+          >
+            {language === 'en' ? 'PROJECTS' : 'PROYECTOS'}
+          </h1>
+        </div>
+      </div>
+
       <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-        {/* Desktop Sidebar */}
-        <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-          sidebarVisible ? 'w-64' : 'w-0'
-        }`}>
-          <div className="w-64">
-            {/* Búsqueda */}
+        {/* Desktop Sidebar - Fixed - Alineado con el contenido principal */}
+        <div className={`hidden lg:block fixed left-8 transition-all duration-300 ease-in-out ${
+          sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+        }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
+          <div className="w-64 pr-4 overflow-x-hidden">
+            {/* Botón de cambio de vista - Primero */}
+            <div className="mb-8">
+              <button
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="w-full flex items-center justify-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-3 rounded-md transition-all duration-300 ease-in-out hover:scale-105 border border-gray-200"
+              >
+                <span
+                  className="material-symbols-outlined transition-all duration-300 ease-in-out"
+                  style={{ fontSize: '24px' }}
+                >
+                  {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
+                </span>
+                <span className="font-medium">
+                  {viewMode === 'grid'
+                    ? (language === 'en' ? 'List View' : 'Vista Lista')
+                    : (language === 'en' ? 'Grid View' : 'Vista Cuadrícula')
+                  }
+                </span>
+              </button>
+            </div>
+
+            {/* Búsqueda - Segundo */}
             <div className="mb-8">
               <div className="relative">
                 <svg
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-black"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-8 text-black"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -362,15 +385,79 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                   placeholder={language === 'en' ? 'Search projects...' : 'Buscar proyectos...'}
                   value={filterState.searchTerm}
                   onChange={(e) => updateFilter({ searchTerm: e.target.value })}
-                  className="w-full border-0 border-b border-gray-300 pl-7 pr-0 py-2 text-base bg-transparent placeholder-black"
+                  className="w-full border-0 border-b border-gray-300 pl-7 pr-0 pb-3 pt-1 text-base bg-transparent placeholder-black"
                 />
               </div>
             </div>
 
-            {/* Categorías */}
-            <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
-              <div className="space-y-2">
+            {/* Ordenar - Acordeón - Tercero */}
+            <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+              <button
+                onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
+                className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+              >
+                <span>
+                  {filterState.sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                  {filterState.sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                  {filterState.sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                </span>
+                <span className="material-symbols-outlined text-base">
+                  {activeAccordion === 'sort' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                activeAccordion === 'sort' ? 'max-h-[500px]' : 'max-h-0'
+              }`}>
+                <button
+                  onClick={() => {
+                    updateFilter({ sortBy: 'date' });
+                    setActiveAccordion(null);
+                  }}
+                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    filterState.sortBy === 'date' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                </button>
+                <button
+                  onClick={() => {
+                    updateFilter({ sortBy: 'title' });
+                    setActiveAccordion(null);
+                  }}
+                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    filterState.sortBy === 'title' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {language === 'en' ? 'Order by name' : 'Orden por nombre'}
+                </button>
+                <button
+                  onClick={() => {
+                    updateFilter({ sortBy: 'category' });
+                    setActiveAccordion(null);
+                  }}
+                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    filterState.sortBy === 'category' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {language === 'en' ? 'Order by category' : 'Orden por categoría'}
+                </button>
+              </div>
+            </div>
+
+            {/* Categorías - Acordeón - Cuarto */}
+            <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+              <button
+                onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
+                className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+              >
+                <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                <span className="material-symbols-outlined text-base">
+                  {activeAccordion === 'categories' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+              }`}>
                 <button
                   onClick={() => updateFilter({ selectedCategory: null })}
                   className={`block w-full text-left py-1 text-base transition-all duration-200 ${
@@ -393,10 +480,20 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               </div>
             </div>
 
-            {/* Años */}
-            <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-              <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
-              <div className="space-y-2">
+            {/* Años - Acordeón */}
+            <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+              <button
+                onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
+                className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+              >
+                <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                <span className="material-symbols-outlined text-base">
+                  {activeAccordion === 'year' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+              }`}>
                 <button
                   onClick={() => updateFilter({ selectedYear: null })}
                   className={`block w-full text-left py-1 text-base transition-all duration-200 ${
@@ -421,10 +518,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           </div>
         </div>
 
+        {/* Espaciador para sidebar fixed cuando está visible - con transición */}
+        <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out ${
+          sidebarVisible ? 'w-64' : 'w-0'
+        }`}></div>
+
         {/* Grilla de proyectos */}
-        <div className={`flex-1 transition-all duration-300 ease-in-out ${
-          !sidebarVisible ? '-ml-0' : ''
-        }`}>
+        <div className="flex-1 transition-all duration-300 ease-in-out">
           
           {filteredAndSortedProjects.length === 0 ? (
             <div className="text-center py-12">

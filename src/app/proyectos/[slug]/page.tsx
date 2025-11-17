@@ -317,7 +317,7 @@ export default function ProjectPage({ params }: Props) {
 
   return (
     <MainLayout>
-      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
+      <div className="container-mobile py-4 lg:py-8 pt-12 lg:pt-24">
         {/* Mobile: Breadcrumb al inicio */}
         <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">
           <nav className="text-sm">
@@ -371,11 +371,11 @@ export default function ProjectPage({ params }: Props) {
           )}
         </div>
 
-        {/* Botón de toggle siempre visible en la parte superior - Solo desktop */}
-        <div className="hidden lg:block mb-4">
+        {/* Botón de toggle siempre fixed - Solo desktop */}
+        <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
             onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
+            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
             <span
@@ -388,11 +388,11 @@ export default function ProjectPage({ params }: Props) {
         </div>
 
         <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-          {/* Sidebar Izquierdo - Solo desktop */}
-          <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-            sidebarVisible ? 'w-64' : 'w-0'
-          }`}>
-            <div className="w-64">
+          {/* Sidebar Izquierdo Fixed - Solo desktop */}
+          <div className={`hidden lg:block fixed top-48 left-8 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+          }`} style={{ maxHeight: 'calc(100vh - 12rem)', overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="w-64 pr-4 overflow-x-hidden">
               {/* Título y tabs - alineados con la imagen */}
               <div className="mb-8">
                 <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full mb-6" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
@@ -521,64 +521,16 @@ export default function ProjectPage({ params }: Props) {
                 );
               })()}
 
-              {/* Categorías */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">Categorías</h4>
-                <div className="space-y-2">
-                  <Link
-                    href="/proyectos"
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 text-gray-500 hover:text-black`}
-                  >
-                    Todas las categorías
-                  </Link>
-                  {categories.map((category) => (
-                    <Link
-                      key={category.id}
-                      href={`/proyectos?category=${encodeURIComponent(category.name)}`}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        project.categories?.includes(category.name)
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
-                      }`}
-                    >
-                      {category.name} ({category.count})
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Año */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">Año</h4>
-                <div className="space-y-2">
-                  <Link
-                    href="/proyectos"
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 text-gray-500 hover:text-black`}
-                  >
-                    Todos los años
-                  </Link>
-                  {availableYears.map((year) => (
-                    <Link
-                      key={year}
-                      href={`/proyectos?year=${year}`}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        project.year === year
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
-                      }`}
-                    >
-                      {year}
-                    </Link>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
 
+          {/* Espaciador para sidebar fixed cuando está visible - con transición */}
+          <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64' : 'w-0'
+          }`}></div>
+
           {/* Contenido Principal */}
-          <div className={`flex-1 transition-all duration-300 ease-in-out ${
-            !sidebarVisible ? '-ml-0' : ''
-          }`}>
+          <div className="flex-1 transition-all duration-300 ease-in-out">
             {/* Determinar si mostrar slider o imagen estática */}
             {(() => {
               const currentTab = activeProjectTab >= 0 && project.tabs?.[activeProjectTab];
@@ -984,12 +936,12 @@ export default function ProjectPage({ params }: Props) {
 
                       return image && image.trim() !== '' ? (
                         <div key={index} className="relative">
-                          <div className="relative overflow-hidden" style={{ borderRadius: '5px' }}>
+                          <div className="relative">
                             <img
                               src={image}
                               alt={`${project.title} - Imagen ${actualIndex + 1}`}
-                              className="w-full h-auto object-contain"
-                              style={{ maxWidth: '100%' }}
+                              className="h-auto"
+                              style={{ width: 'auto', maxWidth: '100%', display: 'block', borderRadius: '5px' }}
                             />
                             {description && description.trim() !== '' && (
                               <div className="mt-2 text-sm text-gray-600">
