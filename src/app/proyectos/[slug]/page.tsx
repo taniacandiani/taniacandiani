@@ -559,16 +559,73 @@ export default function ProjectPage({ params }: Props) {
 
           {/* Contenido Principal */}
           <div className="flex-1">
-            {/* Slider con puntitos */}
-            <div
-              className="relative mb-8"
-              onMouseEnter={() => setIsSliderHovered(true)}
-              onMouseLeave={() => setIsSliderHovered(false)}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-            >
-              <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
+            {/* Determinar si mostrar slider o imagen estática */}
+            {(() => {
+              const currentTab = activeProjectTab >= 0 && project.tabs?.[activeProjectTab];
+              const showWithoutSlider = currentTab
+                ? currentTab.imagesWithoutSlider
+                : project.imagesWithoutSlider;
+
+              // Si está configurado sin slider, mostrar solo la primera imagen
+              if (showWithoutSlider && sliderImages.length > 0) {
+                return (
+                  <div className="relative mb-8">
+                    <div className="relative aspect-[16/9] overflow-hidden" style={{ borderRadius: '5px' }}>
+                      {sliderImages[0] && sliderImages[0].trim() !== '' ? (
+                        <Image
+                          src={sliderImages[0]}
+                          alt={`${project.title} - Imagen principal`}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-400">Sin imagen</span>
+                        </div>
+                      )}
+
+                      {/* Descripción de la primera imagen si existe */}
+                      {(() => {
+                        let descriptions: string[] | undefined;
+                        if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                          const tab = project.tabs[activeProjectTab];
+                          descriptions = language === 'en' && tab.heroImageDescriptions_en
+                            ? tab.heroImageDescriptions_en
+                            : tab.heroImageDescriptions;
+                        } else {
+                          descriptions = language === 'en' && project.heroImageDescriptions_en
+                            ? project.heroImageDescriptions_en
+                            : project.heroImageDescriptions;
+                        }
+                        const firstDescription = descriptions?.[0];
+
+                        if (firstDescription && firstDescription.trim() !== '') {
+                          return (
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 z-10">
+                              <p className="text-white text-sm md:text-base drop-shadow-lg">
+                                {firstDescription}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Mostrar slider normal si no está configurado sin slider
+              return (
+                <div
+                  className="relative mb-8"
+                  onMouseEnter={() => setIsSliderHovered(true)}
+                  onMouseLeave={() => setIsSliderHovered(false)}
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
+                  <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
                 {sliderImages[currentSlide] && sliderImages[currentSlide].trim() !== '' ? (
                   <Image
                     src={sliderImages[currentSlide]}
@@ -640,21 +697,23 @@ export default function ProjectPage({ params }: Props) {
                 )}
               </div>
               
-              {/* Puntitos indicadores - solo mostrar si hay múltiples imágenes */}
-              {sliderImages.length > 1 && (
-                <div className="flex justify-center space-x-2 mt-4">
-                  {sliderImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full ${
-                        index === currentSlide ? 'bg-black' : 'bg-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+                    {/* Puntitos indicadores - solo mostrar si hay múltiples imágenes */}
+                    {sliderImages.length > 1 && (
+                      <div className="flex justify-center space-x-2 mt-4">
+                        {sliderImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToSlide(index)}
+                            className={`w-3 h-3 rounded-full ${
+                              index === currentSlide ? 'bg-black' : 'bg-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
             {/* Breadcrumb - Solo desktop */}
             <div className="hidden lg:block mb-6 pb-4 border-b border-gray-200">
@@ -869,6 +928,60 @@ export default function ProjectPage({ params }: Props) {
                 )}
               </div>
             </div>
+
+            {/* Imágenes adicionales cuando no hay slider */}
+            {(() => {
+              const currentTab = activeProjectTab >= 0 && project.tabs?.[activeProjectTab];
+              const showWithoutSlider = currentTab
+                ? currentTab.imagesWithoutSlider
+                : project.imagesWithoutSlider;
+
+              // Si está configurado sin slider y hay más de una imagen, mostrar las imágenes restantes
+              if (showWithoutSlider && sliderImages.length > 1) {
+                const remainingImages = sliderImages.slice(1);
+                let descriptions: string[] | undefined;
+
+                // Obtener las descripciones correspondientes
+                if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                  const tab = project.tabs[activeProjectTab];
+                  descriptions = language === 'en' && tab.heroImageDescriptions_en
+                    ? tab.heroImageDescriptions_en
+                    : tab.heroImageDescriptions;
+                } else {
+                  descriptions = language === 'en' && project.heroImageDescriptions_en
+                    ? project.heroImageDescriptions_en
+                    : project.heroImageDescriptions;
+                }
+
+                return (
+                  <div className="mb-12 space-y-8">
+                    {remainingImages.map((image, index) => {
+                      const actualIndex = index + 1; // +1 porque empezamos desde la segunda imagen
+                      const description = descriptions?.[actualIndex];
+
+                      return image && image.trim() !== '' ? (
+                        <div key={index} className="relative">
+                          <div className="relative overflow-hidden" style={{ borderRadius: '5px' }}>
+                            <img
+                              src={image}
+                              alt={`${project.title} - Imagen ${actualIndex + 1}`}
+                              className="w-full h-auto object-contain"
+                              style={{ maxWidth: '100%' }}
+                            />
+                            {description && description.trim() !== '' && (
+                              <div className="mt-2 text-sm text-gray-600">
+                                {description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Imagen secundaria */}
             {(() => {

@@ -35,6 +35,7 @@ export interface ProjectTab {
   heroImages?: string[];
   heroImageDescriptions?: string[];
   heroImageDescriptions_en?: string[];
+  imagesWithoutSlider?: boolean; // New: Display images without slider
   additionalImage?: string;
   projectDetails?: string;
   technicalSheet?: string;
@@ -86,6 +87,7 @@ export interface Project {
   // Hero display options
   showInHomeHero?: boolean; // Checkbox to show in home hero
   heroDescription?: string; // Custom description for home hero (HOME page only)
+  imagesWithoutSlider?: boolean; // New: Display images without slider
 
   // Additional project metadata
   commissionedBy?: string;

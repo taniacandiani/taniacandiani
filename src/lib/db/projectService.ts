@@ -146,6 +146,7 @@ export class ProjectService {
       project.pdfButtonText || null,
       project.pdfButtonText_en || null,
       project.videoUrl || null,
+      project.imagesWithoutSlider ?? false,
       project.createdAt || null, // Allow custom createdAt
     ];
 
@@ -153,7 +154,7 @@ export class ProjectService {
     const hasUndefined = queryValues.some((val, idx) => {
       if (val === undefined) {
         console.error(`ERROR: Value at index ${idx} is undefined!`);
-        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','created_at'][idx]}`);
+        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','images_without_slider','created_at'][idx]}`);
         return true;
       }
       return false;
@@ -177,7 +178,7 @@ export class ProjectService {
         commissioned_by, curator, location,
         title_en, description_en, project_details_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
-        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, created_at
+        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, images_without_slider, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
@@ -186,7 +187,7 @@ export class ProjectService {
         $20, $21, $22,
         $23, $24, $25,
         $26, $27, $28,
-        $29, $30, $31, $32, $33, $34, COALESCE($35, NOW())
+        $29, $30, $31, $32, $33, $34, $35, COALESCE($36, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -273,7 +274,8 @@ export class ProjectService {
         pdf_button_text = $32,
         pdf_button_text_en = $33,
         video_url = $34,
-        created_at = $35,
+        images_without_slider = $35,
+        created_at = $36,
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -312,6 +314,7 @@ export class ProjectService {
         'pdfButtonText' in project ? (project.pdfButtonText || null) : 'KEEP_EXISTING',
         'pdfButtonText_en' in project ? (project.pdfButtonText_en || null) : 'KEEP_EXISTING',
         'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING',
+        project.imagesWithoutSlider !== undefined ? project.imagesWithoutSlider : null,
         project.createdAt !== undefined ? project.createdAt : null,
       ]
     );
@@ -383,6 +386,7 @@ export class ProjectService {
       pdfButtonText: row.pdf_button_text,
       pdfButtonText_en: row.pdf_button_text_en,
       videoUrl: row.video_url,
+      imagesWithoutSlider: row.images_without_slider,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       tabs: [], // Will be populated separately
@@ -406,6 +410,7 @@ export class ProjectService {
       heroImages: row.hero_images || [],
       heroImageDescriptions: row.hero_image_descriptions || [],
       heroImageDescriptions_en: row.hero_image_descriptions_en || [],
+      imagesWithoutSlider: row.images_without_slider,
       additionalImage: row.additional_image,
       projectDetails: row.project_details,
       technicalSheet: row.technical_sheet,
@@ -429,16 +434,16 @@ export class ProjectService {
       await nile.db.query(
         `INSERT INTO project_tabs (
           id, project_id, tab_order, title,
-          hero_images, hero_image_descriptions, hero_image_descriptions_en,
+          hero_images, hero_image_descriptions, hero_image_descriptions_en, images_without_slider,
           additional_image, project_details, technical_sheet,
           pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_url,
           title_en, project_details_en, technical_sheet_en
         ) VALUES (
           $1, $2, $3, $4,
-          $5::jsonb, $6::jsonb, $7::jsonb,
-          $8, $9, $10,
-          $11, $12, $13, $14, $15, $16,
-          $17, $18, $19
+          $5::jsonb, $6::jsonb, $7::jsonb, $8,
+          $9, $10, $11,
+          $12, $13, $14, $15, $16, $17,
+          $18, $19, $20
         )`,
         [
           crypto.randomUUID(),
@@ -448,6 +453,7 @@ export class ProjectService {
           JSON.stringify(tab.heroImages || []),
           JSON.stringify(tab.heroImageDescriptions || []),
           JSON.stringify(tab.heroImageDescriptions_en || []),
+          tab.imagesWithoutSlider ?? false,
           tab.additionalImage || null,
           tab.projectDetails || null,
           tab.technicalSheet || null,

@@ -609,9 +609,24 @@ export default function EditProjectPage() {
 
           {/* Imagen del Hero */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Imagen del Hero * <span className="text-red-500">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Imagen del Hero * <span className="text-red-500">*</span>
+              </label>
+
+              {/* Checkbox para imágenes sin slider */}
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={project.imagesWithoutSlider || false}
+                  onChange={(e) => setProject({ ...project, imagesWithoutSlider: e.target.checked })}
+                  className="rounded focus:ring-black"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Imágenes sin slider
+                </span>
+              </label>
+            </div>
 
             {/* Botón de subir imagen - siempre visible */}
             <ImageUploader
@@ -1127,9 +1142,24 @@ export default function EditProjectPage() {
 
                   {/* Imágenes del Hero del Tab */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {editingLanguage === 'es' ? 'Imágenes del Hero del Tab' : 'Tab Hero Images'}
+                      </label>
+
+                      {/* Checkbox para imágenes sin slider en tabs */}
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={tab.imagesWithoutSlider || false}
+                          onChange={(e) => updateTab(tabIndex, 'imagesWithoutSlider', e.target.checked)}
+                          className="rounded focus:ring-black"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Imágenes sin slider
+                        </span>
+                      </label>
+                    </div>
                     <ImageUploader
                       label=""
                       projectId={project.slug}
