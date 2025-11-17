@@ -1339,7 +1339,7 @@ export default function EditProjectPage() {
                           return (
                             <ImageUploader
                               label={editingLanguage === 'es' ? 'Subir Documento PDF' : 'Upload PDF Document'}
-                              projectId={tabSlug}
+                              projectId={project.slug}
                               currentImage={tab.pdfUrl}
                               onImageUpload={(fileUrl) => updateTab(tabIndex, 'pdfUrl', fileUrl)}
                               required={false}
@@ -1351,27 +1351,54 @@ export default function EditProjectPage() {
                       )}
 
                       {tab.pdfUrl && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            {editingLanguage === 'es' ? 'Texto del Botón PDF' : 'PDF Button Text'}
-                          </label>
-                          <input
-                            type="text"
-                            value={editingLanguage === 'es' ? (tab.pdfButtonText || '') : (tab.pdfButtonText_en || '')}
-                            onChange={(e) => updateTab(
-                              tabIndex,
-                              editingLanguage === 'es' ? 'pdfButtonText' : 'pdfButtonText_en',
-                              e.target.value
-                            )}
-                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                            placeholder={editingLanguage === 'es' ? 'Ej: Descargar catálogo' : 'Ex: Download catalog'}
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {editingLanguage === 'es'
-                              ? 'Este texto aparecerá en el botón que abre el PDF'
-                              : 'This text will appear on the button that opens the PDF'}
-                          </p>
-                        </div>
+                        <>
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-xs font-medium text-gray-700 mb-1">
+                                  {editingLanguage === 'es' ? 'PDF Actual:' : 'Current PDF:'}
+                                </p>
+                                <a
+                                  href={tab.pdfUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline break-all"
+                                >
+                                  {tab.pdfUrl}
+                                </a>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => updateTab(tabIndex, 'pdfUrl', '')}
+                                className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                              >
+                                {editingLanguage === 'es' ? 'Eliminar PDF' : 'Remove PDF'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              {editingLanguage === 'es' ? 'Texto del Botón PDF' : 'PDF Button Text'}
+                            </label>
+                            <input
+                              type="text"
+                              value={editingLanguage === 'es' ? (tab.pdfButtonText || '') : (tab.pdfButtonText_en || '')}
+                              onChange={(e) => updateTab(
+                                tabIndex,
+                                editingLanguage === 'es' ? 'pdfButtonText' : 'pdfButtonText_en',
+                                e.target.value
+                              )}
+                              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                              placeholder={editingLanguage === 'es' ? 'Ej: Descargar catálogo' : 'Ex: Download catalog'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {editingLanguage === 'es'
+                                ? 'Este texto aparecerá en el botón que abre el PDF'
+                                : 'This text will appear on the button that opens the PDF'}
+                            </p>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

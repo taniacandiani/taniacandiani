@@ -28,6 +28,7 @@ export default function ProjectPage({ params }: Props) {
   const [isSliderHovered, setIsSliderHovered] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Function to process video URL and generate embed
   const getVideoEmbed = (url: string) => {
@@ -369,11 +370,28 @@ export default function ProjectPage({ params }: Props) {
           )}
         </div>
 
+        {/* Botón de toggle siempre visible en la parte superior - Solo desktop */}
+        <div className="hidden lg:block mb-4">
+          <button
+            onClick={() => setSidebarVisible(!sidebarVisible)}
+            className="flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
+            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+          >
+            <span
+              className="material-symbols-outlined leading-none -mt-1"
+              style={{ fontSize: '32px' }}
+            >
+              thumbnail_bar
+            </span>
+          </button>
+        </div>
+
         <div className="flex gap-8">
           {/* Sidebar Izquierdo - Solo desktop */}
-          <div className="hidden lg:block w-64">
-            {/* Título y tabs sticky */}
-            <div className={`sticky top-32 z-10 ${project.tabs && project.tabs.length > 0 ? 'mb-8' : 'mb-8'}`}>
+          {sidebarVisible && (
+            <div className="hidden lg:block w-64 transition-all duration-300">
+              {/* Título y tabs sticky */}
+              <div className={`sticky top-32 z-10 ${project.tabs && project.tabs.length > 0 ? 'mb-8' : 'mb-8'}`}>
               <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
                 {getLocalizedContent('title')}
               </h1>
@@ -556,6 +574,7 @@ export default function ProjectPage({ params }: Props) {
               </div>
             </div>
           </div>
+          )}
 
           {/* Contenido Principal */}
           <div className="flex-1">
@@ -840,26 +859,26 @@ export default function ProjectPage({ params }: Props) {
                         return content ? (
                           <>
                             <RichContent content={content} />
-                            {/* PDF Button for tabs - usar el PDF del proyecto principal */}
-                            {project.pdfUrl && (
+                            {/* PDF Button for tabs - usar el PDF específico del tab */}
+                            {tab.pdfUrl && (
                               <div className="mt-8 mb-4">
                                 <a
-                                  href={project.pdfUrl}
+                                  href={tab.pdfUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-block px-6 py-3 bg-black text-white border-2 border-black font-medium rounded-lg transition-all duration-300 hover:bg-white hover:text-black"
                                 >
                                   📄 {language === 'en'
-                                    ? (project.pdfButtonText_en || project.pdfButtonText || 'View Document')
-                                    : (project.pdfButtonText || 'Ver Documento')
+                                    ? (tab.pdfButtonText_en || tab.pdfButtonText || 'View Document')
+                                    : (tab.pdfButtonText || 'Ver Documento')
                                   }
                                 </a>
                               </div>
                             )}
-                            {/* Video Embed */}
-                            {project.videoUrl && (
+                            {/* Video Embed for tabs */}
+                            {tab.videoUrl && (
                               <div className="mt-8 mb-8" style={{ marginLeft: 0, marginRight: 'auto' }}>
-                                {getVideoEmbed(project.videoUrl)}
+                                {getVideoEmbed(tab.videoUrl)}
                               </div>
                             )}
                           </>
