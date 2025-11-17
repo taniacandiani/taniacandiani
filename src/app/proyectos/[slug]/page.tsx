@@ -386,53 +386,52 @@ export default function ProjectPage({ params }: Props) {
           </button>
         </div>
 
-        <div className="flex gap-8">
+        <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
           {/* Sidebar Izquierdo - Solo desktop */}
-          {sidebarVisible && (
-            <div className="hidden lg:block w-64 transition-all duration-300">
-              {/* Título y tabs sticky */}
-              <div className={`sticky top-32 z-10 ${project.tabs && project.tabs.length > 0 ? 'mb-8' : 'mb-8'}`}>
-              <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                {getLocalizedContent('title')}
-              </h1>
+          <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+            sidebarVisible ? 'w-64' : 'w-0'
+          }`}>
+            <div className="w-64">
+              {/* Título y tabs - alineados con la imagen */}
+              <div className="mb-8">
+                <h1 className="text-lg text-white bg-black px-4 py-2 text-center w-full mb-6" style={{ borderRadius: '5px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                  {getLocalizedContent('title')}
+                </h1>
 
-              {/* Tabs del proyecto - ahora dentro del sticky */}
-              {project.tabs && project.tabs.length > 0 && (
-                <div className="mt-6">
-                  <div className="border-b border-gray-300 mb-4"></div>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setActiveProjectTab(-1)}
-                      className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
-                        activeProjectTab === -1
-                          ? 'bg-black text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
-                      }`}
-                      style={{ fontWeight: 600 }}
-                    >
-                      {getLocalizedContent('title')}
-                    </button>
-                    {project.tabs.map((tab, index) => (
+                {/* Tabs del proyecto */}
+                {project.tabs && project.tabs.length > 0 && (
+                  <div>
+                    <div className="border-b border-gray-300 mb-4"></div>
+                    <div className="space-y-2">
                       <button
-                        key={tab.id}
-                        onClick={() => setActiveProjectTab(index)}
+                        onClick={() => setActiveProjectTab(-1)}
                         className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
-                          activeProjectTab === index
+                          activeProjectTab === -1
                             ? 'bg-black text-white'
                             : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                         }`}
                         style={{ fontWeight: 600 }}
                       >
-                        {language === 'en' ? (tab.title_en || tab.title) : tab.title}
+                        {getLocalizedContent('title')}
                       </button>
-                    ))}
+                      {project.tabs.map((tab, index) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveProjectTab(index)}
+                          className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                            activeProjectTab === index
+                              ? 'bg-black text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+                          }`}
+                          style={{ fontWeight: 600 }}
+                        >
+                          {language === 'en' ? (tab.title_en || tab.title) : tab.title}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Resto del contenido */}
-            <div>
+                )}
+              </div>
 
               {/* Datos del proyecto */}
               {project.projectInfo && project.projectInfo.length > 0 && (
@@ -574,10 +573,11 @@ export default function ProjectPage({ params }: Props) {
               </div>
             </div>
           </div>
-          )}
 
           {/* Contenido Principal */}
-          <div className="flex-1">
+          <div className={`flex-1 transition-all duration-300 ease-in-out ${
+            !sidebarVisible ? '-ml-0' : ''
+          }`}>
             {/* Determinar si mostrar slider o imagen estática */}
             {(() => {
               const currentTab = activeProjectTab >= 0 && project.tabs?.[activeProjectTab];
