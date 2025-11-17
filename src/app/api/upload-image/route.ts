@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToCloudinary, uploadFileToCloudinary } from '@/lib/cloudinary';
 
 // Configurar el límite de tamaño para permitir archivos de hasta 50MB
 export const maxDuration = 60; // Tiempo máximo de ejecución en segundos
@@ -139,8 +139,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`Imagen optimizada: ${originalName} (${(file.size / 1024 / 1024).toFixed(2)}MB) → (${(finalSize / 1024 / 1024).toFixed(2)}MB) - ${compressionRatio}% de reducción`);
 
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadToCloudinary(processedBuffer, contentType);
+    // Upload to Cloudinary - usar función diferente para PDFs
+    const cloudinaryResult = isPDF
+      ? await uploadFileToCloudinary(processedBuffer, contentType, 'raw', mimeType, originalName)
+      : await uploadToCloudinary(processedBuffer, contentType);
 
     return NextResponse.json({
       imageUrl: cloudinaryResult.secure_url,

@@ -136,12 +136,16 @@ export async function moveFolderInCloudinary(
  * @param file - File as base64 or buffer
  * @param folder - Folder path in Cloudinary (e.g., "acerca/publicaciones")
  * @param resourceType - Type of resource: 'image', 'raw' (for PDFs), or 'auto'
+ * @param mimeType - Optional MIME type for the file
+ * @param fileName - Optional file name for the upload
  * @returns Cloudinary upload result with URL and metadata
  */
 export async function uploadFileToCloudinary(
   file: string | Buffer,
   folder: string = 'uploads',
-  resourceType: 'image' | 'raw' | 'auto' = 'auto'
+  resourceType: 'image' | 'raw' | 'auto' = 'auto',
+  mimeType?: string,
+  fileName?: string
 ): Promise<CloudinaryUploadResult> {
   try {
     // Determinar el formato del archivo para base64
@@ -149,23 +153,46 @@ export async function uploadFileToCloudinary(
     if (typeof file === 'string') {
       base64String = file;
     } else {
-      // Para PDFs y otros archivos no imagen, usar application/pdf
-      const prefix = resourceType === 'image' ? 'data:image/png;base64,' : 'data:application/pdf;base64,';
+      // Usar el mimeType proporcionado o determinar por resourceType
+      let prefix: string;
+      if (mimeType) {
+        prefix = `data:${mimeType};base64,`;
+      } else if (resourceType === 'raw') {
+        prefix = 'data:application/pdf;base64,';
+      } else {
+        prefix = 'data:image/png;base64,';
+      }
       base64String = `${prefix}${file.toString('base64')}`;
+    }
+
+    // Configurar opciones de upload
+    const uploadOptions: any = {
+      folder,
+      resource_type: resourceType,
+    };
+
+    // Para PDFs y archivos raw
+    if (resourceType === 'raw') {
+      // Generar un nombre único con extensión .pdf
+      if (fileName) {
+        const timestamp = Date.now();
+        const cleanName = fileName.replace(/\.pdf$/i, '');
+        // Importante: incluir .pdf en el public_id para que Cloudinary lo reconozca
+        uploadOptions.public_id = `${cleanName}_${timestamp}.pdf`;
+      }
+      // No especificar format, dejar que Cloudinary lo detecte del public_id
+    }
+
+    // Para imágenes mantener configuración de calidad
+    if (resourceType === 'image') {
+      uploadOptions.quality = 'auto:best';
+      uploadOptions.fetch_format = 'auto';
+      uploadOptions.flags = 'preserve_transparency';
     }
 
     const result = await cloudinary.uploader.upload(
       base64String,
-      {
-        folder,
-        resource_type: resourceType,
-        // Para imágenes mantener configuración de calidad
-        ...(resourceType === 'image' && {
-          quality: 'auto:best',
-          fetch_format: 'auto',
-          flags: 'preserve_transparency',
-        }),
-      }
+      uploadOptions
     );
 
     return {
