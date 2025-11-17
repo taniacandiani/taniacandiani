@@ -139,7 +139,8 @@ export async function POST(request: NextRequest) {
     const project = await ProjectService.create(projectDataWithoutId);
 
     console.log('Project created successfully:', project.id);
-    return NextResponse.json({ success: true, id: project.id, slug: project.slug });
+    // Retornar el proyecto completo para que el frontend pueda usarlo
+    return NextResponse.json(project);
   } catch (error) {
     console.error('Error writing projects data - Full error:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');

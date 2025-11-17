@@ -82,13 +82,21 @@ export default function EditProjectPage() {
   // Detectar si venimos de crear un nuevo proyecto y mostrar mensaje
   useEffect(() => {
     const isCreated = searchParams.get('created');
-    if (isCreated === 'true' && project) {
+    // Solo ejecutar si el proyecto está cargado y el parámetro created es 'true'
+    if (!project || isCreated !== 'true') return;
+
+    // Limpiar el parámetro de query inmediatamente para evitar re-ejecuciones
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+
+    // Mostrar el mensaje de éxito con un pequeño delay para asegurar que el estado esté listo
+    const timer = setTimeout(() => {
       showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente. Puedes continuar editándolo aquí.');
-      // Limpiar el parámetro de query después de mostrar el mensaje
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, [searchParams, project, showSuccess]);
+    }, 100);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id]); // Solo depender del ID del proyecto
 
   // Notificar al layout cuando cambia el idioma
   useEffect(() => {

@@ -64,7 +64,7 @@ export class ProjectStorage {
     }
   }
 
-  static async save(project: Project): Promise<void> {
+  static async save(project: Project): Promise<Project> {
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -80,6 +80,9 @@ export class ProjectStorage {
         throw new Error(`Failed to save project: ${errorMessage}`);
       }
 
+      // Obtener el proyecto creado de la respuesta
+      const createdProject = await response.json();
+
       // Invalidar caché después de guardar
       this.invalidateCache();
 
@@ -87,6 +90,8 @@ export class ProjectStorage {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('projectsUpdated'));
       }
+
+      return createdProject;
     } catch (error) {
       console.error('Error saving project:', error);
       throw error;
