@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Project, ProjectCategory, ProjectTab } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
@@ -17,6 +17,7 @@ import ToastNotification from '@/components/ui/Notification';
 export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const [project, setProject] = useState<Project | null>(null);
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,17 @@ export default function EditProjectPage() {
       setProject({ ...project, heroImages: [''] });
     }
   }, [project]);
+
+  // Detectar si venimos de crear un nuevo proyecto y mostrar mensaje
+  useEffect(() => {
+    const isCreated = searchParams.get('created');
+    if (isCreated === 'true' && project) {
+      showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente. Puedes continuar editándolo aquí.');
+      // Limpiar el parámetro de query después de mostrar el mensaje
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams, project, showSuccess]);
 
   // Notificar al layout cuando cambia el idioma
   useEffect(() => {

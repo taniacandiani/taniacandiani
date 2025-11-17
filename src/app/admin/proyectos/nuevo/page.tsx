@@ -194,14 +194,15 @@ export default function NewProjectPage() {
       console.log('Tabs:', projectToSave.tabs);
 
       // Crear el proyecto
-      await ProjectStorage.save(projectToSave as any);
+      const createdProject = await ProjectStorage.save(projectToSave as any);
 
       // Mostrar mensaje de éxito
-      showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente');
+      showSuccess('Proyecto Creado', 'El proyecto se ha creado exitosamente. Redirigiendo a la página de edición...');
 
-      // Redirigir después de un breve delay para que se vea el mensaje
+      // Redirigir a la página de edición del proyecto después de un breve delay para que se vea el mensaje
+      // Incluimos un parámetro de query para indicar que venimos de crear un nuevo proyecto
       setTimeout(() => {
-        router.push('/admin/proyectos');
+        router.push(`/admin/proyectos/editar/${createdProject.id}?created=true`);
       }, 1500);
 
     } catch (error: any) {
