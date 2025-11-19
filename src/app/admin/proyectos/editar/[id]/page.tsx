@@ -639,11 +639,33 @@ export default function EditProjectPage() {
                 <input
                   type="checkbox"
                   checked={project.imagesWithoutSlider || false}
-                  onChange={(e) => setProject({ ...project, imagesWithoutSlider: e.target.checked })}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    setProject({
+                      ...project,
+                      imagesWithoutSlider: newValue,
+                      // Si activa "sin slider", desactiva "ajustar a altura"
+                      sliderImagesContain: newValue ? false : project.sliderImagesContain
+                    });
+                  }}
                   className="rounded focus:ring-black"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Imágenes sin slider
+                </span>
+              </label>
+
+              {/* Checkbox para ajustar imágenes solo a altura */}
+              <label className={`flex items-center space-x-2 ${project.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={project.sliderImagesContain || false}
+                  onChange={(e) => setProject({ ...project, sliderImagesContain: e.target.checked })}
+                  className="rounded focus:ring-black"
+                  disabled={project.imagesWithoutSlider || false}
+                />
+                <span className={`text-sm font-medium ${project.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
+                  Ajustar imágenes solo a altura (slider)
                 </span>
               </label>
             </div>
@@ -1172,11 +1194,32 @@ export default function EditProjectPage() {
                         <input
                           type="checkbox"
                           checked={tab.imagesWithoutSlider || false}
-                          onChange={(e) => updateTab(tabIndex, 'imagesWithoutSlider', e.target.checked)}
+                          onChange={(e) => {
+                            const newValue = e.target.checked;
+                            updateTab(tabIndex, 'imagesWithoutSlider', newValue);
+                            // Si activa "sin slider", desactiva "ajustar a altura"
+                            if (newValue) {
+                              updateTab(tabIndex, 'sliderImagesContain', false);
+                            }
+                          }}
                           className="rounded focus:ring-black"
                         />
                         <span className="text-sm font-medium text-gray-700">
                           Imágenes sin slider
+                        </span>
+                      </label>
+
+                      {/* Checkbox para ajustar imágenes solo a altura en tabs */}
+                      <label className={`flex items-center space-x-2 ${tab.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={tab.sliderImagesContain || false}
+                          onChange={(e) => updateTab(tabIndex, 'sliderImagesContain', e.target.checked)}
+                          className="rounded focus:ring-black"
+                          disabled={tab.imagesWithoutSlider || false}
+                        />
+                        <span className={`text-sm font-medium ${tab.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
+                          Ajustar imágenes solo a altura (slider)
                         </span>
                       </label>
                     </div>

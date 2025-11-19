@@ -542,13 +542,24 @@ export default function ProjectPage({ params }: Props) {
               if (showWithoutSlider && sliderImages.length > 0) {
                 return (
                   <div className="relative mb-8">
-                    <div className="relative aspect-[16/9] overflow-hidden" style={{ borderRadius: '5px' }}>
+                    <div className={`relative overflow-hidden ${
+                      sidebarVisible ? 'aspect-[16/8]' : 'aspect-[16/6]'
+                    }`} style={{
+                      borderRadius: '5px',
+                      backgroundColor: (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                                       (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain ? 'black' : undefined
+                    }}>
                       {sliderImages[0] && sliderImages[0].trim() !== '' ? (
                         <Image
                           src={sliderImages[0]}
                           alt={`${project.title} - Imagen principal`}
                           fill
-                          className="object-cover"
+                          className={
+                            (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                            (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
+                              ? "object-contain"
+                              : "object-cover"
+                          }
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -597,7 +608,13 @@ export default function ProjectPage({ params }: Props) {
                   onTouchMove={onTouchMove}
                   onTouchEnd={onTouchEnd}
                 >
-                  <div className="relative aspect-[16/9] overflow-hidden group" style={{ borderRadius: '5px' }}>
+                  <div className={`relative overflow-hidden group ${
+                    sidebarVisible ? 'aspect-[16/8]' : 'aspect-[16/6]'
+                  }`} style={{
+                    borderRadius: '5px',
+                    backgroundColor: (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                                     (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain ? 'black' : undefined
+                  }}>
                 {sliderImages[currentSlide] && sliderImages[currentSlide].trim() !== '' ? (
                   <Image
                     src={optimizeCloudinaryUrl(sliderImages[currentSlide], CLOUDINARY_PRESETS.slider)}
@@ -606,7 +623,12 @@ export default function ProjectPage({ params }: Props) {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
                     quality={85}
                     loading={currentSlide === 0 ? "eager" : "lazy"}
-                    className="object-cover"
+                    className={
+                      (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                      (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
+                        ? "object-contain"
+                        : "object-cover"
+                    }
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">

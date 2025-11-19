@@ -147,6 +147,7 @@ export class ProjectService {
       project.pdfButtonText_en || null,
       project.videoUrl || null,
       project.imagesWithoutSlider ?? false,
+      project.sliderImagesContain ?? false,
       project.createdAt || null, // Allow custom createdAt
     ];
 
@@ -154,7 +155,7 @@ export class ProjectService {
     const hasUndefined = queryValues.some((val, idx) => {
       if (val === undefined) {
         console.error(`ERROR: Value at index ${idx} is undefined!`);
-        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','images_without_slider','created_at'][idx]}`);
+        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','images_without_slider','slider_images_contain','created_at'][idx]}`);
         return true;
       }
       return false;
@@ -178,7 +179,7 @@ export class ProjectService {
         commissioned_by, curator, location,
         title_en, description_en, project_details_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
-        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, images_without_slider, created_at
+        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, images_without_slider, slider_images_contain, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
@@ -187,7 +188,7 @@ export class ProjectService {
         $20, $21, $22,
         $23, $24, $25,
         $26, $27, $28,
-        $29, $30, $31, $32, $33, $34, $35, COALESCE($36, NOW())
+        $29, $30, $31, $32, $33, $34, $35, $36, COALESCE($37, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -275,7 +276,8 @@ export class ProjectService {
         pdf_button_text_en = $33,
         video_url = $34,
         images_without_slider = $35,
-        created_at = $36,
+        slider_images_contain = $36,
+        created_at = $37,
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -315,6 +317,7 @@ export class ProjectService {
         'pdfButtonText_en' in project ? (project.pdfButtonText_en || null) : 'KEEP_EXISTING',
         'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING',
         project.imagesWithoutSlider !== undefined ? project.imagesWithoutSlider : null,
+        project.sliderImagesContain !== undefined ? project.sliderImagesContain : null,
         project.createdAt !== undefined ? project.createdAt : null,
       ]
     );
@@ -387,6 +390,7 @@ export class ProjectService {
       pdfButtonText_en: row.pdf_button_text_en,
       videoUrl: row.video_url,
       imagesWithoutSlider: row.images_without_slider,
+      sliderImagesContain: row.slider_images_contain,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       tabs: [], // Will be populated separately

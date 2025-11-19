@@ -20,6 +20,7 @@ export const projects = pgTable('projects', {
   showInHomeHero: boolean('show_in_home_hero').default(false),
   heroDescription: text('hero_description'),
   imagesWithoutSlider: boolean('images_without_slider').default(false),
+  sliderImagesContain: boolean('slider_images_contain').default(false),
 
   // Details
   projectDetails: text('project_details'),
@@ -66,6 +67,7 @@ export const projectTabs = pgTable('project_tabs', {
   heroImageDescriptions: jsonb('hero_image_descriptions').$type<string[]>(),
   heroImageDescriptionsEn: jsonb('hero_image_descriptions_en').$type<string[]>(),
   imagesWithoutSlider: boolean('images_without_slider').default(false),
+  sliderImagesContain: boolean('slider_images_contain').default(false),
   additionalImage: text('additional_image'),
   projectDetails: text('project_details'),
   technicalSheet: text('technical_sheet'),

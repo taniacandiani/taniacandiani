@@ -48,6 +48,8 @@ export default function NewProjectPage() {
     downloadLink: '',
     additionalImage: '',
     showInHomeHero: false,
+    imagesWithoutSlider: false,
+    sliderImagesContain: false,
     heroDescription: '',
     commissionedBy: '',
     curator: '',
@@ -260,6 +262,8 @@ export default function NewProjectPage() {
       heroImages: [''],
       heroImageDescriptions: [''],
       heroImageDescriptions_en: [''],
+      imagesWithoutSlider: false,
+      sliderImagesContain: false,
       additionalImage: '',
       projectDetails: '',
       technicalSheet: '',
@@ -629,6 +633,42 @@ export default function NewProjectPage() {
                       }}
                     />
                   )}
+
+                  {/* Checkboxes para controlar el comportamiento de las imágenes */}
+                  <div className="flex gap-4 mt-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.imagesWithoutSlider || false}
+                        onChange={(e) => {
+                          const newValue = e.target.checked;
+                          setFormData({
+                            ...formData,
+                            imagesWithoutSlider: newValue,
+                            // Si activa "sin slider", desactiva "ajustar a altura"
+                            sliderImagesContain: newValue ? false : formData.sliderImagesContain
+                          });
+                        }}
+                        className="rounded focus:ring-black"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Imágenes sin slider
+                      </span>
+                    </label>
+
+                    <label className={`flex items-center space-x-2 ${formData.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={formData.sliderImagesContain || false}
+                        onChange={(e) => setFormData({ ...formData, sliderImagesContain: e.target.checked })}
+                        className="rounded focus:ring-black"
+                        disabled={formData.imagesWithoutSlider || false}
+                      />
+                      <span className={`text-sm font-medium ${formData.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
+                        Ajustar imágenes solo a altura (slider)
+                      </span>
+                    </label>
+                  </div>
 
                   {/* Mostrar imágenes del hero cargadas con drag and drop */}
                   <ReorderableImageList
@@ -1189,6 +1229,41 @@ export default function NewProjectPage() {
                           );
                         })()
                       )}
+
+                      {/* Checkboxes para controlar el comportamiento de las imágenes del tab */}
+                      <div className="flex gap-4 mt-4">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={tab.imagesWithoutSlider || false}
+                            onChange={(e) => {
+                              const newValue = e.target.checked;
+                              updateTab(activeTabIndex, 'imagesWithoutSlider', newValue);
+                              // Si activa "sin slider", desactiva "ajustar a altura"
+                              if (newValue) {
+                                updateTab(activeTabIndex, 'sliderImagesContain', false);
+                              }
+                            }}
+                            className="rounded focus:ring-black"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Imágenes sin slider
+                          </span>
+                        </label>
+
+                        <label className={`flex items-center space-x-2 ${tab.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={tab.sliderImagesContain || false}
+                            onChange={(e) => updateTab(activeTabIndex, 'sliderImagesContain', e.target.checked)}
+                            className="rounded focus:ring-black"
+                            disabled={tab.imagesWithoutSlider || false}
+                          />
+                          <span className={`text-sm font-medium ${tab.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
+                            Ajustar imágenes solo a altura (slider)
+                          </span>
+                        </label>
+                      </div>
 
                       {/* Mostrar imágenes del hero del tab */}
                       {tab.heroImages && tab.heroImages.filter(img => img && img.trim() !== '').length > 0 && (
