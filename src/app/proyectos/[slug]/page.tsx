@@ -74,11 +74,29 @@ export default function ProjectPage({ params }: Props) {
     return null;
   };
 
-  // Get localized content
+  // Get localized content with fallback to other language
   const getLocalizedContent = (field: keyof Project, fallback: string = '') => {
     if (!project) return fallback;
 
+    // Primero intentar obtener el contenido en el idioma actual
     if (language === 'en') {
+      const enField = `${field}_en` as keyof Project;
+      const enValue = project[enField];
+      if (enValue && typeof enValue === 'string' && enValue.trim() !== '') {
+        return enValue;
+      }
+      // Si no hay en inglés, usar el español como fallback
+      const spanishValue = project[field];
+      if (spanishValue && typeof spanishValue === 'string' && spanishValue.trim() !== '') {
+        return spanishValue;
+      }
+    } else {
+      // Si el idioma es español
+      const spanishValue = project[field];
+      if (spanishValue && typeof spanishValue === 'string' && spanishValue.trim() !== '') {
+        return spanishValue;
+      }
+      // Si no hay en español, usar el inglés como fallback
       const enField = `${field}_en` as keyof Project;
       const enValue = project[enField];
       if (enValue && typeof enValue === 'string' && enValue.trim() !== '') {
@@ -86,8 +104,7 @@ export default function ProjectPage({ params }: Props) {
       }
     }
 
-    const value = project[field];
-    return (typeof value === 'string' ? value : fallback) || fallback;
+    return fallback;
   };
 
   // Always define slider images, even if project is null
@@ -422,7 +439,7 @@ export default function ProjectPage({ params }: Props) {
                               : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                           }`}
                         >
-                          {language === 'en' ? (tab.title_en || tab.title) : tab.title}
+                          {language === 'en' ? (tab.title_en || tab.title) : (tab.title || tab.title_en)}
                         </button>
                       ))}
                     </div>
@@ -456,18 +473,15 @@ export default function ProjectPage({ params }: Props) {
 
               {/* Información adicional */}
               {(() => {
-                // Verificar qué campos tienen contenido real para el idioma actual
-                const hasCommissioned = language === 'en'
-                  ? project.commissionedBy_en && project.commissionedBy_en.trim() !== ''
-                  : project.commissionedBy && project.commissionedBy.trim() !== '';
+                // Verificar qué campos tienen contenido real en cualquier idioma
+                const hasCommissioned = (project.commissionedBy && project.commissionedBy.trim() !== '') ||
+                                       (project.commissionedBy_en && project.commissionedBy_en.trim() !== '');
 
-                const hasCurator = language === 'en'
-                  ? project.curator_en && project.curator_en.trim() !== ''
-                  : project.curator && project.curator.trim() !== '';
+                const hasCurator = (project.curator && project.curator.trim() !== '') ||
+                                  (project.curator_en && project.curator_en.trim() !== '');
 
-                const hasLocation = language === 'en'
-                  ? project.location_en && project.location_en.trim() !== ''
-                  : project.location && project.location.trim() !== '';
+                const hasLocation = (project.location && project.location.trim() !== '') ||
+                                   (project.location_en && project.location_en.trim() !== '');
 
                 const hasYear = project.year && project.year > 0;
 
@@ -566,24 +580,35 @@ export default function ProjectPage({ params }: Props) {
 
                     {/* Descripción de la primera imagen si existe */}
                     {(() => {
-                      let descriptions: string[] | undefined;
+                      let description: string | undefined;
                       if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
                         const tab = project.tabs[activeProjectTab];
-                        descriptions = language === 'en' && tab.heroImageDescriptions_en
-                          ? tab.heroImageDescriptions_en
-                          : tab.heroImageDescriptions;
-                      } else {
-                        descriptions = language === 'en' && project.heroImageDescriptions_en
-                          ? project.heroImageDescriptions_en
-                          : project.heroImageDescriptions;
-                      }
-                      const firstDescription = descriptions?.[0];
+                        // Intentar obtener descripción con fallback
+                        const enDesc = tab.heroImageDescriptions_en?.[0];
+                        const esDesc = tab.heroImageDescriptions?.[0];
 
-                      if (firstDescription && firstDescription.trim() !== '') {
+                        if (language === 'en') {
+                          description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                        } else {
+                          description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                        }
+                      } else {
+                        // Para el proyecto principal
+                        const enDesc = project.heroImageDescriptions_en?.[0];
+                        const esDesc = project.heroImageDescriptions?.[0];
+
+                        if (language === 'en') {
+                          description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                        } else {
+                          description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                        }
+                      }
+
+                      if (description && description.trim() !== '') {
                         return (
                           <div className="mt-2 text-center">
                             <p className="text-black text-sm">
-                              {firstDescription}
+                              {description}
                             </p>
                           </div>
                         );
@@ -592,7 +617,7 @@ export default function ProjectPage({ params }: Props) {
                     })()}
                   </div>
                 );
-          ``    }
+              }
 
               // Mostrar slider normal si no está configurado sin slider
               return (
@@ -662,26 +687,36 @@ export default function ProjectPage({ params }: Props) {
 
                   {/* Descripción de la imagen actual - fuera del slider */}
                   {(() => {
-                    let descriptions: string[] | undefined;
+                    let description: string | undefined;
 
                     if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
                       const tab = project.tabs[activeProjectTab];
-                      descriptions = language === 'en' && tab.heroImageDescriptions_en
-                        ? tab.heroImageDescriptions_en
-                        : tab.heroImageDescriptions;
+                      // Intentar obtener descripción con fallback
+                      const enDesc = tab.heroImageDescriptions_en?.[currentSlide];
+                      const esDesc = tab.heroImageDescriptions?.[currentSlide];
+
+                      if (language === 'en') {
+                        description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                      } else {
+                        description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                      }
                     } else {
-                      descriptions = language === 'en' && project.heroImageDescriptions_en
-                        ? project.heroImageDescriptions_en
-                        : project.heroImageDescriptions;
+                      // Para el proyecto principal
+                      const enDesc = project.heroImageDescriptions_en?.[currentSlide];
+                      const esDesc = project.heroImageDescriptions?.[currentSlide];
+
+                      if (language === 'en') {
+                        description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                      } else {
+                        description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                      }
                     }
 
-                    const currentDescription = descriptions?.[currentSlide];
-
-                    if (currentDescription && currentDescription.trim() !== '') {
+                    if (description && description.trim() !== '') {
                       return (
                         <div className="mt-2 text-center">
                           <p className="text-black text-sm">
-                            {currentDescription}
+                            {description}
                           </p>
                         </div>
                       );
@@ -729,7 +764,7 @@ export default function ProjectPage({ params }: Props) {
                   // Si hay un tab seleccionado, mostrar el título del tab
                   if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
                     const tab = project.tabs[activeProjectTab];
-                    return language === 'en' ? (tab.title_en || tab.title) : tab.title;
+                    return language === 'en' ? (tab.title_en || tab.title) : (tab.title || tab.title_en);
                   }
                   // Si no hay tab seleccionado, mostrar el título principal
                   return getLocalizedContent('title');
@@ -828,7 +863,7 @@ export default function ProjectPage({ params }: Props) {
                         const tab = project.tabs[activeProjectTab];
                         const content = language === 'en'
                           ? (tab.projectDetails_en || tab.projectDetails)
-                          : tab.projectDetails;
+                          : (tab.projectDetails || tab.projectDetails_en);
                         return content ? (
                           <>
                             <RichContent content={content} />
@@ -843,7 +878,7 @@ export default function ProjectPage({ params }: Props) {
                                 >
                                   📄 {language === 'en'
                                     ? (tab.pdfButtonText_en || tab.pdfButtonText || 'View Document')
-                                    : (tab.pdfButtonText || 'Ver Documento')
+                                    : (tab.pdfButtonText || tab.pdfButtonText_en || 'Ver Documento')
                                   }
                                 </a>
                               </div>
@@ -875,7 +910,7 @@ export default function ProjectPage({ params }: Props) {
                               >
                                 📄 {language === 'en'
                                   ? (project.pdfButtonText_en || project.pdfButtonText || 'View Document')
-                                  : (project.pdfButtonText || 'Ver Documento')
+                                  : (project.pdfButtonText || project.pdfButtonText_en || 'Ver Documento')
                                 }
                               </a>
                             </div>
@@ -901,7 +936,7 @@ export default function ProjectPage({ params }: Props) {
                         const tab = project.tabs[activeProjectTab];
                         const content = language === 'en'
                           ? (tab.technicalSheet_en || tab.technicalSheet)
-                          : tab.technicalSheet;
+                          : (tab.technicalSheet || tab.technicalSheet_en);
                         return content ? (
                           <RichContent content={content} />
                         ) : (
@@ -931,25 +966,34 @@ export default function ProjectPage({ params }: Props) {
               // Si está configurado sin slider y hay más de una imagen, mostrar las imágenes restantes
               if (showWithoutSlider && sliderImages.length > 1) {
                 const remainingImages = sliderImages.slice(1);
-                let descriptions: string[] | undefined;
-
-                // Obtener las descripciones correspondientes
-                if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
-                  const tab = project.tabs[activeProjectTab];
-                  descriptions = language === 'en' && tab.heroImageDescriptions_en
-                    ? tab.heroImageDescriptions_en
-                    : tab.heroImageDescriptions;
-                } else {
-                  descriptions = language === 'en' && project.heroImageDescriptions_en
-                    ? project.heroImageDescriptions_en
-                    : project.heroImageDescriptions;
-                }
 
                 return (
                   <div className="mb-12 space-y-8">
                     {remainingImages.map((image, index) => {
                       const actualIndex = index + 1; // +1 porque empezamos desde la segunda imagen
-                      const description = descriptions?.[actualIndex];
+
+                      // Obtener descripción con fallback para cada imagen
+                      let description: string | undefined;
+                      if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                        const tab = project.tabs[activeProjectTab];
+                        const enDesc = tab.heroImageDescriptions_en?.[actualIndex];
+                        const esDesc = tab.heroImageDescriptions?.[actualIndex];
+
+                        if (language === 'en') {
+                          description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                        } else {
+                          description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                        }
+                      } else {
+                        const enDesc = project.heroImageDescriptions_en?.[actualIndex];
+                        const esDesc = project.heroImageDescriptions?.[actualIndex];
+
+                        if (language === 'en') {
+                          description = (enDesc && enDesc.trim() !== '') ? enDesc : esDesc;
+                        } else {
+                          description = (esDesc && esDesc.trim() !== '') ? esDesc : enDesc;
+                        }
+                      }
 
                       return image && image.trim() !== '' ? (
                         <div key={index} className="relative">
@@ -1035,7 +1079,7 @@ export default function ProjectPage({ params }: Props) {
                             {language === 'en' ? 'Previous Project' : 'Proyecto Anterior'}
                           </div>
                           <div className="font-medium">
-                            {language === 'en' && previous.title_en ? previous.title_en : previous.title}
+                            {language === 'en' ? (previous.title_en || previous.title) : (previous.title || previous.title_en)}
                           </div>
                         </div>
                       </div>
@@ -1075,7 +1119,7 @@ export default function ProjectPage({ params }: Props) {
                             {language === 'en' ? 'Next Project' : 'Siguiente Proyecto'}
                           </div>
                           <div className="font-medium">
-                            {language === 'en' && next.title_en ? next.title_en : next.title}
+                            {language === 'en' ? (next.title_en || next.title) : (next.title || next.title_en)}
                           </div>
                         </div>
                         <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
@@ -1113,7 +1157,7 @@ export default function ProjectPage({ params }: Props) {
                             {language === 'en' ? 'Previous' : 'Anterior'}
                           </div>
                           <div className="font-medium line-clamp-2">
-                            {language === 'en' && previous.title_en ? previous.title_en : previous.title}
+                            {language === 'en' ? (previous.title_en || previous.title) : (previous.title || previous.title_en)}
                           </div>
                         </div>
                       </div>
@@ -1142,7 +1186,7 @@ export default function ProjectPage({ params }: Props) {
                             {language === 'en' ? 'Next' : 'Siguiente'}
                           </div>
                           <div className="font-medium line-clamp-2">
-                            {language === 'en' && next.title_en ? next.title_en : next.title}
+                            {language === 'en' ? (next.title_en || next.title) : (next.title || next.title_en)}
                           </div>
                         </div>
                         <span className="material-symbols-outlined text-sm">
