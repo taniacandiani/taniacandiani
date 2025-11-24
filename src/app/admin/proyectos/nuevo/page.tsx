@@ -634,38 +634,68 @@ export default function NewProjectPage() {
                     />
                   )}
 
-                  {/* Checkboxes para controlar el comportamiento de las imágenes */}
-                  <div className="flex gap-4 mt-4">
-                    <label className="flex items-center space-x-2">
+                  {/* Opciones de visualización de imágenes como radio buttons */}
+                  <div className="flex flex-wrap gap-4 mt-4">
+                    {/* Opción 1: Slider con cover (por defecto) */}
+                    <label className="flex items-center space-x-2 cursor-pointer">
                       <input
-                        type="checkbox"
-                        checked={formData.imagesWithoutSlider || false}
-                        onChange={(e) => {
-                          const newValue = e.target.checked;
+                        type="radio"
+                        name="imageDisplayMode"
+                        checked={(formData.imagesWithoutSlider === false || formData.imagesWithoutSlider === undefined) &&
+                                (formData.sliderImagesContain === false || formData.sliderImagesContain === undefined)}
+                        onChange={() => {
                           setFormData({
                             ...formData,
-                            imagesWithoutSlider: newValue,
-                            // Si activa "sin slider", desactiva "ajustar a altura"
-                            sliderImagesContain: newValue ? false : formData.sliderImagesContain
+                            imagesWithoutSlider: false,
+                            sliderImagesContain: false
                           });
                         }}
-                        className="rounded focus:ring-black"
+                        className="text-black focus:ring-black"
                       />
                       <span className="text-sm font-medium text-gray-700">
-                        Imágenes sin slider
+                        Slider (ajustado al ancho)
+                      </span>
+                      <span className="text-xs text-gray-500 font-normal">[Por defecto]</span>
+                    </label>
+
+                    {/* Opción 2: Slider con contain (ajustar solo altura) */}
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="imageDisplayMode"
+                        checked={(formData.imagesWithoutSlider === false || formData.imagesWithoutSlider === undefined) &&
+                                formData.sliderImagesContain === true}
+                        onChange={() => {
+                          setFormData({
+                            ...formData,
+                            imagesWithoutSlider: false,
+                            sliderImagesContain: true
+                          });
+                        }}
+                        className="text-black focus:ring-black"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Slider (ajustado solo a altura)
                       </span>
                     </label>
 
-                    <label className={`flex items-center space-x-2 ${formData.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                    {/* Opción 3: Imágenes sin slider */}
+                    <label className="flex items-center space-x-2 cursor-pointer">
                       <input
-                        type="checkbox"
-                        checked={formData.sliderImagesContain || false}
-                        onChange={(e) => setFormData({ ...formData, sliderImagesContain: e.target.checked })}
-                        className="rounded focus:ring-black"
-                        disabled={formData.imagesWithoutSlider || false}
+                        type="radio"
+                        name="imageDisplayMode"
+                        checked={formData.imagesWithoutSlider === true}
+                        onChange={() => {
+                          setFormData({
+                            ...formData,
+                            imagesWithoutSlider: true,
+                            sliderImagesContain: false
+                          });
+                        }}
+                        className="text-black focus:ring-black"
                       />
-                      <span className={`text-sm font-medium ${formData.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
-                        Ajustar imágenes solo a altura (slider)
+                      <span className="text-sm font-medium text-gray-700">
+                        Imágenes sin slider
                       </span>
                     </label>
                   </div>
@@ -1230,37 +1260,59 @@ export default function NewProjectPage() {
                         })()
                       )}
 
-                      {/* Checkboxes para controlar el comportamiento de las imágenes del tab */}
-                      <div className="flex gap-4 mt-4">
-                        <label className="flex items-center space-x-2">
+                      {/* Opciones de visualización para el tab como radio buttons */}
+                      <div className="flex flex-wrap gap-4 mt-4">
+                        {/* Opción 1: Slider con cover (por defecto) */}
+                        <label className="flex items-center space-x-2 cursor-pointer">
                           <input
-                            type="checkbox"
-                            checked={tab.imagesWithoutSlider || false}
-                            onChange={(e) => {
-                              const newValue = e.target.checked;
-                              updateTab(activeTabIndex, 'imagesWithoutSlider', newValue);
-                              // Si activa "sin slider", desactiva "ajustar a altura"
-                              if (newValue) {
-                                updateTab(activeTabIndex, 'sliderImagesContain', false);
-                              }
+                            type="radio"
+                            name={`tabImageDisplayMode-${activeTabIndex}`}
+                            checked={(tab.imagesWithoutSlider === false || tab.imagesWithoutSlider === undefined) &&
+                                    (tab.sliderImagesContain === false || tab.sliderImagesContain === undefined)}
+                            onChange={() => {
+                              updateTab(activeTabIndex, 'imagesWithoutSlider', false);
+                              updateTab(activeTabIndex, 'sliderImagesContain', false);
                             }}
-                            className="rounded focus:ring-black"
+                            className="text-black focus:ring-black"
                           />
                           <span className="text-sm font-medium text-gray-700">
-                            Imágenes sin slider
+                            Slider (ajustado al ancho)
+                          </span>
+                          <span className="text-xs text-gray-500 font-normal">[Por defecto]</span>
+                        </label>
+
+                        {/* Opción 2: Slider con contain (ajustar solo altura) */}
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`tabImageDisplayMode-${activeTabIndex}`}
+                            checked={(tab.imagesWithoutSlider === false || tab.imagesWithoutSlider === undefined) &&
+                                    tab.sliderImagesContain === true}
+                            onChange={() => {
+                              updateTab(activeTabIndex, 'imagesWithoutSlider', false);
+                              updateTab(activeTabIndex, 'sliderImagesContain', true);
+                            }}
+                            className="text-black focus:ring-black"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Slider (ajustado solo a altura)
                           </span>
                         </label>
 
-                        <label className={`flex items-center space-x-2 ${tab.imagesWithoutSlider ? 'opacity-50' : ''}`}>
+                        {/* Opción 3: Imágenes sin slider */}
+                        <label className="flex items-center space-x-2 cursor-pointer">
                           <input
-                            type="checkbox"
-                            checked={tab.sliderImagesContain || false}
-                            onChange={(e) => updateTab(activeTabIndex, 'sliderImagesContain', e.target.checked)}
-                            className="rounded focus:ring-black"
-                            disabled={tab.imagesWithoutSlider || false}
+                            type="radio"
+                            name={`tabImageDisplayMode-${activeTabIndex}`}
+                            checked={tab.imagesWithoutSlider === true}
+                            onChange={() => {
+                              updateTab(activeTabIndex, 'imagesWithoutSlider', true);
+                              updateTab(activeTabIndex, 'sliderImagesContain', false);
+                            }}
+                            className="text-black focus:ring-black"
                           />
-                          <span className={`text-sm font-medium ${tab.imagesWithoutSlider ? 'text-gray-400' : 'text-gray-700'}`}>
-                            Ajustar imágenes solo a altura (slider)
+                          <span className="text-sm font-medium text-gray-700">
+                            Imágenes sin slider
                           </span>
                         </label>
                       </div>

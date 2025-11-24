@@ -415,6 +415,7 @@ export class ProjectService {
       heroImageDescriptions: row.hero_image_descriptions || [],
       heroImageDescriptions_en: row.hero_image_descriptions_en || [],
       imagesWithoutSlider: row.images_without_slider,
+      sliderImagesContain: row.slider_images_contain,
       additionalImage: row.additional_image,
       projectDetails: row.project_details,
       technicalSheet: row.technical_sheet,
@@ -438,16 +439,16 @@ export class ProjectService {
       await nile.db.query(
         `INSERT INTO project_tabs (
           id, project_id, tab_order, title,
-          hero_images, hero_image_descriptions, hero_image_descriptions_en, images_without_slider,
+          hero_images, hero_image_descriptions, hero_image_descriptions_en, images_without_slider, slider_images_contain,
           additional_image, project_details, technical_sheet,
           pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_url,
           title_en, project_details_en, technical_sheet_en
         ) VALUES (
           $1, $2, $3, $4,
-          $5::jsonb, $6::jsonb, $7::jsonb, $8,
-          $9, $10, $11,
-          $12, $13, $14, $15, $16, $17,
-          $18, $19, $20
+          $5::jsonb, $6::jsonb, $7::jsonb, $8, $9,
+          $10, $11, $12,
+          $13, $14, $15, $16, $17, $18,
+          $19, $20, $21
         )`,
         [
           crypto.randomUUID(),
@@ -458,6 +459,7 @@ export class ProjectService {
           JSON.stringify(tab.heroImageDescriptions || []),
           JSON.stringify(tab.heroImageDescriptions_en || []),
           tab.imagesWithoutSlider ?? false,
+          tab.sliderImagesContain ?? false,
           tab.additionalImage || null,
           tab.projectDetails || null,
           tab.technicalSheet || null,

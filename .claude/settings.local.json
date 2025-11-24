@@ -15,7 +15,8 @@
       "WebSearch",
       "Bash(find:*)",
       "Read(//Users/mariod.alvarado/Desktop/**)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx drizzle-kit generate)"
     ],
     "deny": [],
     "ask": []
