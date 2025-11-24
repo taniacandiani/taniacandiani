@@ -335,7 +335,7 @@ export default function ProjectPage({ params }: Props) {
 
         {/* Mobile: Título y tabs arriba (antes de la imagen) */}
         <div className="lg:hidden mb-6">
-          <h1 className="text-3xl font-medium mb-4">
+          <h1 className="text-2xl font-medium mb-4">
             {getLocalizedContent('title')}
           </h1>
 
@@ -344,12 +344,11 @@ export default function ProjectPage({ params }: Props) {
             <div className="space-y-2">
               <button
                 onClick={() => setActiveProjectTab(-1)}
-                className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                   activeProjectTab === -1
                     ? 'bg-black text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
-                style={{ fontWeight: 600 }}
               >
                 {getLocalizedContent('title')}
               </button>
@@ -357,12 +356,11 @@ export default function ProjectPage({ params }: Props) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveProjectTab(index)}
-                  className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                  className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                     activeProjectTab === index
                       ? 'bg-black text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-100'
                   }`}
-                  style={{ fontWeight: 600 }}
                 >
                   {language === 'en' ? (tab.title_en || tab.title) : tab.title}
                 </button>
@@ -406,12 +404,11 @@ export default function ProjectPage({ params }: Props) {
                     <div className="space-y-2">
                       <button
                         onClick={() => setActiveProjectTab(-1)}
-                        className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                        className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                           activeProjectTab === -1
                             ? 'bg-black text-white'
                             : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                         }`}
-                        style={{ fontWeight: 600 }}
                       >
                         {getLocalizedContent('title')}
                       </button>
@@ -419,12 +416,11 @@ export default function ProjectPage({ params }: Props) {
                         <button
                           key={tab.id}
                           onClick={() => setActiveProjectTab(index)}
-                          className={`block w-full text-left py-2 px-3 text-base transition-all duration-200 rounded border border-black ${
+                          className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                             activeProjectTab === index
                               ? 'bg-black text-white'
                               : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                           }`}
-                          style={{ fontWeight: 600 }}
                         >
                           {language === 'en' ? (tab.title_en || tab.title) : tab.title}
                         </button>
@@ -596,7 +592,7 @@ export default function ProjectPage({ params }: Props) {
                     })()}
                   </div>
                 );
-              }
+          ``    }
 
               // Mostrar slider normal si no está configurado sin slider
               return (
@@ -728,7 +724,7 @@ export default function ProjectPage({ params }: Props) {
 
             {/* Título del proyecto - Solo desktop */}
             <div className="hidden lg:block mb-8">
-              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '6rem', lineHeight: 1 }}>
+              <h1 className="mb-4" style={{ fontWeight: 500, fontSize: '5rem', lineHeight: 1.1 }}>
                 {(() => {
                   // Si hay un tab seleccionado, mostrar el título del tab
                   if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {

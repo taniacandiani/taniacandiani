@@ -1230,8 +1230,13 @@ export default function EditProjectPage() {
                             checked={(tab.imagesWithoutSlider === false || tab.imagesWithoutSlider === undefined) &&
                                     (tab.sliderImagesContain === false || tab.sliderImagesContain === undefined)}
                             onChange={() => {
-                              updateTab(tabIndex, 'imagesWithoutSlider', false);
-                              updateTab(tabIndex, 'sliderImagesContain', false);
+                              const newTabs = [...(project.tabs || [])];
+                              newTabs[tabIndex] = {
+                                ...newTabs[tabIndex],
+                                imagesWithoutSlider: false,
+                                sliderImagesContain: false
+                              };
+                              setProject({ ...project, tabs: newTabs });
                             }}
                             className="text-black focus:ring-black"
                           />
@@ -1249,8 +1254,13 @@ export default function EditProjectPage() {
                             checked={(tab.imagesWithoutSlider === false || tab.imagesWithoutSlider === undefined) &&
                                     tab.sliderImagesContain === true}
                             onChange={() => {
-                              updateTab(tabIndex, 'imagesWithoutSlider', false);
-                              updateTab(tabIndex, 'sliderImagesContain', true);
+                              const newTabs = [...(project.tabs || [])];
+                              newTabs[tabIndex] = {
+                                ...newTabs[tabIndex],
+                                imagesWithoutSlider: false,
+                                sliderImagesContain: true
+                              };
+                              setProject({ ...project, tabs: newTabs });
                             }}
                             className="text-black focus:ring-black"
                           />
@@ -1266,8 +1276,13 @@ export default function EditProjectPage() {
                             name={`tabImageDisplayMode-${tabIndex}`}
                             checked={tab.imagesWithoutSlider === true}
                             onChange={() => {
-                              updateTab(tabIndex, 'imagesWithoutSlider', true);
-                              updateTab(tabIndex, 'sliderImagesContain', false);
+                              const newTabs = [...(project.tabs || [])];
+                              newTabs[tabIndex] = {
+                                ...newTabs[tabIndex],
+                                imagesWithoutSlider: true,
+                                sliderImagesContain: false
+                              };
+                              setProject({ ...project, tabs: newTabs });
                             }}
                             className="text-black focus:ring-black"
                           />
