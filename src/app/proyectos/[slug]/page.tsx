@@ -283,6 +283,8 @@ export default function ProjectPage({ params }: Props) {
   useEffect(() => {
     setCurrentSlide(0);
     setActiveTab('detalles'); // Resetear a "detalles" cuando cambia de tab de proyecto
+    // Hacer scroll hacia arriba cuando se cambia de tab del sidebar
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeProjectTab]);
 
   // Asegurar que el tab activo sea válido (no mostrar ficha si no hay contenido)
