@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -29,7 +29,9 @@ export default function ProjectPage({ params }: Props) {
   const [isSliderHovered, setIsSliderHovered] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [userManuallyToggled, setUserManuallyToggled] = useState(false);
+  const heroSliderRef = useRef<HTMLDivElement>(null);
 
   // Function to process video URL and generate embed
   const getVideoEmbed = (url: string) => {
@@ -321,6 +323,46 @@ export default function ProjectPage({ params }: Props) {
     }
   }, [sliderImages.length, isSliderHovered]);
 
+  // Handle manual sidebar toggle
+  const handleSidebarToggle = useCallback(() => {
+    setSidebarVisible(prev => !prev);
+    setUserManuallyToggled(true);
+  }, []);
+
+  // Scroll listener para abrir/cerrar sidebar automáticamente
+  useEffect(() => {
+    const handleScroll = () => {
+      // Solo aplicar en desktop
+      if (window.innerWidth < 1024) return;
+
+      // Si el usuario manualmente cambió el sidebar, respetar su decisión
+      if (userManuallyToggled) {
+        // Pero resetear el estado manual cuando regresa arriba
+        if (window.scrollY < 100) {
+          setUserManuallyToggled(false);
+        }
+        return;
+      }
+
+      if (heroSliderRef.current) {
+        const sliderRect = heroSliderRef.current.getBoundingClientRect();
+        const sliderBottom = sliderRect.bottom;
+
+        // Si el usuario pasó la galería (el fondo del slider está arriba de la ventana)
+        if (sliderBottom < 0) {
+          // Abrir sidebar automáticamente
+          setSidebarVisible(true);
+        } else {
+          // Cerrar sidebar cuando está en la galería
+          setSidebarVisible(false);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [userManuallyToggled]);
+
   // Render loading state
   if (loading || !project) {
     return (
@@ -391,7 +433,7 @@ export default function ProjectPage({ params }: Props) {
         {/* Botón de toggle siempre fixed - Solo desktop */}
         <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
-            onClick={() => setSidebarVisible(!sidebarVisible)}
+            onClick={handleSidebarToggle}
             className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
@@ -553,7 +595,7 @@ export default function ProjectPage({ params }: Props) {
               // Si está configurado sin slider, mostrar solo la primera imagen
               if (showWithoutSlider && sliderImages.length > 0) {
                 return (
-                  <div className="relative mb-8">
+                  <div ref={heroSliderRef} className="relative mb-8">
                     <div className={`relative overflow-hidden ${
                       sidebarVisible ? 'aspect-[16/8]' : 'aspect-[16/6]'
                     }`} style={{
@@ -623,7 +665,7 @@ export default function ProjectPage({ params }: Props) {
 
               // Mostrar slider normal si no está configurado sin slider
               return (
-                <div className="relative mb-8">
+                <div ref={heroSliderRef} className="relative mb-8">
                   <div
                     className="relative"
                     onMouseEnter={() => setIsSliderHovered(true)}

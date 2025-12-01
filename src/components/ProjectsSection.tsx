@@ -22,7 +22,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
     selectedYear: null,
     sortBy: 'date'
   });
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
@@ -117,7 +117,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   }, [projects, filterState]);
 
   return (
-    <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
+    <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-24">
       {/* Header - Solo mobile */}
       <div className="mb-8 lg:hidden flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -312,34 +312,32 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
         </div>
       </div>
 
-      {/* Toggle y Título - fixed position */}
-      <div className="hidden lg:block fixed top-40 left-8 z-50">
-        <div className="flex items-center gap-4">
-          {/* Toggle button primero */}
-          <button
-            onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
-            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+      {/* Toggle buttons - fixed position */}
+      <div className="hidden lg:flex fixed top-36 left-8 z-50 gap-2">
+        <button
+          onClick={() => setSidebarVisible(!sidebarVisible)}
+          className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+          aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+        >
+          <span
+            className="material-symbols-outlined leading-none -mt-1"
+            style={{ fontSize: '32px' }}
           >
-            <span
-              className="material-symbols-outlined leading-none -mt-1"
-              style={{ fontSize: '32px' }}
-            >
-              thumbnail_bar
-            </span>
-          </button>
-
-          {/* Título PROYECTOS con animación fade */}
-          <h1
-            className={`text-2xl font-medium tracking-widest text-black transition-all duration-300 ease-in-out ${
-              sidebarVisible
-                ? 'opacity-100 translate-x-0'
-                : 'opacity-0 -translate-x-4 pointer-events-none'
-            }`}
+            thumbnail_bar
+          </span>
+        </button>
+        <button
+          onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+          className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+          aria-label={viewMode === 'grid' ? (language === 'en' ? 'Switch to list view' : 'Cambiar a vista lista') : (language === 'en' ? 'Switch to grid view' : 'Cambiar a vista cuadrícula')}
+        >
+          <span
+            className="material-symbols-outlined leading-none -mt-1"
+            style={{ fontSize: '32px' }}
           >
-            {language === 'en' ? 'PROJECTS' : 'PROYECTOS'}
-          </h1>
-        </div>
+            {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
+          </span>
+        </button>
       </div>
 
       <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
@@ -348,28 +346,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
         }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="w-64 pr-4 overflow-x-hidden">
-            {/* Botón de cambio de vista - Primero */}
-            <div className="mb-8">
-              <button
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="w-full flex items-center justify-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-3 rounded-md transition-all duration-300 ease-in-out hover:scale-105 border border-gray-200"
-              >
-                <span
-                  className="material-symbols-outlined transition-all duration-300 ease-in-out"
-                  style={{ fontSize: '24px' }}
-                >
-                  {viewMode === 'grid' ? 'calendar_view_day' : 'calendar_view_month'}
-                </span>
-                <span className="font-medium">
-                  {viewMode === 'grid'
-                    ? (language === 'en' ? 'List View' : 'Vista Lista')
-                    : (language === 'en' ? 'Grid View' : 'Vista Cuadrícula')
-                  }
-                </span>
-              </button>
-            </div>
-
-            {/* Búsqueda - Segundo */}
+            {/* Búsqueda */}
             <div className="mb-8">
               <div className="relative">
                 <svg
