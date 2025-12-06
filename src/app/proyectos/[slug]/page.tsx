@@ -31,6 +31,10 @@ export default function ProjectPage({ params }: Props) {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxTouchStart, setLightboxTouchStart] = useState<number | null>(null);
+  const [lightboxTouchEnd, setLightboxTouchEnd] = useState<number | null>(null);
   const heroSliderRef = useRef<HTMLDivElement>(null);
 
   // Function to process video URL and generate embed
@@ -166,9 +170,58 @@ export default function ProjectPage({ params }: Props) {
     setCurrentSlide(index);
   };
 
-  // Touch handlers for swipe
+  // Lightbox handlers
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    document.body.style.overflow = '';
+  };
+
+  const lightboxNext = () => {
+    setLightboxIndex((prev) => (prev + 1) % sliderImages.length);
+  };
+
+  const lightboxPrev = () => {
+    setLightboxIndex((prev) => (prev - 1 + sliderImages.length) % sliderImages.length);
+  };
+
+  // Minimum swipe distance for touch navigation
   const minSwipeDistance = 50;
 
+  // Lightbox touch handlers
+  const onLightboxTouchStart = (e: React.TouchEvent) => {
+    setLightboxTouchEnd(null);
+    setLightboxTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onLightboxTouchMove = (e: React.TouchEvent) => {
+    setLightboxTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onLightboxTouchEnd = () => {
+    if (!lightboxTouchStart || !lightboxTouchEnd) return;
+
+    const distance = lightboxTouchStart - lightboxTouchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      lightboxNext();
+    }
+    if (isRightSwipe) {
+      lightboxPrev();
+    }
+
+    setLightboxTouchStart(null);
+    setLightboxTouchEnd(null);
+  };
+
+  // Touch handlers for slider swipe
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -312,16 +365,38 @@ export default function ProjectPage({ params }: Props) {
     }
   }, [activeTab, activeProjectTab, project]);
 
-  // Auto-rotate del slider - pausar cuando hover
+  // Auto-rotate del slider - pausar cuando hover o lightbox abierto
   useEffect(() => {
-    if (sliderImages.length > 1 && !isSliderHovered) {
+    if (sliderImages.length > 1 && !isSliderHovered && !lightboxOpen) {
       const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
       }, 5000);
 
       return () => clearInterval(interval);
     }
-  }, [sliderImages.length, isSliderHovered]);
+  }, [sliderImages.length, isSliderHovered, lightboxOpen]);
+
+  // Lightbox keyboard navigation and cleanup
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+
+      if (e.key === 'Escape') {
+        closeLightbox();
+      } else if (e.key === 'ArrowRight') {
+        lightboxNext();
+      } else if (e.key === 'ArrowLeft') {
+        lightboxPrev();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      // Cleanup overflow on unmount
+      document.body.style.overflow = '';
+    };
+  }, [lightboxOpen]);
 
   // Handle manual sidebar toggle
   const handleSidebarToggle = useCallback(() => {
@@ -329,39 +404,49 @@ export default function ProjectPage({ params }: Props) {
     setUserManuallyToggled(true);
   }, []);
 
-  // Scroll listener para abrir/cerrar sidebar automáticamente
+  // Función para manejar click en tabs del proyecto - muestra sidebar si no está visible
+  const handleProjectTabClick = useCallback((tabIndex: number) => {
+    setActiveProjectTab(tabIndex);
+    // Si el sidebar no está visible, mostrarlo
+    if (!sidebarVisible) {
+      setSidebarVisible(true);
+      setUserManuallyToggled(true);
+    }
+  }, [sidebarVisible]);
+
+  // Abrir sidebar UNA vez cuando el usuario hace scroll hacia abajo (muy sutil)
   useEffect(() => {
+    // Si ya está visible o el usuario lo controló manualmente, no hacer nada
+    if (sidebarVisible || userManuallyToggled) return;
+
+    // Solo aplicar en desktop
+    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+
+    let lastScrollY = window.scrollY;
+
     const handleScroll = () => {
-      // Solo aplicar en desktop
-      if (window.innerWidth < 1024) return;
+      const currentScrollY = window.scrollY;
 
-      // Si el usuario manualmente cambió el sidebar, respetar su decisión
-      if (userManuallyToggled) {
-        // Pero resetear el estado manual cuando regresa arriba
-        if (window.scrollY < 100) {
-          setUserManuallyToggled(false);
-        }
-        return;
+      // Si el usuario hizo scroll hacia ABAJO más de 30px desde el inicio
+      if (currentScrollY > 30 && currentScrollY > lastScrollY) {
+        // Abrir sidebar y dejar de escuchar
+        setSidebarVisible(true);
+        window.removeEventListener('scroll', handleScroll);
       }
 
-      if (heroSliderRef.current) {
-        const sliderRect = heroSliderRef.current.getBoundingClientRect();
-        const sliderBottom = sliderRect.bottom;
-
-        // Si el usuario pasó la galería (el fondo del slider está arriba de la ventana)
-        if (sliderBottom < 0) {
-          // Abrir sidebar automáticamente
-          setSidebarVisible(true);
-        } else {
-          // Cerrar sidebar cuando está en la galería
-          setSidebarVisible(false);
-        }
-      }
+      lastScrollY = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [userManuallyToggled]);
+    // Pequeño delay para asegurar que todo esté listo
+    const timeoutId = setTimeout(() => {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [sidebarVisible, userManuallyToggled, loading]);
 
   // Render loading state
   if (loading || !project) {
@@ -464,7 +549,7 @@ export default function ProjectPage({ params }: Props) {
                     <div className="border-b border-gray-300 mb-4"></div>
                     <div className="space-y-2">
                       <button
-                        onClick={() => setActiveProjectTab(-1)}
+                        onClick={() => handleProjectTabClick(-1)}
                         className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                           activeProjectTab === -1
                             ? 'bg-black text-white'
@@ -476,7 +561,7 @@ export default function ProjectPage({ params }: Props) {
                       {project.tabs.map((tab, index) => (
                         <button
                           key={tab.id}
-                          onClick={() => setActiveProjectTab(index)}
+                          onClick={() => handleProjectTabClick(index)}
                           className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                             activeProjectTab === index
                               ? 'bg-black text-white'
@@ -675,56 +760,43 @@ export default function ProjectPage({ params }: Props) {
                     onTouchEnd={onTouchEnd}
                   >
                     <div className={`relative overflow-hidden group ${
-                      sidebarVisible ? 'aspect-[16/8]' : 'aspect-[16/6]'
+                      sidebarVisible ? 'aspect-[4/3] md:aspect-[16/8]' : 'aspect-[4/3] md:aspect-[16/6]'
                     }`} style={{
                       borderRadius: '5px',
                       backgroundColor: (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
                                        (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain ? 'transparent' : undefined
                     }}>
                       {sliderImages[currentSlide] && sliderImages[currentSlide].trim() !== '' ? (
-                        <Image
-                          src={optimizeCloudinaryUrl(sliderImages[currentSlide], CLOUDINARY_PRESETS.slider)}
-                          alt={`${project.title} - Slide ${currentSlide + 1}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
-                          quality={85}
-                          loading={currentSlide === 0 ? "eager" : "lazy"}
-                          className={
-                            (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
-                            (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
-                              ? "object-contain"
-                              : "object-cover"
-                          }
-                        />
+                        <button
+                          onClick={() => openLightbox(currentSlide)}
+                          className="absolute inset-0 w-full h-full cursor-pointer focus:outline-none group/zoom"
+                          aria-label={language === 'en' ? 'Open image in full screen' : 'Abrir imagen en pantalla completa'}
+                        >
+                          <Image
+                            src={optimizeCloudinaryUrl(sliderImages[currentSlide], CLOUDINARY_PRESETS.slider)}
+                            alt={`${project.title} - Slide ${currentSlide + 1}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
+                            quality={85}
+                            loading={currentSlide === 0 ? "eager" : "lazy"}
+                            className={
+                              (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                              (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
+                                ? "object-contain"
+                                : "object-cover"
+                            }
+                          />
+                          {/* Icono de expandir en hover - esquina inferior derecha */}
+                          <div className="absolute bottom-3 right-3 opacity-0 group-hover/zoom:opacity-100 transition-opacity duration-300 bg-white bg-opacity-90 p-2 rounded-md shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                          </div>
+                        </button>
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-400">Sin imagen</span>
                         </div>
-                      )}
-
-                      {/* Flechas de navegación - solo mostrar si hay múltiples imágenes */}
-                      {sliderImages.length > 1 && (
-                        <>
-                          <button
-                            onClick={prevSlide}
-                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full transition-opacity duration-300 hover:bg-opacity-75"
-                            aria-label="Imagen anterior"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-
-                          <button
-                            onClick={nextSlide}
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full transition-opacity duration-300 hover:bg-opacity-75"
-                            aria-label="Imagen siguiente"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </>
                       )}
                     </div>
                   </div>
@@ -768,18 +840,44 @@ export default function ProjectPage({ params }: Props) {
                     return null;
                   })()}
 
-                  {/* Puntitos indicadores - solo mostrar si hay múltiples imágenes */}
+                  {/* Navegación del slider - flechas y puntitos debajo de la imagen */}
                   {sliderImages.length > 1 && (
-                    <div className="flex justify-center space-x-2 mt-4">
-                      {sliderImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => goToSlide(index)}
-                          className={`w-3 h-3 rounded-full ${
-                            index === currentSlide ? 'bg-black' : 'bg-gray-300'
-                          }`}
-                        />
-                      ))}
+                    <div className="flex items-center justify-center gap-4 mt-4">
+                      {/* Flecha izquierda */}
+                      <button
+                        onClick={prevSlide}
+                        className="p-2 rounded-full border border-gray-300 hover:border-black hover:bg-gray-100 transition-all duration-200"
+                        aria-label={language === 'en' ? 'Previous image' : 'Imagen anterior'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Puntitos indicadores */}
+                      <div className="flex space-x-2">
+                        {sliderImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToSlide(index)}
+                            className={`w-2.5 h-2.5 rounded-full transition-colors duration-200 ${
+                              index === currentSlide ? 'bg-black' : 'bg-gray-300 hover:bg-gray-400'
+                            }`}
+                            aria-label={`${language === 'en' ? 'Go to image' : 'Ir a imagen'} ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Flecha derecha */}
+                      <button
+                        onClick={nextSlide}
+                        className="p-2 rounded-full border border-gray-300 hover:border-black hover:bg-gray-100 transition-all duration-200"
+                        aria-label={language === 'en' ? 'Next image' : 'Imagen siguiente'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -845,6 +943,19 @@ export default function ProjectPage({ params }: Props) {
             {/* Tabs */}
             <div className="mb-8">
               {(() => {
+                // Determinar si hay contenido en créditos en CUALQUIERA de los dos idiomas
+                let hasCredits = false;
+                if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                  const tab = project.tabs[activeProjectTab];
+                  const hasSpanishCredits = !!(tab.credits && tab.credits.trim() !== '');
+                  const hasEnglishCredits = !!(tab.credits_en && tab.credits_en.trim() !== '');
+                  hasCredits = hasSpanishCredits || hasEnglishCredits;
+                } else {
+                  const hasSpanishCredits = !!(project.credits && project.credits.trim() !== '');
+                  const hasEnglishCredits = !!(project.credits_en && project.credits_en.trim() !== '');
+                  hasCredits = hasSpanishCredits || hasEnglishCredits;
+                }
+
                 // Determinar si hay contenido en la ficha técnica en CUALQUIERA de los dos idiomas
                 let hasTechnicalSheet = false;
                 if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
@@ -860,8 +971,11 @@ export default function ProjectPage({ params }: Props) {
                   hasTechnicalSheet = hasSpanishContent || hasEnglishContent;
                 }
 
+                // Calcular número de columnas: detalles + (créditos?) + (ficha?) + pdf
+                const numCols = 2 + (hasCredits ? 1 : 0) + (hasTechnicalSheet ? 1 : 0);
+
                 return (
-                  <div className={`grid ${hasTechnicalSheet ? 'grid-cols-3' : 'grid-cols-2'} border-b border-gray-200 mb-6`}>
+                  <div className={`grid grid-cols-${numCols} border-b border-gray-200 mb-6`} style={{ gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}>
                     <button
                       onClick={() => setActiveTab('detalles')}
                       className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
@@ -872,6 +986,18 @@ export default function ProjectPage({ params }: Props) {
                     >
                       {language === 'en' ? 'Project Details' : 'Detalles del Proyecto'}
                     </button>
+                    {hasCredits && (
+                      <button
+                        onClick={() => setActiveTab('creditos')}
+                        className={`px-3 lg:px-6 py-3 lg:pt-8 lg:pb-6 text-sm lg:text-lg font-medium border-r border-gray-200 ${
+                          activeTab === 'creditos'
+                            ? 'border-b-2 border-b-black text-black bg-gray-50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {language === 'en' ? 'Credits' : 'Créditos'}
+                      </button>
+                    )}
                     {hasTechnicalSheet && (
                       <button
                         onClick={() => setActiveTab('ficha')}
@@ -968,6 +1094,33 @@ export default function ProjectPage({ params }: Props) {
                         </>
                       ) : (
                         <p>{language === 'en' ? 'Project details not available.' : 'Detalles del proyecto no disponibles.'}</p>
+                      );
+                    })()}
+                  </div>
+                )}
+                {activeTab === 'creditos' && (
+                  <div>
+                    {(() => {
+                      // Si hay un tab seleccionado, mostrar los créditos del tab
+                      if (activeProjectTab >= 0 && project.tabs && project.tabs[activeProjectTab]) {
+                        const tab = project.tabs[activeProjectTab];
+                        const content = language === 'en'
+                          ? (tab.credits_en || tab.credits)
+                          : (tab.credits || tab.credits_en);
+                        return content ? (
+                          <RichContent content={content} />
+                        ) : (
+                          <p>{language === 'en' ? 'Credits not available.' : 'Créditos no disponibles.'}</p>
+                        );
+                      }
+                      // Si no hay tab seleccionado, mostrar los créditos principales
+                      const content = language === 'en'
+                        ? (project.credits_en || project.credits)
+                        : (project.credits || project.credits_en);
+                      return content ? (
+                        <RichContent content={content} />
+                      ) : (
+                        <p>{language === 'en' ? 'Credits not available for this project.' : 'Créditos no disponibles para este proyecto.'}</p>
                       );
                     })()}
                   </div>
@@ -1252,6 +1405,88 @@ export default function ProjectPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black bg-opacity-95 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Botón cerrar */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 z-[10000] text-white hover:text-gray-300 transition-colors p-2"
+            aria-label={language === 'en' ? 'Close' : 'Cerrar'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Contador de imágenes */}
+          {sliderImages.length > 1 && (
+            <div className="absolute top-4 left-4 z-[10000] text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded">
+              {lightboxIndex + 1} / {sliderImages.length}
+            </div>
+          )}
+
+          {/* Imagen con soporte touch */}
+          <div
+            className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={onLightboxTouchStart}
+            onTouchMove={onLightboxTouchMove}
+            onTouchEnd={onLightboxTouchEnd}
+          >
+            {sliderImages[lightboxIndex] && (
+              <img
+                src={sliderImages[lightboxIndex]}
+                alt={`${project.title} - ${language === 'en' ? 'Image' : 'Imagen'} ${lightboxIndex + 1}`}
+                className="max-w-full max-h-full object-contain select-none"
+                draggable={false}
+              />
+            )}
+          </div>
+
+          {/* Navegación - solo si hay múltiples imágenes */}
+          {sliderImages.length > 1 && (
+            <>
+              {/* Flecha izquierda */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  lightboxPrev();
+                }}
+                className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-[10000] text-white hover:text-gray-300 transition-colors p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75"
+                aria-label={language === 'en' ? 'Previous image' : 'Imagen anterior'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Flecha derecha */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  lightboxNext();
+                }}
+                className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-[10000] text-white hover:text-gray-300 transition-colors p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75"
+                aria-label={language === 'en' ? 'Next image' : 'Siguiente imagen'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* Instrucciones para móvil - swipe */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10000] text-white text-xs opacity-50 md:hidden">
+            {language === 'en' ? 'Swipe to navigate' : 'Desliza para navegar'}
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

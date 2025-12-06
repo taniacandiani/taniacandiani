@@ -44,6 +44,7 @@ export default function NewProjectPage() {
     heroImageDescriptions: [''],
     heroImageDescriptions_en: [''],
     projectDetails: '',
+    credits: '',
     technicalSheet: '',
     downloadLink: '',
     additionalImage: '',
@@ -65,6 +66,7 @@ export default function NewProjectPage() {
     // English fields
     title_en: '',
     projectDetails_en: '',
+    credits_en: '',
     technicalSheet_en: '',
     heroDescription_en: '',
     commissionedBy_en: '',
@@ -790,6 +792,19 @@ export default function NewProjectPage() {
                       [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
                     })}
                     placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
+                    height={250}
+                  />
+                </div>
+
+                <div>
+                  <RichTextEditor
+                    label={editingLanguage === 'es' ? 'Créditos' : 'Credits'}
+                    value={editingLanguage === 'es' ? (formData.credits || '') : (formData.credits_en || '')}
+                    onChange={(content) => setFormData({
+                      ...formData,
+                      [editingLanguage === 'es' ? 'credits' : 'credits_en']: content
+                    })}
+                    placeholder={editingLanguage === 'es' ? 'Escribe los créditos aquí...' : 'Write the credits here...'}
                     height={250}
                   />
                 </div>

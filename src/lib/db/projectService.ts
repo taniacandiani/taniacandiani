@@ -128,6 +128,7 @@ export class ProjectService {
       project.showInHomeHero ?? false,
       project.heroDescription || null,
       project.projectDetails || null,
+      project.credits || null,
       project.technicalSheet || null,
       project.downloadLink || null,
       project.additionalImage || null,
@@ -137,6 +138,7 @@ export class ProjectService {
       project.title_en || null,
       project.description_en || null,
       project.projectDetails_en || null,
+      project.credits_en || null,
       project.technicalSheet_en || null,
       project.heroDescription_en || null,
       project.commissionedBy_en || null,
@@ -155,7 +157,7 @@ export class ProjectService {
     const hasUndefined = queryValues.some((val, idx) => {
       if (val === undefined) {
         console.error(`ERROR: Value at index ${idx} is undefined!`);
-        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','images_without_slider','slider_images_contain','created_at'][idx]}`);
+        console.error(`Field mapping: ${['id','title','image','year','description','slug','categories','tags','featured','status','hero_images','hero_image_descriptions','hero_image_descriptions_en','show_in_home_hero','hero_description','project_details','credits','technical_sheet','download_link','additional_image','commissioned_by','curator','location','title_en','description_en','project_details_en','credits_en','technical_sheet_en','hero_description_en','commissioned_by_en','curator_en','location_en','pdf_url','pdf_button_text','pdf_button_text_en','video_url','images_without_slider','slider_images_contain','created_at'][idx]}`);
         return true;
       }
       return false;
@@ -175,20 +177,20 @@ export class ProjectService {
         id, title, image, year, description, slug, categories, tags,
         featured, status, hero_images, hero_image_descriptions, hero_image_descriptions_en,
         show_in_home_hero, hero_description,
-        project_details, technical_sheet, download_link, additional_image,
+        project_details, credits, technical_sheet, download_link, additional_image,
         commissioned_by, curator, location,
-        title_en, description_en, project_details_en,
+        title_en, description_en, project_details_en, credits_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
         curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, images_without_slider, slider_images_contain, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
         $14, $15,
-        $16, $17, $18, $19,
-        $20, $21, $22,
-        $23, $24, $25,
-        $26, $27, $28,
-        $29, $30, $31, $32, $33, $34, $35, $36, COALESCE($37, NOW())
+        $16, $17, $18, $19, $20,
+        $21, $22, $23,
+        $24, $25, $26, $27,
+        $28, $29, $30,
+        $31, $32, $33, $34, $35, $36, $37, $38, COALESCE($39, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -257,27 +259,29 @@ export class ProjectService {
         show_in_home_hero = $14,
         hero_description = $15,
         project_details = $16,
-        technical_sheet = $17,
-        download_link = $18,
-        additional_image = $19,
-        commissioned_by = $20,
-        curator = $21,
-        location = $22,
-        title_en = $23,
-        description_en = $24,
-        project_details_en = $25,
-        technical_sheet_en = $26,
-        hero_description_en = $27,
-        commissioned_by_en = $28,
-        curator_en = $29,
-        location_en = $30,
-        pdf_url = $31,
-        pdf_button_text = $32,
-        pdf_button_text_en = $33,
-        video_url = $34,
-        images_without_slider = $35,
-        slider_images_contain = $36,
-        created_at = $37,
+        credits = $17,
+        technical_sheet = $18,
+        download_link = $19,
+        additional_image = $20,
+        commissioned_by = $21,
+        curator = $22,
+        location = $23,
+        title_en = $24,
+        description_en = $25,
+        project_details_en = $26,
+        credits_en = $27,
+        technical_sheet_en = $28,
+        hero_description_en = $29,
+        commissioned_by_en = $30,
+        curator_en = $31,
+        location_en = $32,
+        pdf_url = $33,
+        pdf_button_text = $34,
+        pdf_button_text_en = $35,
+        video_url = $36,
+        images_without_slider = $37,
+        slider_images_contain = $38,
+        created_at = $39,
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -298,6 +302,7 @@ export class ProjectService {
         project.showInHomeHero !== undefined ? project.showInHomeHero : null,
         project.heroDescription !== undefined ? (project.heroDescription || null) : 'KEEP_EXISTING',
         project.projectDetails !== undefined ? (project.projectDetails || null) : 'KEEP_EXISTING',
+        project.credits !== undefined ? (project.credits || null) : 'KEEP_EXISTING',
         project.technicalSheet !== undefined ? (project.technicalSheet || null) : 'KEEP_EXISTING',
         project.downloadLink !== undefined ? (project.downloadLink || null) : 'KEEP_EXISTING',
         project.additionalImage !== undefined ? (project.additionalImage || null) : 'KEEP_EXISTING',
@@ -307,6 +312,7 @@ export class ProjectService {
         project.title_en !== undefined ? (project.title_en || null) : 'KEEP_EXISTING',
         project.description_en !== undefined ? (project.description_en || null) : 'KEEP_EXISTING',
         project.projectDetails_en !== undefined ? (project.projectDetails_en || null) : 'KEEP_EXISTING',
+        project.credits_en !== undefined ? (project.credits_en || null) : 'KEEP_EXISTING',
         project.technicalSheet_en !== undefined ? (project.technicalSheet_en || null) : 'KEEP_EXISTING',
         project.heroDescription_en !== undefined ? (project.heroDescription_en || null) : 'KEEP_EXISTING',
         project.commissionedBy_en !== undefined ? (project.commissionedBy_en || null) : 'KEEP_EXISTING',
@@ -371,6 +377,7 @@ export class ProjectService {
       showInHomeHero: row.show_in_home_hero,
       heroDescription: row.hero_description,
       projectDetails: row.project_details,
+      credits: row.credits,
       technicalSheet: row.technical_sheet,
       downloadLink: row.download_link,
       additionalImage: row.additional_image,
@@ -380,6 +387,7 @@ export class ProjectService {
       title_en: row.title_en,
       description_en: row.description_en,
       projectDetails_en: row.project_details_en,
+      credits_en: row.credits_en,
       technicalSheet_en: row.technical_sheet_en,
       heroDescription_en: row.hero_description_en,
       commissionedBy_en: row.commissioned_by_en,
@@ -418,6 +426,7 @@ export class ProjectService {
       sliderImagesContain: row.slider_images_contain,
       additionalImage: row.additional_image,
       projectDetails: row.project_details,
+      credits: row.credits,
       technicalSheet: row.technical_sheet,
       pdfUrl: row.pdf_url,
       pdfTitle: row.pdf_title,
@@ -427,6 +436,7 @@ export class ProjectService {
       videoUrl: row.video_url,
       title_en: row.title_en,
       projectDetails_en: row.project_details_en,
+      credits_en: row.credits_en,
       technicalSheet_en: row.technical_sheet_en,
     }));
   }
@@ -440,15 +450,15 @@ export class ProjectService {
         `INSERT INTO project_tabs (
           id, project_id, tab_order, title,
           hero_images, hero_image_descriptions, hero_image_descriptions_en, images_without_slider, slider_images_contain,
-          additional_image, project_details, technical_sheet,
+          additional_image, project_details, credits, technical_sheet,
           pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_url,
-          title_en, project_details_en, technical_sheet_en
+          title_en, project_details_en, credits_en, technical_sheet_en
         ) VALUES (
           $1, $2, $3, $4,
           $5::jsonb, $6::jsonb, $7::jsonb, $8, $9,
-          $10, $11, $12,
-          $13, $14, $15, $16, $17, $18,
-          $19, $20, $21
+          $10, $11, $12, $13,
+          $14, $15, $16, $17, $18, $19,
+          $20, $21, $22, $23
         )`,
         [
           crypto.randomUUID(),
@@ -462,6 +472,7 @@ export class ProjectService {
           tab.sliderImagesContain ?? false,
           tab.additionalImage || null,
           tab.projectDetails || null,
+          tab.credits || null,
           tab.technicalSheet || null,
           tab.pdfUrl || null,
           tab.pdfTitle || null,
@@ -471,6 +482,7 @@ export class ProjectService {
           tab.videoUrl || null,
           tab.title_en || null,
           tab.projectDetails_en || null,
+          tab.credits_en || null,
           tab.technicalSheet_en || null,
         ]
       );

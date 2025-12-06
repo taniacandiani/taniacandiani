@@ -16,7 +16,9 @@
       "Bash(find:*)",
       "Read(//Users/mariod.alvarado/Desktop/**)",
       "Bash(npx tsc:*)",
-      "Bash(npx drizzle-kit generate)"
+      "Bash(npx drizzle-kit generate)",
+      "Bash(/usr/local/bin/npm run build)",
+      "Bash(/Users/mariod.alvarado/.volta/bin/npx tsx migrate-credits.js)"
     ],
     "deny": [],
     "ask": []

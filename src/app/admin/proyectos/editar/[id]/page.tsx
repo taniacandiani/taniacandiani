@@ -844,6 +844,19 @@ export default function EditProjectPage() {
 
             <div>
               <RichTextEditor
+                label={editingLanguage === 'es' ? 'Créditos' : 'Credits'}
+                value={editingLanguage === 'es' ? (project.credits || '') : (project.credits_en || '')}
+                onChange={(content) => setProject({
+                  ...project,
+                  [editingLanguage === 'es' ? 'credits' : 'credits_en']: content
+                })}
+                placeholder={editingLanguage === 'es' ? 'Escribe los créditos aquí...' : 'Write the credits here...'}
+                height={250}
+              />
+            </div>
+
+            <div>
+              <RichTextEditor
                 label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
                 value={editingLanguage === 'es' ? (project.technicalSheet || '') : (project.technicalSheet_en || '')}
                 onChange={(content) => setProject({

@@ -39,6 +39,7 @@ export interface ProjectTab {
   sliderImagesContain?: boolean; // New: Display slider images with object-contain
   additionalImage?: string;
   projectDetails?: string;
+  credits?: string;
   technicalSheet?: string;
 
   // PDF Document (new fields)
@@ -53,6 +54,7 @@ export interface ProjectTab {
 
   title_en?: string;
   projectDetails_en?: string;
+  credits_en?: string;
   technicalSheet_en?: string;
 }
 
@@ -73,6 +75,7 @@ export interface Project {
   heroImageDescriptions?: string[]; // Descriptions for each hero image (for project slider)
   heroImageDescriptions_en?: string[]; // English descriptions for hero images
   projectDetails?: string; // Full project description (HTML)
+  credits?: string; // Credits content (HTML)
   technicalSheet?: string; // Technical sheet content (HTML)
   downloadLink?: string; // PDF download link
   additionalImage?: string; // Bottom image
@@ -103,6 +106,7 @@ export interface Project {
   title_en?: string;
   description_en?: string;
   projectDetails_en?: string;
+  credits_en?: string;
   technicalSheet_en?: string;
   heroDescription_en?: string;
   commissionedBy_en?: string;

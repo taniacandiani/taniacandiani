@@ -24,6 +24,7 @@ export const projects = pgTable('projects', {
 
   // Details
   projectDetails: text('project_details'),
+  credits: text('credits'),
   technicalSheet: text('technical_sheet'),
   downloadLink: text('download_link'),
   additionalImage: text('additional_image'),
@@ -45,6 +46,7 @@ export const projects = pgTable('projects', {
   titleEn: varchar('title_en', { length: 500 }),
   descriptionEn: text('description_en'),
   projectDetailsEn: text('project_details_en'),
+  creditsEn: text('credits_en'),
   technicalSheetEn: text('technical_sheet_en'),
   heroDescriptionEn: text('hero_description_en'),
   commissionedByEn: varchar('commissioned_by_en', { length: 255 }),
@@ -70,6 +72,7 @@ export const projectTabs = pgTable('project_tabs', {
   sliderImagesContain: boolean('slider_images_contain').default(false),
   additionalImage: text('additional_image'),
   projectDetails: text('project_details'),
+  credits: text('credits'),
   technicalSheet: text('technical_sheet'),
 
   // PDF Document (new fields)
@@ -85,6 +88,7 @@ export const projectTabs = pgTable('project_tabs', {
   // English translations
   titleEn: varchar('title_en', { length: 500 }),
   projectDetailsEn: text('project_details_en'),
+  creditsEn: text('credits_en'),
   technicalSheetEn: text('technical_sheet_en'),
 
   createdAt: timestamp('created_at').defaultNow(),
