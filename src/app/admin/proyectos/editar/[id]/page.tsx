@@ -183,14 +183,13 @@ export default function EditProjectPage() {
         showInHomeHero: project.showInHomeHero || false,
         projectDetails: project.projectDetails,
         technicalSheet: project.technicalSheet,
-        downloadLink: project.downloadLink,
         additionalImage: project.additionalImage, // No usar || '' para permitir eliminar
         heroDescription: project.heroDescription,
         commissionedBy: project.commissionedBy,
         curator: project.curator,
         location: project.location,
-        // Video y PDF - convertir cadenas vacías a null explícitamente
-        videoUrl: project.videoUrl && project.videoUrl.trim() ? project.videoUrl.trim() : null,
+        // Video y PDF - filtrar URLs vacías
+        videoUrls: (project.videoUrls || []).filter(url => url && url.trim() !== ''),
         pdfUrl: project.pdfUrl && project.pdfUrl.trim() ? project.pdfUrl.trim() : null,
         pdfButtonText: project.pdfButtonText && project.pdfButtonText.trim() ? project.pdfButtonText.trim() : null,
         pdfButtonText_en: project.pdfButtonText_en && project.pdfButtonText_en.trim() ? project.pdfButtonText_en.trim() : null,
@@ -313,7 +312,7 @@ export default function EditProjectPage() {
       pdfTitle_en: '',
       pdfButtonText: '',
       pdfButtonText_en: '',
-      videoUrl: '',
+      videoUrls: [''],
       title_en: '',
       projectDetails_en: '',
       technicalSheet_en: ''
@@ -951,100 +950,125 @@ export default function EditProjectPage() {
           </div>
         </div>
 
-        {/* Video Embed */}
+        {/* Video Embed - Multiple Videos */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Video del Proyecto</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Videos del Proyecto</h2>
             <span className="text-sm font-medium text-gray-600">
               Campo compartido entre idiomas
             </span>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL del Video (YouTube o Vimeo)
-              </label>
-              <div className="flex gap-2">
+            <p className="text-xs text-gray-500">
+              Agrega múltiples videos de YouTube o Vimeo. Se mostrarán embebidos uno debajo del otro en la página del proyecto.
+            </p>
+
+            {/* Lista de videos */}
+            {(project.videoUrls || ['']).map((videoUrl, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-gray-700">Video {index + 1}</span>
+                  {(project.videoUrls || []).length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newVideoUrls = (project.videoUrls || []).filter((_, i) => i !== index);
+                        setProject({ ...project, videoUrls: newVideoUrls.length > 0 ? newVideoUrls : [''] });
+                      }}
+                      className="ml-auto px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
-                  value={project.videoUrl || ''}
-                  onChange={(e) => setProject({ ...project, videoUrl: e.target.value })}
-                  className="flex-1 bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+                  value={videoUrl || ''}
+                  onChange={(e) => {
+                    const newVideoUrls = [...(project.videoUrls || [''])];
+                    newVideoUrls[index] = e.target.value;
+                    setProject({ ...project, videoUrls: newVideoUrls });
+                  }}
+                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
                 />
-                {project.videoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setProject({ ...project, videoUrl: '' })}
-                    className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
-                  >
-                    Eliminar
-                  </button>
+
+                {/* Video Preview */}
+                {videoUrl && videoUrl.trim() !== '' && (
+                  <div className="mt-3">
+                    <div className="max-w-xl">
+                      {(() => {
+                        const url = videoUrl;
+
+                        // YouTube
+                        const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                        const youtubeMatch = url.match(youtubeRegex);
+                        if (youtubeMatch) {
+                          const videoId = youtubeMatch[1];
+                          return (
+                            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                src={`https://www.youtube.com/embed/${videoId}`}
+                                title={`YouTube video ${index + 1}`}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Vimeo
+                        const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
+                        const vimeoMatch = url.match(vimeoRegex);
+                        if (vimeoMatch) {
+                          const videoId = vimeoMatch[1];
+                          return (
+                            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                src={`https://player.vimeo.com/video/${videoId}`}
+                                title={`Vimeo video ${index + 1}`}
+                                frameBorder="0"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-600">
+                            URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Pega aquí el enlace completo del video de YouTube o Vimeo. Se mostrará embebido en la página del proyecto.
-              </p>
-            </div>
+            ))}
 
-            {/* Video Preview */}
-            {project.videoUrl && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vista Previa del Video
-                </label>
-                <div className="max-w-2xl">
-                  {(() => {
-                    const url = project.videoUrl;
-
-                    // YouTube
-                    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-                    const youtubeMatch = url.match(youtubeRegex);
-                    if (youtubeMatch) {
-                      const videoId = youtubeMatch[1];
-                      return (
-                        <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
-                          <iframe
-                            className="absolute top-0 left-0 w-full h-full rounded-lg"
-                            src={`https://www.youtube.com/embed/${videoId}`}
-                            title="YouTube video player"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                      );
-                    }
-
-                    // Vimeo
-                    const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
-                    const vimeoMatch = url.match(vimeoRegex);
-                    if (vimeoMatch) {
-                      const videoId = vimeoMatch[1];
-                      return (
-                        <div className="relative w-full" style={{ paddingBottom: '28.125%' }}>
-                          <iframe
-                            className="absolute top-0 left-0 w-full h-full rounded-lg"
-                            src={`https://player.vimeo.com/video/${videoId}`}
-                            title="Vimeo video player"
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-600">
-                        URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
+            {/* Botón para agregar más videos */}
+            <button
+              type="button"
+              onClick={() => {
+                const currentVideos = project.videoUrls || [''];
+                // Solo agregar si el último video tiene contenido
+                const lastVideo = currentVideos[currentVideos.length - 1];
+                if (lastVideo && lastVideo.trim() !== '') {
+                  setProject({ ...project, videoUrls: [...currentVideos, ''] });
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Agregar otro video</span>
+            </button>
           </div>
         </div>
 
@@ -1058,23 +1082,6 @@ export default function EditProjectPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {editingLanguage === 'es' ? 'Link de Descarga' : 'Download Link'}
-              </label>
-              <input
-                type="text"
-                value={project.downloadLink || ''}
-                onChange={(e) => setProject({ ...project, downloadLink: e.target.value })}
-                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="https://..."
-                disabled={editingLanguage === 'en'}
-              />
-              {editingLanguage === 'en' && (
-                <p className="text-xs text-gray-500 mt-1">Este campo es compartido entre idiomas</p>
-              )}
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {editingLanguage === 'es' ? 'Comisionado por' : 'Commissioned by'}
@@ -1548,89 +1555,124 @@ export default function EditProjectPage() {
                     </div>
                   </div>
 
-                  {/* Video del Tab */}
+                  {/* Videos del Tab - Multiple Videos */}
                   <div className="bg-white p-4 rounded-lg border border-gray-200">
                     <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-sm font-semibold text-gray-900">Video del Tab</h4>
+                      <h4 className="text-sm font-semibold text-gray-900">Videos del Tab</h4>
                       <span className="text-xs font-medium text-gray-600">
                         Campo compartido entre idiomas
                       </span>
                     </div>
 
                     <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          URL del Video (YouTube o Vimeo)
-                        </label>
-                        <input
-                          type="text"
-                          value={tab.videoUrl || ''}
-                          onChange={(e) => updateTab(tabIndex, 'videoUrl', e.target.value)}
-                          className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                          placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Pega aquí el enlace completo del video de YouTube o Vimeo. Se mostrará embebido en este tab.
-                        </p>
-                      </div>
+                      <p className="text-xs text-gray-500">
+                        Agrega múltiples videos de YouTube o Vimeo. Se mostrarán uno debajo del otro.
+                      </p>
 
-                      {/* Vista previa del video */}
-                      {tab.videoUrl && (
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            Vista Previa del Video
-                          </label>
-                          <div className="max-w-md">
-                            {(() => {
-                              const url = tab.videoUrl;
-
-                              // YouTube
-                              const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-                              const youtubeMatch = url.match(youtubeRegex);
-                              if (youtubeMatch) {
-                                const videoId = youtubeMatch[1];
-                                return (
-                                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                                    <iframe
-                                      className="absolute top-0 left-0 w-full h-full rounded"
-                                      src={`https://www.youtube.com/embed/${videoId}`}
-                                      title="YouTube video player"
-                                      frameBorder="0"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                    />
-                                  </div>
-                                );
-                              }
-
-                              // Vimeo
-                              const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
-                              const vimeoMatch = url.match(vimeoRegex);
-                              if (vimeoMatch) {
-                                const videoId = vimeoMatch[1];
-                                return (
-                                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                                    <iframe
-                                      className="absolute top-0 left-0 w-full h-full rounded"
-                                      src={`https://player.vimeo.com/video/${videoId}`}
-                                      title="Vimeo video player"
-                                      frameBorder="0"
-                                      allow="autoplay; fullscreen; picture-in-picture"
-                                      allowFullScreen
-                                    />
-                                  </div>
-                                );
-                              }
-
-                              return (
-                                <div className="bg-gray-100 rounded p-3 text-xs text-gray-600">
-                                  URL de video no reconocida. Por favor, usa un enlace de YouTube o Vimeo.
-                                </div>
-                              );
-                            })()}
+                      {/* Lista de videos del tab */}
+                      {(tab.videoUrls || ['']).map((videoUrl, videoIndex) => (
+                        <div key={videoIndex} className="border border-gray-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-medium text-gray-700">Video {videoIndex + 1}</span>
+                            {(tab.videoUrls || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newVideoUrls = (tab.videoUrls || []).filter((_, i) => i !== videoIndex);
+                                  updateTab(tabIndex, 'videoUrls', newVideoUrls.length > 0 ? newVideoUrls : ['']);
+                                }}
+                                className="ml-auto px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                              >
+                                Eliminar
+                              </button>
+                            )}
                           </div>
+                          <input
+                            type="text"
+                            value={videoUrl || ''}
+                            onChange={(e) => {
+                              const newVideoUrls = [...(tab.videoUrls || [''])];
+                              newVideoUrls[videoIndex] = e.target.value;
+                              updateTab(tabIndex, 'videoUrls', newVideoUrls);
+                            }}
+                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..."
+                          />
+
+                          {/* Vista previa del video */}
+                          {videoUrl && videoUrl.trim() !== '' && (
+                            <div className="mt-2">
+                              <div className="max-w-sm">
+                                {(() => {
+                                  const url = videoUrl;
+
+                                  // YouTube
+                                  const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                                  const youtubeMatch = url.match(youtubeRegex);
+                                  if (youtubeMatch) {
+                                    const videoId = youtubeMatch[1];
+                                    return (
+                                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                        <iframe
+                                          className="absolute top-0 left-0 w-full h-full rounded"
+                                          src={`https://www.youtube.com/embed/${videoId}`}
+                                          title={`YouTube video ${videoIndex + 1}`}
+                                          frameBorder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                        />
+                                      </div>
+                                    );
+                                  }
+
+                                  // Vimeo
+                                  const vimeoRegex = /(?:vimeo\.com\/)([0-9]+)/;
+                                  const vimeoMatch = url.match(vimeoRegex);
+                                  if (vimeoMatch) {
+                                    const videoId = vimeoMatch[1];
+                                    return (
+                                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                        <iframe
+                                          className="absolute top-0 left-0 w-full h-full rounded"
+                                          src={`https://player.vimeo.com/video/${videoId}`}
+                                          title={`Vimeo video ${videoIndex + 1}`}
+                                          frameBorder="0"
+                                          allow="autoplay; fullscreen; picture-in-picture"
+                                          allowFullScreen
+                                        />
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="bg-gray-100 rounded p-2 text-xs text-gray-600">
+                                      URL no reconocida.
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
+
+                      {/* Botón para agregar más videos */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentVideos = tab.videoUrls || [''];
+                          const lastVideo = currentVideos[currentVideos.length - 1];
+                          if (lastVideo && lastVideo.trim() !== '') {
+                            updateTab(tabIndex, 'videoUrls', [...currentVideos, '']);
+                          }
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Agregar otro video</span>
+                      </button>
                     </div>
                   </div>
                 </div>

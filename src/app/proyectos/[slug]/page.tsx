@@ -681,25 +681,37 @@ export default function ProjectPage({ params }: Props) {
               if (showWithoutSlider && sliderImages.length > 0) {
                 return (
                   <div ref={heroSliderRef} className="relative mb-8">
-                    <div className={`relative overflow-hidden ${
-                      sidebarVisible ? 'aspect-[16/8]' : 'aspect-[16/6]'
+                    <div className={`relative overflow-hidden group ${
+                      sidebarVisible ? 'aspect-[4/3] md:aspect-[16/8]' : 'aspect-[4/3] md:aspect-[16/6]'
                     }`} style={{
                       borderRadius: '5px',
                       backgroundColor: (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
                                        (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain ? 'transparent' : undefined
                     }}>
                       {sliderImages[0] && sliderImages[0].trim() !== '' ? (
-                        <Image
-                          src={sliderImages[0]}
-                          alt={`${project.title} - Imagen principal`}
-                          fill
-                          className={
-                            (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
-                            (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
-                              ? "object-contain"
-                              : "object-cover"
-                          }
-                        />
+                        <button
+                          onClick={() => openLightbox(0)}
+                          className="absolute inset-0 w-full h-full cursor-pointer focus:outline-none group/zoom"
+                          aria-label={language === 'en' ? 'Open image in full screen' : 'Abrir imagen en pantalla completa'}
+                        >
+                          <Image
+                            src={sliderImages[0]}
+                            alt={`${project.title} - Imagen principal`}
+                            fill
+                            className={
+                              (activeProjectTab >= 0 && project.tabs?.[activeProjectTab]?.sliderImagesContain) ||
+                              (!activeProjectTab || activeProjectTab < 0) && project.sliderImagesContain
+                                ? "object-contain"
+                                : "object-cover"
+                            }
+                          />
+                          {/* Icono de expandir en hover */}
+                          <div className="absolute bottom-3 right-3 opacity-0 group-hover/zoom:opacity-100 transition-opacity duration-300 bg-white bg-opacity-90 p-2 rounded-md shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                          </div>
+                        </button>
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-400">Sin imagen</span>
@@ -1053,10 +1065,14 @@ export default function ProjectPage({ params }: Props) {
                                 </a>
                               </div>
                             )}
-                            {/* Video Embed for tabs */}
-                            {tab.videoUrl && (
-                              <div className="mt-8 mb-8" style={{ marginLeft: 0, marginRight: 'auto' }}>
-                                {getVideoEmbed(tab.videoUrl)}
+                            {/* Video Embeds for tabs - Multiple Videos */}
+                            {tab.videoUrls && tab.videoUrls.length > 0 && tab.videoUrls.some(url => url && url.trim() !== '') && (
+                              <div className="mt-8 mb-8 space-y-6" style={{ marginLeft: 0, marginRight: 'auto' }}>
+                                {tab.videoUrls.filter(url => url && url.trim() !== '').map((videoUrl, videoIndex) => (
+                                  <div key={videoIndex}>
+                                    {getVideoEmbed(videoUrl)}
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </>
@@ -1085,10 +1101,14 @@ export default function ProjectPage({ params }: Props) {
                               </a>
                             </div>
                           )}
-                          {/* Video Embed */}
-                          {project.videoUrl && (
-                            <div className="mt-8 mb-8" style={{ marginLeft: 0, marginRight: 'auto' }}>
-                              {getVideoEmbed(project.videoUrl)}
+                          {/* Video Embeds - Multiple Videos */}
+                          {project.videoUrls && project.videoUrls.length > 0 && project.videoUrls.some(url => url && url.trim() !== '') && (
+                            <div className="mt-8 mb-8 space-y-6" style={{ marginLeft: 0, marginRight: 'auto' }}>
+                              {project.videoUrls.filter(url => url && url.trim() !== '').map((videoUrl, videoIndex) => (
+                                <div key={videoIndex}>
+                                  {getVideoEmbed(videoUrl)}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </>
@@ -1194,13 +1214,25 @@ export default function ProjectPage({ params }: Props) {
 
                       return image && image.trim() !== '' ? (
                         <div key={index} className="relative">
-                          <div className="relative flex flex-col items-center">
-                            <img
-                              src={image}
-                              alt={`${project.title} - Imagen ${actualIndex + 1}`}
-                              className="h-auto"
-                              style={{ width: 'auto', maxWidth: '100%', display: 'block', borderRadius: '5px' }}
-                            />
+                          <div className="relative flex flex-col items-center group">
+                            <button
+                              onClick={() => openLightbox(actualIndex)}
+                              className="cursor-pointer focus:outline-none relative group/zoom"
+                              aria-label={language === 'en' ? 'Open image in full screen' : 'Abrir imagen en pantalla completa'}
+                            >
+                              <img
+                                src={image}
+                                alt={`${project.title} - Imagen ${actualIndex + 1}`}
+                                className="h-auto"
+                                style={{ width: 'auto', maxWidth: '100%', display: 'block', borderRadius: '5px' }}
+                              />
+                              {/* Icono de expandir en hover */}
+                              <div className="absolute bottom-3 right-3 opacity-0 group-hover/zoom:opacity-100 transition-opacity duration-300 bg-white bg-opacity-90 p-2 rounded-md shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                              </div>
+                            </button>
                             {description && description.trim() !== '' && (
                               <div className="mt-2 text-sm text-gray-600 text-center w-full">
                                 {description}

@@ -49,8 +49,8 @@ export interface ProjectTab {
   pdfButtonText?: string;
   pdfButtonText_en?: string;
 
-  // Video Embed (new field)
-  videoUrl?: string;
+  // Video Embed (supports multiple videos)
+  videoUrls?: string[];
 
   title_en?: string;
   projectDetails_en?: string;
@@ -85,8 +85,8 @@ export interface Project {
   pdfButtonText?: string; // Texto del botón PDF en español
   pdfButtonText_en?: string; // Texto del botón PDF en inglés
 
-  // Video Embed
-  videoUrl?: string; // URL del video de YouTube o Vimeo
+  // Video Embed (supports multiple videos)
+  videoUrls?: string[]; // URLs de videos de YouTube o Vimeo
 
   // Hero display options
   showInHomeHero?: boolean; // Checkbox to show in home hero

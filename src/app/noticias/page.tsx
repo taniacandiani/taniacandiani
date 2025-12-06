@@ -25,7 +25,8 @@ function NoticiasContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [userManuallyToggled, setUserManuallyToggled] = useState(false);
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -153,10 +154,50 @@ function NoticiasContent() {
     };
   }, []);
 
+  // Abrir sidebar UNA vez cuando el usuario hace scroll hacia abajo (solo desktop)
+  useEffect(() => {
+    // Si ya está visible o el usuario lo controló manualmente, no hacer nada
+    if (sidebarVisible || userManuallyToggled) return;
+
+    // Solo aplicar en desktop
+    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Si el usuario hizo scroll hacia ABAJO más de 30px desde el inicio
+      if (currentScrollY > 30 && currentScrollY > lastScrollY) {
+        // Abrir sidebar y dejar de escuchar
+        setSidebarVisible(true);
+        window.removeEventListener('scroll', handleScroll);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    // Pequeño delay para asegurar que todo esté listo
+    const timeoutId = setTimeout(() => {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [sidebarVisible, userManuallyToggled, loading]);
+
+  // Handle manual sidebar toggle
+  const handleSidebarToggle = () => {
+    setSidebarVisible(prev => !prev);
+    setUserManuallyToggled(true);
+  };
+
   // Get available years
   const availableYears = useMemo(() => {
     if (!Array.isArray(news)) return [];
-    
+
     const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [news]);
@@ -219,26 +260,23 @@ function NoticiasContent() {
 
   return (
     <MainLayout>
-      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
-        {/* Header */}
-        <div className="mb-8 lg:mb-16 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            {/* Toggle sidebar button - solo desktop */}
-            <button
-              onClick={() => setSidebarVisible(!sidebarVisible)}
-              className="hidden lg:flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
-              aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-24">
+        {/* Botón de toggle siempre fixed - Solo desktop */}
+        <div className="hidden lg:block fixed top-36 left-8 z-50">
+          <button
+            onClick={handleSidebarToggle}
+            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+          >
+            <span
+              className="material-symbols-outlined leading-none -mt-1"
+              style={{ fontSize: '32px' }}
             >
-              <span
-                className="material-symbols-outlined leading-none -mt-1"
-                style={{ fontSize: '32px' }}
-              >
-                thumbnail_bar
-              </span>
-            </button>
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">{language === 'en' ? 'NEWS' : 'NOTICIAS'}</h1>
-          </div>
+              thumbnail_bar
+            </span>
+          </button>
         </div>
+
 
         {/* Mobile Filters - Acordeones arriba */}
         <div className="lg:hidden mb-8 space-y-4">
@@ -347,11 +385,11 @@ function NoticiasContent() {
         </div>
 
         <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-          {/* Desktop Sidebar */}
-          <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-            sidebarVisible ? 'w-64' : 'w-0'
-          }`}>
-            <div className="w-64">
+          {/* Desktop Sidebar Fixed */}
+          <div className={`hidden lg:block fixed left-8 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+          }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="w-64 pr-4 overflow-x-hidden">
               {/* Búsqueda */}
               <div className="mb-8">
                 <div className="relative">
@@ -438,6 +476,11 @@ function NoticiasContent() {
               </div>
             </div>
           </div>
+
+          {/* Espaciador para sidebar fixed cuando está visible */}
+          <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64' : 'w-0'
+          }`}></div>
 
           {/* Grid de noticias */}
           <div className={`flex-1 transition-all duration-300 ease-in-out ${

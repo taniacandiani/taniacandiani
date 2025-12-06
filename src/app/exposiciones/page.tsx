@@ -24,7 +24,9 @@ function ExposicionesContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // Default to all categories
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [categories, setCategories] = useState<ExhibitionCategory[]>([]);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [userManuallyToggled, setUserManuallyToggled] = useState(false);
+  const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -160,6 +162,46 @@ function ExposicionesContent() {
     };
   }, []);
 
+  // Abrir sidebar UNA vez cuando el usuario hace scroll hacia abajo (solo desktop)
+  useEffect(() => {
+    // Si ya está visible o el usuario lo controló manualmente, no hacer nada
+    if (sidebarVisible || userManuallyToggled) return;
+
+    // Solo aplicar en desktop
+    if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Si el usuario hizo scroll hacia ABAJO más de 30px desde el inicio
+      if (currentScrollY > 30 && currentScrollY > lastScrollY) {
+        // Abrir sidebar y dejar de escuchar
+        setSidebarVisible(true);
+        window.removeEventListener('scroll', handleScroll);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    // Pequeño delay para asegurar que todo esté listo
+    const timeoutId = setTimeout(() => {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [sidebarVisible, userManuallyToggled, loading]);
+
+  // Handle manual sidebar toggle
+  const handleSidebarToggle = () => {
+    setSidebarVisible(prev => !prev);
+    setUserManuallyToggled(true);
+  };
+
   // Get available years
   const availableYears = useMemo(() => {
     if (!Array.isArray(exhibitions)) return [];
@@ -235,94 +277,21 @@ function ExposicionesContent() {
 
   return (
     <MainLayout>
-      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-16">
-        {/* Header */}
-        <div className="mb-8 lg:mb-16 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            {/* Toggle sidebar button - solo desktop */}
-            <button
-              onClick={() => setSidebarVisible(!sidebarVisible)}
-              className="hidden lg:flex p-1 hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer"
-              aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+      <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-24">
+        {/* Botón de toggle siempre fixed - Solo desktop */}
+        <div className="hidden lg:block fixed top-36 left-8 z-50">
+          <button
+            onClick={handleSidebarToggle}
+            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
+          >
+            <span
+              className="material-symbols-outlined leading-none -mt-1"
+              style={{ fontSize: '32px' }}
             >
-              <span
-                className="material-symbols-outlined leading-none -mt-1"
-                style={{ fontSize: '32px' }}
-              >
-                thumbnail_bar
-              </span>
-            </button>
-            <h1 className="text-2xl md:text-4xl font-medium tracking-widest text-black">
-              {language === 'en' ? 'EXHIBITIONS' : 'EXPOSICIONES'}
-            </h1>
-          </div>
-
-          {/* Sorting dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-            >
-              <span>
-                {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
-                {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
-                {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
-              </span>
-              <svg
-                width="12"
-                height="8"
-                viewBox="0 0 12 8"
-                fill="none"
-                className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
-              >
-                <path
-                  d="M1 1L6 6L11 1"
-                  stroke="#000000"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 bg-black text-white rounded-sm shadow-lg z-50 min-w-[160px]">
-                <button
-                  onClick={() => {
-                    setSortBy('date');
-                    setDropdownOpen(false);
-                  }}
-                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
-                    sortBy === 'date' ? 'bg-gray-800' : ''
-                  }`}
-                >
-                  {language === 'en' ? 'Order by date' : 'Orden por fecha'}
-                </button>
-                <button
-                  onClick={() => {
-                    setSortBy('title');
-                    setDropdownOpen(false);
-                  }}
-                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
-                    sortBy === 'title' ? 'bg-gray-800' : ''
-                  }`}
-                >
-                  {language === 'en' ? 'Order by name' : 'Orden por nombre'}
-                </button>
-                <button
-                  onClick={() => {
-                    setSortBy('category');
-                    setDropdownOpen(false);
-                  }}
-                  className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors ${
-                    sortBy === 'category' ? 'bg-gray-800' : ''
-                  }`}
-                >
-                  {language === 'en' ? 'Order by category' : 'Orden por categoría'}
-                </button>
-              </div>
-            )}
-          </div>
+              thumbnail_bar
+            </span>
+          </button>
         </div>
 
         {/* Mobile Filters - Acordeones arriba */}
@@ -432,16 +401,16 @@ function ExposicionesContent() {
         </div>
 
         <div className={`flex ${sidebarVisible ? 'gap-8' : 'gap-0'} transition-all duration-300 ease-in-out`}>
-          {/* Desktop Sidebar */}
-          <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-            sidebarVisible ? 'w-64' : 'w-0'
-          }`}>
-            <div className="w-64">
+          {/* Desktop Sidebar Fixed */}
+          <div className={`hidden lg:block fixed left-8 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+          }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="w-64 pr-4 overflow-x-hidden">
               {/* Búsqueda */}
               <div className="mb-8">
                 <div className="relative">
                   <svg
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-black"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-8 text-black"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -453,23 +422,84 @@ function ExposicionesContent() {
                     placeholder={language === 'en' ? 'Search exhibitions...' : 'Buscar exposiciones...'}
                     value={searchTerm}
                     onChange={(e) => updateFilter({ search: e.target.value })}
-                    className="w-full border-0 border-b border-gray-300 pl-7 pr-0 py-2 text-base bg-transparent placeholder-black"
+                    className="w-full border-0 border-b border-gray-300 pl-7 pr-0 pb-3 pt-1 text-base bg-transparent placeholder-black"
                   />
                 </div>
               </div>
 
-              {/* Categories */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
-                <div className="space-y-2">
+              {/* Ordenar - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span>
+                    {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                    {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                    {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                  </span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'sort' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'sort' ? 'max-h-[500px]' : 'max-h-0'
+                }`}>
+                  <button
+                    onClick={() => {
+                      setSortBy('date');
+                      setActiveAccordion(null);
+                    }}
+                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'date' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortBy('title');
+                      setActiveAccordion(null);
+                    }}
+                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'title' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {language === 'en' ? 'Order by name' : 'Orden por nombre'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortBy('category');
+                      setActiveAccordion(null);
+                    }}
+                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'category' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {language === 'en' ? 'Order by category' : 'Orden por categoría'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Categories - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'categories' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
                     className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                      selectedCategory === null
-                        ? 'text-black'
-                        : 'text-gray-500 hover:text-black'
+                      selectedCategory === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
-                    aria-pressed={selectedCategory === null}
                   >
                     {language === 'en' ? 'All categories' : 'Todas las categorías'}
                   </button>
@@ -478,11 +508,8 @@ function ExposicionesContent() {
                       key={category.id}
                       onClick={() => updateFilter({ category: category.name })}
                       className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        selectedCategory === category.name
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
+                        selectedCategory === category.name ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
-                      aria-pressed={selectedCategory === category.name}
                     >
                       {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                     </button>
@@ -490,18 +517,25 @@ function ExposicionesContent() {
                 </div>
               </div>
 
-              {/* Years */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
-                <div className="space-y-2">
+              {/* Years - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'year' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}
                     className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                      selectedYear === null
-                        ? 'text-black'
-                        : 'text-gray-500 hover:text-black'
+                      selectedYear === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
-                    aria-pressed={selectedYear === null}
                   >
                     {language === 'en' ? 'All years' : 'Todos los años'}
                   </button>
@@ -510,11 +544,8 @@ function ExposicionesContent() {
                       key={year}
                       onClick={() => updateFilter({ year })}
                       className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        selectedYear === year
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
+                        selectedYear === year ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
-                      aria-pressed={selectedYear === year}
                     >
                       {year}
                     </button>
@@ -523,6 +554,11 @@ function ExposicionesContent() {
               </div>
             </div>
           </div>
+
+          {/* Espaciador para sidebar fixed cuando está visible */}
+          <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out ${
+            sidebarVisible ? 'w-64' : 'w-0'
+          }`}></div>
 
           {/* Exhibition grid */}
           <div className={`flex-1 transition-all duration-300 ease-in-out ${

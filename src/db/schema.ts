@@ -34,8 +34,8 @@ export const projects = pgTable('projects', {
   pdfButtonText: varchar('pdf_button_text', { length: 255 }),
   pdfButtonTextEn: varchar('pdf_button_text_en', { length: 255 }),
 
-  // Video Embed
-  videoUrl: text('video_url'),
+  // Video Embed (supports multiple videos)
+  videoUrls: jsonb('video_urls').$type<string[]>(),
 
   // Metadata
   commissionedBy: varchar('commissioned_by', { length: 255 }),
@@ -82,8 +82,8 @@ export const projectTabs = pgTable('project_tabs', {
   pdfButtonText: varchar('pdf_button_text', { length: 255 }),
   pdfButtonTextEn: varchar('pdf_button_text_en', { length: 255 }),
 
-  // Video Embed (new field)
-  videoUrl: text('video_url'),
+  // Video Embed (supports multiple videos)
+  videoUrls: jsonb('video_urls').$type<string[]>(),
 
   // English translations
   titleEn: varchar('title_en', { length: 500 }),

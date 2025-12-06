@@ -147,7 +147,7 @@ export class ProjectService {
       project.pdfUrl || null,
       project.pdfButtonText || null,
       project.pdfButtonText_en || null,
-      project.videoUrl || null,
+      JSON.stringify(project.videoUrls || []),
       project.imagesWithoutSlider ?? false,
       project.sliderImagesContain ?? false,
       project.createdAt || null, // Allow custom createdAt
@@ -181,7 +181,7 @@ export class ProjectService {
         commissioned_by, curator, location,
         title_en, description_en, project_details_en, credits_en,
         technical_sheet_en, hero_description_en, commissioned_by_en,
-        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_url, images_without_slider, slider_images_contain, created_at
+        curator_en, location_en, pdf_url, pdf_button_text, pdf_button_text_en, video_urls, images_without_slider, slider_images_contain, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb,
         $9, $10, $11::jsonb, $12::jsonb, $13::jsonb,
@@ -190,7 +190,7 @@ export class ProjectService {
         $21, $22, $23,
         $24, $25, $26, $27,
         $28, $29, $30,
-        $31, $32, $33, $34, $35, $36, $37, $38, COALESCE($39, NOW())
+        $31, $32, $33, $34, $35, $36::jsonb, $37, $38, COALESCE($39, NOW())
       ) RETURNING *`,
       queryValues
       );
@@ -237,9 +237,9 @@ export class ProjectService {
     console.log('=== UPDATE Project ===');
     console.log('Project ID:', id);
     console.log('pdfUrl en project:', project.pdfUrl);
-    console.log('videoUrl en project:', project.videoUrl);
+    console.log('videoUrls en project:', project.videoUrls);
     console.log('pdfUrl está en project?', 'pdfUrl' in project);
-    console.log('videoUrl está en project?', 'videoUrl' in project);
+    console.log('videoUrls está en project?', 'videoUrls' in project);
 
     // Build update query with direct assignment - allows setting fields to null
     const result = await nile.db.query(
@@ -278,7 +278,7 @@ export class ProjectService {
         pdf_url = $33,
         pdf_button_text = $34,
         pdf_button_text_en = $35,
-        video_url = $36,
+        video_urls = $36::jsonb,
         images_without_slider = $37,
         slider_images_contain = $38,
         created_at = $39,
@@ -321,7 +321,7 @@ export class ProjectService {
         'pdfUrl' in project ? (project.pdfUrl || null) : 'KEEP_EXISTING',
         'pdfButtonText' in project ? (project.pdfButtonText || null) : 'KEEP_EXISTING',
         'pdfButtonText_en' in project ? (project.pdfButtonText_en || null) : 'KEEP_EXISTING',
-        'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING',
+        'videoUrls' in project ? JSON.stringify(project.videoUrls || []) : 'KEEP_EXISTING',
         project.imagesWithoutSlider !== undefined ? project.imagesWithoutSlider : null,
         project.sliderImagesContain !== undefined ? project.sliderImagesContain : null,
         project.createdAt !== undefined ? project.createdAt : null,
@@ -330,9 +330,9 @@ export class ProjectService {
 
     // Debug: Log what's being sent for PDF and Video
     const pdfValue = 'pdfUrl' in project ? (project.pdfUrl || null) : 'KEEP_EXISTING';
-    const videoValue = 'videoUrl' in project ? (project.videoUrl || null) : 'KEEP_EXISTING';
-    console.log('Valor enviado para pdf_url (param $31):', pdfValue);
-    console.log('Valor enviado para video_url (param $34):', videoValue);
+    const videoValue = 'videoUrls' in project ? JSON.stringify(project.videoUrls || []) : 'KEEP_EXISTING';
+    console.log('Valor enviado para pdf_url (param $33):', pdfValue);
+    console.log('Valor enviado para video_urls (param $36):', videoValue);
 
     if (result.rows.length > 0) {
       // Update tabs if provided
@@ -396,7 +396,7 @@ export class ProjectService {
       pdfUrl: row.pdf_url,
       pdfButtonText: row.pdf_button_text,
       pdfButtonText_en: row.pdf_button_text_en,
-      videoUrl: row.video_url,
+      videoUrls: row.video_urls || [],
       imagesWithoutSlider: row.images_without_slider,
       sliderImagesContain: row.slider_images_contain,
       createdAt: row.created_at,
@@ -433,7 +433,7 @@ export class ProjectService {
       pdfTitle_en: row.pdf_title_en,
       pdfButtonText: row.pdf_button_text,
       pdfButtonText_en: row.pdf_button_text_en,
-      videoUrl: row.video_url,
+      videoUrls: row.video_urls || [],
       title_en: row.title_en,
       projectDetails_en: row.project_details_en,
       credits_en: row.credits_en,
@@ -451,13 +451,13 @@ export class ProjectService {
           id, project_id, tab_order, title,
           hero_images, hero_image_descriptions, hero_image_descriptions_en, images_without_slider, slider_images_contain,
           additional_image, project_details, credits, technical_sheet,
-          pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_url,
+          pdf_url, pdf_title, pdf_title_en, pdf_button_text, pdf_button_text_en, video_urls,
           title_en, project_details_en, credits_en, technical_sheet_en
         ) VALUES (
           $1, $2, $3, $4,
           $5::jsonb, $6::jsonb, $7::jsonb, $8, $9,
           $10, $11, $12, $13,
-          $14, $15, $16, $17, $18, $19,
+          $14, $15, $16, $17, $18, $19::jsonb,
           $20, $21, $22, $23
         )`,
         [
@@ -479,7 +479,7 @@ export class ProjectService {
           tab.pdfTitle_en || null,
           tab.pdfButtonText || null,
           tab.pdfButtonText_en || null,
-          tab.videoUrl || null,
+          JSON.stringify(tab.videoUrls || []),
           tab.title_en || null,
           tab.projectDetails_en || null,
           tab.credits_en || null,
