@@ -66,6 +66,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottom: '1 solid #000',
   },
+  logoContainer: {
+    marginBottom: 30,
+    width: '100%',
+  },
+  logo: {
+    fontSize: 22,
+    fontFamily: 'Helvetica',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
   footer: {
     position: 'absolute',
     bottom: 30,
@@ -174,6 +184,7 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
   const title = getContent('title');
   const technicalSheet = getContent('technicalSheet');
   const projectDetails = getContent('projectDetails');
+  const credits = getContent('credits');
   const commissionedBy = getContent('commissionedBy');
   const curator = getContent('curator');
   const location = getContent('location');
@@ -195,6 +206,7 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
   const labels = language === 'en' ? {
     technicalSheet: 'Technical Sheet',
     projectDetails: 'Project Details',
+    credits: 'Credits',
     information: 'Information',
     commissionedBy: 'Commissioned by',
     curator: 'Curator',
@@ -202,9 +214,11 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
     categories: 'Categories',
     year: 'Year',
     images: 'Images',
+    videos: 'Videos',
   } : {
     technicalSheet: 'Ficha Técnica',
     projectDetails: 'Detalles del Proyecto',
+    credits: 'Créditos',
     information: 'Información',
     commissionedBy: 'Comisionado por',
     curator: 'Curador/a',
@@ -212,12 +226,18 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
     categories: 'Categorías',
     year: 'Año',
     images: 'Imágenes',
+    videos: 'Videos',
   };
 
   return (
     <Document>
       {/* Main Content */}
       <Page size="A4" style={styles.page}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Text style={styles.logo}>TANIA CANDIANI</Text>
+        </View>
+
         {/* Title */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{title}</Text>
@@ -236,6 +256,14 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
           <View style={styles.section}>
             <Text style={styles.subsectionTitle}>{labels.projectDetails}</Text>
             <Text style={styles.text}>{htmlToText(projectDetails)}</Text>
+          </View>
+        )}
+
+        {/* Credits */}
+        {credits && (
+          <View style={styles.section}>
+            <Text style={styles.subsectionTitle}>{labels.credits}</Text>
+            <Text style={styles.text}>{htmlToText(credits)}</Text>
           </View>
         )}
 
@@ -321,6 +349,7 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
         const tabTitle = getTabContent(tab, 'title');
         const tabTechnicalSheet = getTabContent(tab, 'technicalSheet');
         const tabProjectDetails = getTabContent(tab, 'projectDetails');
+        const tabCredits = getTabContent(tab, 'credits');
 
         // Extract images from tab project details
         const tabDetailsImages = extractImagesFromHtml(tabProjectDetails);
@@ -354,6 +383,14 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
                 <View style={styles.section}>
                   <Text style={styles.subsectionTitle}>{labels.projectDetails}</Text>
                   <Text style={styles.text}>{htmlToText(tabProjectDetails)}</Text>
+                </View>
+              )}
+
+              {/* Tab Credits */}
+              {tabCredits && (
+                <View style={styles.section}>
+                  <Text style={styles.subsectionTitle}>{labels.credits}</Text>
+                  <Text style={styles.text}>{htmlToText(tabCredits)}</Text>
                 </View>
               )}
 
@@ -398,6 +435,50 @@ export const ProjectPDF: React.FC<ProjectPDFProps> = ({ project, language }) => 
           </React.Fragment>
         );
       })}
+
+      {/* Videos Page - Last page with all videos */}
+      {(() => {
+        // Collect all video URLs from project and tabs
+        const allVideos: { source: string; urls: string[] }[] = [];
+
+        // Project videos
+        if (project.videoUrls && project.videoUrls.length > 0) {
+          allVideos.push({ source: title, urls: project.videoUrls });
+        }
+
+        // Tab videos
+        if (project.tabs) {
+          project.tabs.forEach(tab => {
+            if (tab.videoUrls && tab.videoUrls.length > 0) {
+              const tabTitle = language === 'en' && tab.title_en ? tab.title_en : tab.title;
+              allVideos.push({ source: tabTitle, urls: tab.videoUrls });
+            }
+          });
+        }
+
+        // Only render if there are videos
+        if (allVideos.length === 0) return null;
+
+        return (
+          <Page size="A4" style={styles.page}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{labels.videos}</Text>
+            </View>
+
+            {allVideos.map((videoGroup, groupIndex) => (
+              <View key={groupIndex} style={styles.section}>
+                <Text style={styles.subsectionTitle}>{videoGroup.source}</Text>
+                {videoGroup.urls.map((videoUrl, urlIndex) => (
+                  <Text key={urlIndex} style={styles.text}>• {videoUrl}</Text>
+                ))}
+              </View>
+            ))}
+
+            {/* Footer */}
+            <Text style={styles.footer} fixed>© TANIA CANDIANI</Text>
+          </Page>
+        );
+      })()}
     </Document>
   );
 };

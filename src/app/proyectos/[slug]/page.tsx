@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { Project, ProjectCategory } from '@/types';
 import { ProjectStorage } from '@/lib/projectStorage';
@@ -19,6 +19,7 @@ interface Props {
 
 export default function ProjectPage({ params }: Props) {
   const { language } = useLanguage();
+  const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('detalles');
@@ -35,7 +36,65 @@ export default function ProjectPage({ params }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxTouchStart, setLightboxTouchStart] = useState<number | null>(null);
   const [lightboxTouchEnd, setLightboxTouchEnd] = useState<number | null>(null);
+  const [filterAccordion, setFilterAccordion] = useState<'sort' | 'categories' | 'year' | null>(null);
+  const [isNavFixed, setIsNavFixed] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
   const heroSliderRef = useRef<HTMLDivElement>(null);
+  const navPlaceholderRef = useRef<HTMLDivElement>(null);
+
+  // Function to create a URL-friendly slug from a tab title
+  const slugifyTabTitle = (title: string): string => {
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Remove consecutive hyphens
+      .trim();
+  };
+
+  // Update URL hash when tab changes
+  const updateUrlHash = useCallback((tabIndex: number) => {
+    if (typeof window === 'undefined' || !project) return;
+
+    if (tabIndex === -1) {
+      // Main project tab - remove hash
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState({}, '', url.pathname);
+    } else if (project.tabs && project.tabs[tabIndex]) {
+      // Project tab - add hash with tab slug
+      const tab = project.tabs[tabIndex];
+      const tabTitle = language === 'en' ? (tab.title_en || tab.title) : tab.title;
+      const tabSlug = slugifyTabTitle(tabTitle);
+      window.history.replaceState({}, '', `#${tabSlug}`);
+    }
+  }, [project, language]);
+
+  // Read hash from URL and set active tab on page load
+  useEffect(() => {
+    if (!project || !project.tabs || project.tabs.length === 0) return;
+
+    const hash = window.location.hash.slice(1); // Remove the #
+    if (!hash) {
+      setActiveProjectTab(-1);
+      return;
+    }
+
+    // Find matching tab by slug
+    const tabIndex = project.tabs.findIndex((tab) => {
+      const tabTitleEs = tab.title;
+      const tabTitleEn = tab.title_en || tab.title;
+      const slugEs = slugifyTabTitle(tabTitleEs);
+      const slugEn = slugifyTabTitle(tabTitleEn);
+      return slugEs === hash || slugEn === hash;
+    });
+
+    if (tabIndex !== -1) {
+      setActiveProjectTab(tabIndex);
+    }
+  }, [project]);
 
   // Function to process video URL and generate embed
   const getVideoEmbed = (url: string) => {
@@ -398,6 +457,34 @@ export default function ProjectPage({ params }: Props) {
     };
   }, [lightboxOpen]);
 
+  // Fixed navigation bar - detect when to unstick
+  useEffect(() => {
+    const placeholder = navPlaceholderRef.current;
+    if (!placeholder) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When placeholder is visible, navigation should be in normal position
+        setIsNavFixed(!entry.isIntersecting);
+      },
+      {
+        threshold: 0,
+        rootMargin: '0px 0px 0px 0px'
+      }
+    );
+
+    observer.observe(placeholder);
+    return () => observer.disconnect();
+  }, [loading]);
+
+  // Detect desktop viewport
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
   // Handle manual sidebar toggle
   const handleSidebarToggle = useCallback(() => {
     setSidebarVisible(prev => !prev);
@@ -407,12 +494,13 @@ export default function ProjectPage({ params }: Props) {
   // Función para manejar click en tabs del proyecto - muestra sidebar si no está visible
   const handleProjectTabClick = useCallback((tabIndex: number) => {
     setActiveProjectTab(tabIndex);
+    updateUrlHash(tabIndex);
     // Si el sidebar no está visible, mostrarlo
     if (!sidebarVisible) {
       setSidebarVisible(true);
       setUserManuallyToggled(true);
     }
-  }, [sidebarVisible]);
+  }, [sidebarVisible, updateUrlHash]);
 
   // Abrir sidebar UNA vez cuando el usuario hace scroll hacia abajo (muy sutil)
   useEffect(() => {
@@ -489,7 +577,7 @@ export default function ProjectPage({ params }: Props) {
           {project.tabs && project.tabs.length > 0 && (
             <div className="space-y-2">
               <button
-                onClick={() => setActiveProjectTab(-1)}
+                onClick={() => handleProjectTabClick(-1)}
                 className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                   activeProjectTab === -1
                     ? 'bg-black text-white'
@@ -501,7 +589,7 @@ export default function ProjectPage({ params }: Props) {
               {project.tabs.map((tab, index) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveProjectTab(index)}
+                  onClick={() => handleProjectTabClick(index)}
                   className={`block w-full text-left py-2 px-3 text-sm transition-all duration-200 rounded border border-black ${
                     activeProjectTab === index
                       ? 'bg-black text-white'
@@ -513,6 +601,133 @@ export default function ProjectPage({ params }: Props) {
               ))}
             </div>
           )}
+
+          {/* Mobile: Información del proyecto */}
+          {(() => {
+            const hasCommissioned = (project.commissionedBy && project.commissionedBy.trim() !== '') ||
+                                   (project.commissionedBy_en && project.commissionedBy_en.trim() !== '');
+            const hasCurator = (project.curator && project.curator.trim() !== '') ||
+                              (project.curator_en && project.curator_en.trim() !== '');
+            const hasLocation = (project.location && project.location.trim() !== '') ||
+                               (project.location_en && project.location_en.trim() !== '');
+            const hasYear = project.year && project.year > 0;
+            const hasAnyInfo = hasCommissioned || hasCurator || hasLocation || hasYear;
+
+            if (!hasAnyInfo) return null;
+
+            return (
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h4 className="text-lg font-medium mb-3">
+                  {language === 'en' ? 'Information' : 'Información'}
+                </h4>
+                {hasCommissioned && (
+                  <div className="text-sm text-gray-600 py-1">
+                    <span className="font-medium">{language === 'en' ? 'Commissioned by:' : 'Comisionado por:'}</span><br />
+                    {getLocalizedContent('commissionedBy')}
+                  </div>
+                )}
+                {hasCurator && (
+                  <div className="text-sm text-gray-600 py-1">
+                    <span className="font-medium">{language === 'en' ? 'Curator:' : 'Curador/a:'}</span><br />
+                    {getLocalizedContent('curator')}
+                  </div>
+                )}
+                {hasLocation && (
+                  <div className="text-sm text-gray-600 py-1">
+                    <span className="font-medium">{language === 'en' ? 'Location:' : 'Ubicación:'}</span><br />
+                    {getLocalizedContent('location')}
+                  </div>
+                )}
+                {hasYear && (
+                  <div className="text-sm text-gray-600 py-1">
+                    <span className="font-medium">{language === 'en' ? 'Year:' : 'Año:'}</span><br />
+                    {project.year}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Mobile: Filtros de navegación */}
+          <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
+            {/* Ordenar */}
+            <div className="border-b border-gray-200 pb-3">
+              <button
+                onClick={() => setFilterAccordion(filterAccordion === 'sort' ? null : 'sort')}
+                className="w-full flex justify-between items-center text-base font-normal"
+              >
+                <span>{language === 'en' ? 'Order by date' : 'Orden por fecha'}</span>
+                <span className="material-symbols-outlined text-base">
+                  {filterAccordion === 'sort' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              {filterAccordion === 'sort' && (
+                <div className="space-y-2 mt-2">
+                  <button onClick={() => router.push('/proyectos?sortBy=date')} className="w-full text-left py-1 text-sm text-gray-600 hover:text-black">
+                    {language === 'en' ? 'By date' : 'Por fecha'}
+                  </button>
+                  <button onClick={() => router.push('/proyectos?sortBy=title')} className="w-full text-left py-1 text-sm text-gray-600 hover:text-black">
+                    {language === 'en' ? 'By name' : 'Por nombre'}
+                  </button>
+                  <button onClick={() => router.push('/proyectos?sortBy=category')} className="w-full text-left py-1 text-sm text-gray-600 hover:text-black">
+                    {language === 'en' ? 'By category' : 'Por categoría'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Categorías */}
+            <div className="border-b border-gray-200 pb-3">
+              <button
+                onClick={() => setFilterAccordion(filterAccordion === 'categories' ? null : 'categories')}
+                className="w-full flex justify-between items-center text-base font-normal"
+              >
+                <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                <span className="material-symbols-outlined text-base">
+                  {filterAccordion === 'categories' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              {filterAccordion === 'categories' && (
+                <div className="space-y-2 mt-2">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => router.push(`/proyectos?category=${encodeURIComponent(category.name)}`)}
+                      className="w-full text-left py-1 text-sm text-gray-600 hover:text-black"
+                    >
+                      {language === 'en' && category.nameEn ? category.nameEn : category.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Año */}
+            <div className="border-b border-gray-200 pb-3">
+              <button
+                onClick={() => setFilterAccordion(filterAccordion === 'year' ? null : 'year')}
+                className="w-full flex justify-between items-center text-base font-normal"
+              >
+                <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                <span className="material-symbols-outlined text-base">
+                  {filterAccordion === 'year' ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              {filterAccordion === 'year' && (
+                <div className="space-y-2 mt-2">
+                  {availableYears.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => router.push(`/proyectos?year=${year}`)}
+                      className="w-full text-left py-1 text-sm text-gray-600 hover:text-black"
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Botón de toggle siempre fixed - Solo desktop */}
@@ -659,6 +874,98 @@ export default function ProjectPage({ params }: Props) {
                   </div>
                 );
               })()}
+
+              {/* Filtros - Explorar proyectos */}
+              <div className="space-y-4">
+                {/* Ordenar - Acordeón */}
+                <div className="border-b border-[#E6E0E0] pb-3">
+                  <button
+                    onClick={() => setFilterAccordion(filterAccordion === 'sort' ? null : 'sort')}
+                    className="w-full flex justify-between items-center text-base font-normal hover:text-gray-700"
+                  >
+                    <span>
+                      {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                    </span>
+                    <span className="material-symbols-outlined text-base">
+                      {filterAccordion === 'sort' ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+                  <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                    filterAccordion === 'sort' ? 'max-h-[500px] mt-2' : 'max-h-0'
+                  }`}>
+                    <button
+                      onClick={() => router.push('/proyectos?sortBy=date')}
+                      className="w-full text-left py-1 text-sm text-gray-600 hover:text-black transition-all duration-200"
+                    >
+                      {language === 'en' ? 'By date' : 'Por fecha'}
+                    </button>
+                    <button
+                      onClick={() => router.push('/proyectos?sortBy=title')}
+                      className="w-full text-left py-1 text-sm text-gray-600 hover:text-black transition-all duration-200"
+                    >
+                      {language === 'en' ? 'By name' : 'Por nombre'}
+                    </button>
+                    <button
+                      onClick={() => router.push('/proyectos?sortBy=category')}
+                      className="w-full text-left py-1 text-sm text-gray-600 hover:text-black transition-all duration-200"
+                    >
+                      {language === 'en' ? 'By category' : 'Por categoría'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Categorías - Acordeón */}
+                <div className="border-b border-[#E6E0E0] pb-3">
+                  <button
+                    onClick={() => setFilterAccordion(filterAccordion === 'categories' ? null : 'categories')}
+                    className="w-full flex justify-between items-center text-base font-normal hover:text-gray-700"
+                  >
+                    <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                    <span className="material-symbols-outlined text-base">
+                      {filterAccordion === 'categories' ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+                  <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                    filterAccordion === 'categories' ? 'max-h-96 mt-2' : 'max-h-0'
+                  }`}>
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => router.push(`/proyectos?category=${encodeURIComponent(category.name)}`)}
+                        className="w-full text-left py-1 text-sm text-gray-600 hover:text-black transition-all duration-200"
+                      >
+                        {language === 'en' && category.nameEn ? category.nameEn : category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Años - Acordeón */}
+                <div className="border-b border-[#E6E0E0] pb-3">
+                  <button
+                    onClick={() => setFilterAccordion(filterAccordion === 'year' ? null : 'year')}
+                    className="w-full flex justify-between items-center text-base font-normal hover:text-gray-700"
+                  >
+                    <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                    <span className="material-symbols-outlined text-base">
+                      {filterAccordion === 'year' ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+                  <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                    filterAccordion === 'year' ? 'max-h-96 mt-2' : 'max-h-0'
+                  }`}>
+                    {availableYears.map((year) => (
+                      <button
+                        key={year}
+                        onClick={() => router.push(`/proyectos?year=${year}`)}
+                        className="w-full text-left py-1 text-sm text-gray-600 hover:text-black transition-all duration-200"
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
             </div>
           </div>
@@ -1287,10 +1594,23 @@ export default function ProjectPage({ params }: Props) {
               return null;
             })()}
 
-            {/* Navegación inferior */}
-            <div className="border-t border-gray-200">
+            {/* Placeholder para detectar cuando la navegación debe dejar de ser fixed */}
+            <div ref={navPlaceholderRef} className="h-px" />
+
+            {/* Navegación inferior - fixed hasta llegar a su posición natural */}
+            <div
+              className={`border-t border-gray-200 bg-white z-40 transition-all duration-300 ${
+                isNavFixed
+                  ? 'fixed bottom-0 left-0 right-0'
+                  : 'relative'
+              }`}
+              style={isNavFixed && isDesktop ? {
+                left: sidebarVisible ? 'calc(2rem + 16rem + 2rem)' : '2rem', // 2rem (left-8) + 16rem (w-64) + 2rem gap when sidebar visible
+                right: '2rem',
+              } : undefined}
+            >
               {/* Desktop: 3 columnas con PDF en el centro */}
-              <div className="hidden lg:grid grid-cols-3 pt-8">
+              <div className="hidden lg:grid grid-cols-3 py-4 px-4">
                 {/* Proyecto Anterior */}
                 {(() => {
                   const { previous } = getNavigationProjects();
@@ -1368,7 +1688,7 @@ export default function ProjectPage({ params }: Props) {
               </div>
 
               {/* Mobile: 2 columnas sin PDF */}
-              <div className="lg:hidden grid grid-cols-2 pt-6">
+              <div className="lg:hidden grid grid-cols-2 py-4 container-mobile mx-auto">
                 {/* Proyecto Anterior */}
                 {(() => {
                   const { previous } = getNavigationProjects();
@@ -1434,7 +1754,11 @@ export default function ProjectPage({ params }: Props) {
                 })()}
               </div>
             </div>
-          </div>
+
+            {/* Espaciador cuando la navegación está fixed */}
+            {isNavFixed && <div className="h-20" />}
+
+            </div>
         </div>
       </div>
 

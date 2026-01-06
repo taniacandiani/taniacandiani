@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Project, ProjectCategory, SortOption, ViewMode, FilterState } from '@/types';
+import { Project, ProjectCategory, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { generateNewsExcerpt } from '@/lib/utils';
@@ -33,12 +33,14 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
-    
+    const sortByParam = searchParams.get('sortBy');
+
     setFilterState(prev => ({
       ...prev,
       selectedCategory: category || null,
       selectedYear: year ? parseInt(year) : null,
-      searchTerm: search || ''
+      searchTerm: search || '',
+      sortBy: (sortByParam as 'date' | 'title' | 'category') || prev.sortBy
     }));
   }, [searchParams]);
 
@@ -65,6 +67,32 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
   // Filter update functions
   const updateFilter = useCallback((updates: Partial<FilterState>) => {
     setFilterState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Detectar si hay filtros activos
+  const hasActiveFilters = useMemo(() => {
+    return filterState.selectedCategory !== null ||
+           filterState.selectedYear !== null ||
+           filterState.sortBy !== 'date';
+  }, [filterState.selectedCategory, filterState.selectedYear, filterState.sortBy]);
+
+  // Contar filtros activos
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filterState.selectedCategory !== null) count++;
+    if (filterState.selectedYear !== null) count++;
+    if (filterState.sortBy !== 'date') count++;
+    return count;
+  }, [filterState.selectedCategory, filterState.selectedYear, filterState.sortBy]);
+
+  // Limpiar todos los filtros
+  const clearAllFilters = useCallback(() => {
+    setFilterState({
+      searchTerm: '',
+      selectedCategory: null,
+      selectedYear: null,
+      sortBy: 'date'
+    });
   }, []);
 
 
@@ -208,6 +236,24 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
       {/* Mobile Filters - Acordeones arriba */}
       <div className="lg:hidden mb-8 space-y-4">
+        {/* Botón limpiar filtros mobile - solo visible cuando hay filtros activos */}
+        {hasActiveFilters && (
+          <div className="pb-2">
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+            >
+              <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                filter_alt_off
+              </span>
+              <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+              <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                {activeFilterCount}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Búsqueda - siempre visible */}
         <div className="pb-4">
           <div className="relative">
@@ -235,7 +281,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
             className="w-full flex justify-between items-center py-3 text-left"
           >
-            <h4 className="text-lg font-medium">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
+            <h4 className="text-lg font-medium flex items-center gap-2">
+              {language === 'en' ? 'Categories' : 'Categorías'}
+              {filterState.selectedCategory && (
+                <span className="w-2 h-2 bg-black rounded-full"></span>
+              )}
+            </h4>
             <svg
               className={`w-5 h-5 transition-transform ${activeAccordion === 'categories' ? 'rotate-180' : ''}`}
               fill="none"
@@ -249,20 +300,26 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedCategory: null })}
-                className={`block w-full text-left py-1 text-base ${
+                className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                   filterState.selectedCategory === null ? 'text-black font-medium' : 'text-gray-500'
                 }`}
               >
+                <span className="material-symbols-outlined text-sm w-5">
+                  {filterState.selectedCategory === null ? 'check' : ''}
+                </span>
                 {language === 'en' ? 'All categories' : 'Todas las categorías'}
               </button>
               {categories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => updateFilter({ selectedCategory: category.name })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     filterState.selectedCategory === category.name ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.selectedCategory === category.name ? 'check' : ''}
+                  </span>
                   {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                 </button>
               ))}
@@ -276,7 +333,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
             className="w-full flex justify-between items-center py-3 text-left"
           >
-            <h4 className="text-lg font-medium">{language === 'en' ? 'Year' : 'Año'}</h4>
+            <h4 className="text-lg font-medium flex items-center gap-2">
+              {language === 'en' ? 'Year' : 'Año'}
+              {filterState.selectedYear && (
+                <span className="w-2 h-2 bg-black rounded-full"></span>
+              )}
+            </h4>
             <svg
               className={`w-5 h-5 transition-transform ${activeAccordion === 'year' ? 'rotate-180' : ''}`}
               fill="none"
@@ -290,20 +352,26 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
             <div className="pb-4 space-y-2">
               <button
                 onClick={() => updateFilter({ selectedYear: null })}
-                className={`block w-full text-left py-1 text-base ${
+                className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                   filterState.selectedYear === null ? 'text-black font-medium' : 'text-gray-500'
                 }`}
               >
+                <span className="material-symbols-outlined text-sm w-5">
+                  {filterState.selectedYear === null ? 'check' : ''}
+                </span>
                 {language === 'en' ? 'All years' : 'Todos los años'}
               </button>
               {availableYears.map((year) => (
                 <button
                   key={year}
                   onClick={() => updateFilter({ selectedYear: year })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     filterState.selectedYear === year ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.selectedYear === year ? 'check' : ''}
+                  </span>
                   {year}
                 </button>
               ))}
@@ -346,6 +414,24 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
         }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="w-64 pr-4 overflow-x-hidden">
+            {/* Botón limpiar filtros - solo visible cuando hay filtros activos */}
+            {hasActiveFilters && (
+              <div className="mb-4">
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+                >
+                  <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                    filter_alt_off
+                  </span>
+                  <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+                  <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                    {activeFilterCount}
+                  </span>
+                </button>
+              </div>
+            )}
+
             {/* Búsqueda */}
             <div className="mb-8">
               <div className="relative">
@@ -373,10 +459,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
                 className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
               >
-                <span>
+                <span className="flex items-center gap-2">
                   {filterState.sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
                   {filterState.sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
                   {filterState.sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                  {filterState.sortBy !== 'date' && (
+                    <span className="w-2 h-2 bg-black rounded-full"></span>
+                  )}
                 </span>
                 <span className="material-symbols-outlined text-base">
                   {activeAccordion === 'sort' ? 'expand_less' : 'expand_more'}
@@ -390,10 +479,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     updateFilter({ sortBy: 'date' });
                     setActiveAccordion(null);
                   }}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                     filterState.sortBy === 'date' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.sortBy === 'date' ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'Order by date' : 'Orden por fecha'}
                 </button>
                 <button
@@ -401,10 +493,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     updateFilter({ sortBy: 'title' });
                     setActiveAccordion(null);
                   }}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                     filterState.sortBy === 'title' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.sortBy === 'title' ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'Order by name' : 'Orden por nombre'}
                 </button>
                 <button
@@ -412,10 +507,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                     updateFilter({ sortBy: 'category' });
                     setActiveAccordion(null);
                   }}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                     filterState.sortBy === 'category' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.sortBy === 'category' ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'Order by category' : 'Orden por categoría'}
                 </button>
               </div>
@@ -427,7 +525,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
                 className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
               >
-                <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                <span className="flex items-center gap-2">
+                  {language === 'en' ? 'Categories' : 'Categorías'}
+                  {filterState.selectedCategory && (
+                    <span className="w-2 h-2 bg-black rounded-full"></span>
+                  )}
+                </span>
                 <span className="material-symbols-outlined text-base">
                   {activeAccordion === 'categories' ? 'expand_less' : 'expand_more'}
                 </span>
@@ -437,20 +540,26 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               }`}>
                 <button
                   onClick={() => updateFilter({ selectedCategory: null })}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                     filterState.selectedCategory === null ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.selectedCategory === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All categories' : 'Todas las categorías'}
                 </button>
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => updateFilter({ selectedCategory: category.name })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       filterState.selectedCategory === category.name ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {filterState.selectedCategory === category.name ? 'check' : ''}
+                    </span>
                     {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                   </button>
                 ))}
@@ -463,7 +572,12 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
                 className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
               >
-                <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                <span className="flex items-center gap-2">
+                  {language === 'en' ? 'Year' : 'Año'}
+                  {filterState.selectedYear && (
+                    <span className="w-2 h-2 bg-black rounded-full"></span>
+                  )}
+                </span>
                 <span className="material-symbols-outlined text-base">
                   {activeAccordion === 'year' ? 'expand_less' : 'expand_more'}
                 </span>
@@ -473,20 +587,26 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
               }`}>
                 <button
                   onClick={() => updateFilter({ selectedYear: null })}
-                  className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                     filterState.selectedYear === null ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {filterState.selectedYear === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All years' : 'Todos los años'}
                 </button>
                 {availableYears.map((year) => (
                   <button
                     key={year}
                     onClick={() => updateFilter({ selectedYear: year })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       filterState.selectedYear === year ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {filterState.selectedYear === year ? 'check' : ''}
+                    </span>
                     {year}
                   </button>
                 ))}

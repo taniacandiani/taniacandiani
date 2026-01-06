@@ -10,6 +10,7 @@ import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
 import { generateNewsExcerpt } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 type SortOption = 'date' | 'title' | 'category';
 
@@ -32,6 +33,9 @@ function ExposicionesContent() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Restaurar posición de scroll cuando el contenido esté listo
+  useScrollRestoration('exposiciones', !loading);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -220,6 +224,31 @@ function ExposicionesContent() {
     return Array.from(years).sort((a, b) => b - a);
   }, [exhibitions]);
 
+  // Detectar si hay filtros activos
+  const hasActiveFilters = useMemo(() => {
+    return selectedCategory !== null ||
+           selectedYear !== null ||
+           sortBy !== 'date';
+  }, [selectedCategory, selectedYear, sortBy]);
+
+  // Contar filtros activos
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCategory !== null) count++;
+    if (selectedYear !== null) count++;
+    if (sortBy !== 'date') count++;
+    return count;
+  }, [selectedCategory, selectedYear, sortBy]);
+
+  // Limpiar todos los filtros
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory(null);
+    setSelectedYear(null);
+    setSortBy('date');
+    router.push('/exposiciones');
+  };
+
   const updateFilter = (updates: { category?: string | null; year?: number | null; search?: string }) => {
     const params = new URLSearchParams(searchParams);
 
@@ -296,6 +325,24 @@ function ExposicionesContent() {
 
         {/* Mobile Filters - Acordeones arriba */}
         <div className="lg:hidden mb-8 space-y-4">
+          {/* Botón limpiar filtros mobile */}
+          {hasActiveFilters && (
+            <div className="pb-2">
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+              >
+                <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                  filter_alt_off
+                </span>
+                <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+                <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {activeFilterCount}
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* Búsqueda - siempre visible */}
           <div className="pb-4">
             <div className="relative">
@@ -323,7 +370,12 @@ function ExposicionesContent() {
               onClick={() => setCategoriesAccordionOpen(!categoriesAccordionOpen)}
               className="w-full flex justify-between items-center py-3 text-left"
             >
-              <h4 className="text-lg font-medium">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
+              <h4 className="text-lg font-medium flex items-center gap-2">
+                {language === 'en' ? 'Categories' : 'Categorías'}
+                {selectedCategory && (
+                  <span className="w-2 h-2 bg-black rounded-full"></span>
+                )}
+              </h4>
               <svg
                 className={`w-5 h-5 transition-transform ${categoriesAccordionOpen ? 'rotate-180' : ''}`}
                 fill="none"
@@ -337,20 +389,26 @@ function ExposicionesContent() {
               <div className="pb-4 space-y-2">
                 <button
                   onClick={() => updateFilter({ category: null })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     selectedCategory === null ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {selectedCategory === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All categories' : 'Todas las categorías'}
                 </button>
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => updateFilter({ category: category.name })}
-                    className={`block w-full text-left py-1 text-base ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                       selectedCategory === category.name ? 'text-black font-medium' : 'text-gray-500'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedCategory === category.name ? 'check' : ''}
+                    </span>
                     {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                   </button>
                 ))}
@@ -364,7 +422,12 @@ function ExposicionesContent() {
               onClick={() => setYearAccordionOpen(!yearAccordionOpen)}
               className="w-full flex justify-between items-center py-3 text-left"
             >
-              <h4 className="text-lg font-medium">{language === 'en' ? 'Year' : 'Año'}</h4>
+              <h4 className="text-lg font-medium flex items-center gap-2">
+                {language === 'en' ? 'Year' : 'Año'}
+                {selectedYear && (
+                  <span className="w-2 h-2 bg-black rounded-full"></span>
+                )}
+              </h4>
               <svg
                 className={`w-5 h-5 transition-transform ${yearAccordionOpen ? 'rotate-180' : ''}`}
                 fill="none"
@@ -378,20 +441,26 @@ function ExposicionesContent() {
               <div className="pb-4 space-y-2">
                 <button
                   onClick={() => updateFilter({ year: null })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     selectedYear === null ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {selectedYear === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All years' : 'Todos los años'}
                 </button>
                 {availableYears.map((year) => (
                   <button
                     key={year}
                     onClick={() => updateFilter({ year })}
-                    className={`block w-full text-left py-1 text-base ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                       selectedYear === year ? 'text-black font-medium' : 'text-gray-500'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedYear === year ? 'check' : ''}
+                    </span>
                     {year}
                   </button>
                 ))}
@@ -406,6 +475,24 @@ function ExposicionesContent() {
             sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
           }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
             <div className="w-64 pr-4 overflow-x-hidden">
+              {/* Botón limpiar filtros desktop */}
+              {hasActiveFilters && (
+                <div className="mb-4">
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+                  >
+                    <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                      filter_alt_off
+                    </span>
+                    <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+                    <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  </button>
+                </div>
+              )}
+
               {/* Búsqueda */}
               <div className="mb-8">
                 <div className="relative">
@@ -433,10 +520,13 @@ function ExposicionesContent() {
                   onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
                   className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
                 >
-                  <span>
+                  <span className="flex items-center gap-2">
                     {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
                     {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
                     {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                    {sortBy !== 'date' && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
                   </span>
                   <span className="material-symbols-outlined text-base">
                     {activeAccordion === 'sort' ? 'expand_less' : 'expand_more'}
@@ -450,10 +540,13 @@ function ExposicionesContent() {
                       setSortBy('date');
                       setActiveAccordion(null);
                     }}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       sortBy === 'date' ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'date' ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'Order by date' : 'Orden por fecha'}
                   </button>
                   <button
@@ -461,10 +554,13 @@ function ExposicionesContent() {
                       setSortBy('title');
                       setActiveAccordion(null);
                     }}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       sortBy === 'title' ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'title' ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'Order by name' : 'Orden por nombre'}
                   </button>
                   <button
@@ -472,10 +568,13 @@ function ExposicionesContent() {
                       setSortBy('category');
                       setActiveAccordion(null);
                     }}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       sortBy === 'category' ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'category' ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'Order by category' : 'Orden por categoría'}
                   </button>
                 </div>
@@ -487,7 +586,12 @@ function ExposicionesContent() {
                   onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
                   className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
                 >
-                  <span>{language === 'en' ? 'Categories' : 'Categorías'}</span>
+                  <span className="flex items-center gap-2">
+                    {language === 'en' ? 'Categories' : 'Categorías'}
+                    {selectedCategory && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </span>
                   <span className="material-symbols-outlined text-base">
                     {activeAccordion === 'categories' ? 'expand_less' : 'expand_more'}
                   </span>
@@ -497,20 +601,26 @@ function ExposicionesContent() {
                 }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       selectedCategory === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedCategory === null ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'All categories' : 'Todas las categorías'}
                   </button>
                   {categories.map((category) => (
                     <button
                       key={category.id}
                       onClick={() => updateFilter({ category: category.name })}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                         selectedCategory === category.name ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
                     >
+                      <span className="material-symbols-outlined text-sm w-5">
+                        {selectedCategory === category.name ? 'check' : ''}
+                      </span>
                       {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                     </button>
                   ))}
@@ -523,7 +633,12 @@ function ExposicionesContent() {
                   onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
                   className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
                 >
-                  <span>{language === 'en' ? 'Year' : 'Año'}</span>
+                  <span className="flex items-center gap-2">
+                    {language === 'en' ? 'Year' : 'Año'}
+                    {selectedYear && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </span>
                   <span className="material-symbols-outlined text-base">
                     {activeAccordion === 'year' ? 'expand_less' : 'expand_more'}
                   </span>
@@ -533,20 +648,26 @@ function ExposicionesContent() {
                 }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                       selectedYear === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedYear === null ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'All years' : 'Todos los años'}
                   </button>
                   {availableYears.map((year) => (
                     <button
                       key={year}
                       onClick={() => updateFilter({ year })}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
+                      className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
                         selectedYear === year ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
                     >
+                      <span className="material-symbols-outlined text-sm w-5">
+                        {selectedYear === year ? 'check' : ''}
+                      </span>
                       {year}
                     </button>
                   ))}

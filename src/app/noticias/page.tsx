@@ -11,9 +11,9 @@ import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NewsCategory } from '@/types';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
-import RichContent from '@/components/ui/RichContent';
 import { generateNewsExcerpt } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 function NoticiasContent() {
   const { language } = useLanguage();
@@ -27,9 +27,12 @@ function NoticiasContent() {
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
-  const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
-  const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
+  const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
+
+  // Restaurar posición de scroll cuando el contenido esté listo
+  useScrollRestoration('noticias', !loading);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -123,8 +126,23 @@ function NoticiasContent() {
       filtered = filtered.filter(n => new Date(n.publishedAt).getFullYear() === selectedYear);
     }
 
+    // Ordenar
+    filtered = [...filtered].sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      } else if (sortBy === 'category') {
+        const catA = a.categories?.[0] || '';
+        const catB = b.categories?.[0] || '';
+        return catA.localeCompare(catB);
+      } else {
+        const titleA = language === 'en' && a.titleEn ? a.titleEn : a.title;
+        const titleB = language === 'en' && b.titleEn ? b.titleEn : b.title;
+        return titleA.localeCompare(titleB);
+      }
+    });
+
     setFilteredNews(filtered);
-  }, [searchTerm, selectedCategory, selectedYear, news, language]);
+  }, [searchTerm, selectedCategory, selectedYear, news, language, sortBy]);
 
   // Listen for news updates from admin
   useEffect(() => {
@@ -201,6 +219,29 @@ function NoticiasContent() {
     const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [news]);
+
+  // Detectar si hay filtros activos
+  const hasActiveFilters = useMemo(() => {
+    return selectedCategory !== null || selectedYear !== null || sortBy !== 'date';
+  }, [selectedCategory, selectedYear, sortBy]);
+
+  // Contar filtros activos
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCategory !== null) count++;
+    if (selectedYear !== null) count++;
+    if (sortBy !== 'date') count++;
+    return count;
+  }, [selectedCategory, selectedYear, sortBy]);
+
+  // Limpiar todos los filtros
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory(null);
+    setSelectedYear(null);
+    setSortBy('date');
+    router.push('/noticias');
+  };
 
   const updateFilter = (updates: { category?: string | null; year?: number | null; search?: string }) => {
     const params = new URLSearchParams(searchParams);
@@ -280,6 +321,24 @@ function NoticiasContent() {
 
         {/* Mobile Filters - Acordeones arriba */}
         <div className="lg:hidden mb-8 space-y-4">
+          {/* Botón limpiar filtros mobile */}
+          {hasActiveFilters && (
+            <div className="pb-2">
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+              >
+                <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                  filter_alt_off
+                </span>
+                <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+                <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {activeFilterCount}
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* Búsqueda - siempre visible */}
           <div className="pb-4">
             <div className="relative">
@@ -301,15 +360,22 @@ function NoticiasContent() {
             </div>
           </div>
 
-          {/* Categorías Accordion */}
+          {/* Ordenar Accordion - Mobile */}
           <div className="border-b border-gray-300">
             <button
-              onClick={() => setCategoriesAccordionOpen(!categoriesAccordionOpen)}
+              onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
               className="w-full flex justify-between items-center py-3 text-left"
             >
-              <h4 className="text-lg font-medium">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
+              <h4 className="text-lg font-medium flex items-center gap-2">
+                {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                {sortBy !== 'date' && (
+                  <span className="w-2 h-2 bg-black rounded-full"></span>
+                )}
+              </h4>
               <svg
-                className={`w-5 h-5 transition-transform ${categoriesAccordionOpen ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 transition-transform ${activeAccordion === 'sort' ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -317,24 +383,99 @@ function NoticiasContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            {categoriesAccordionOpen && (
+            {activeAccordion === 'sort' && (
+              <div className="pb-4 space-y-2">
+                <button
+                  onClick={() => {
+                    setSortBy('date');
+                    setActiveAccordion(null);
+                  }}
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
+                    sortBy === 'date' ? 'text-black font-medium' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {sortBy === 'date' ? 'check' : ''}
+                  </span>
+                  {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('title');
+                    setActiveAccordion(null);
+                  }}
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
+                    sortBy === 'title' ? 'text-black font-medium' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {sortBy === 'title' ? 'check' : ''}
+                  </span>
+                  {language === 'en' ? 'Order by name' : 'Orden por nombre'}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('category');
+                    setActiveAccordion(null);
+                  }}
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
+                    sortBy === 'category' ? 'text-black font-medium' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {sortBy === 'category' ? 'check' : ''}
+                  </span>
+                  {language === 'en' ? 'Order by category' : 'Orden por categoría'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Categorías Accordion */}
+          <div className="border-b border-gray-300">
+            <button
+              onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
+              className="w-full flex justify-between items-center py-3 text-left"
+            >
+              <h4 className="text-lg font-medium flex items-center gap-2">
+                {language === 'en' ? 'Categories' : 'Categorías'}
+                {selectedCategory && (
+                  <span className="w-2 h-2 bg-black rounded-full"></span>
+                )}
+              </h4>
+              <svg
+                className={`w-5 h-5 transition-transform ${activeAccordion === 'categories' ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {activeAccordion === 'categories' && (
               <div className="pb-4 space-y-2">
                 <button
                   onClick={() => updateFilter({ category: null })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     selectedCategory === null ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {selectedCategory === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All categories' : 'Todas las categorías'}
                 </button>
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => updateFilter({ category: category.name })}
-                    className={`block w-full text-left py-1 text-base ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                       selectedCategory === category.name ? 'text-black font-medium' : 'text-gray-500'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedCategory === category.name ? 'check' : ''}
+                    </span>
                     {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                   </button>
                 ))}
@@ -345,12 +486,17 @@ function NoticiasContent() {
           {/* Año Accordion */}
           <div className="border-b border-gray-300">
             <button
-              onClick={() => setYearAccordionOpen(!yearAccordionOpen)}
+              onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
               className="w-full flex justify-between items-center py-3 text-left"
             >
-              <h4 className="text-lg font-medium">{language === 'en' ? 'Year' : 'Año'}</h4>
+              <h4 className="text-lg font-medium flex items-center gap-2">
+                {language === 'en' ? 'Year' : 'Año'}
+                {selectedYear && (
+                  <span className="w-2 h-2 bg-black rounded-full"></span>
+                )}
+              </h4>
               <svg
-                className={`w-5 h-5 transition-transform ${yearAccordionOpen ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 transition-transform ${activeAccordion === 'year' ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -358,24 +504,30 @@ function NoticiasContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            {yearAccordionOpen && (
+            {activeAccordion === 'year' && (
               <div className="pb-4 space-y-2">
                 <button
                   onClick={() => updateFilter({ year: null })}
-                  className={`block w-full text-left py-1 text-base ${
+                  className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                     selectedYear === null ? 'text-black font-medium' : 'text-gray-500'
                   }`}
                 >
+                  <span className="material-symbols-outlined text-sm w-5">
+                    {selectedYear === null ? 'check' : ''}
+                  </span>
                   {language === 'en' ? 'All years' : 'Todos los años'}
                 </button>
                 {availableYears.map((year) => (
                   <button
                     key={year}
                     onClick={() => updateFilter({ year })}
-                    className={`block w-full text-left py-1 text-base ${
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base ${
                       selectedYear === year ? 'text-black font-medium' : 'text-gray-500'
                     }`}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedYear === year ? 'check' : ''}
+                    </span>
                     {year}
                   </button>
                 ))}
@@ -390,11 +542,29 @@ function NoticiasContent() {
             sidebarVisible ? 'w-64 opacity-100' : 'w-0 opacity-0 pointer-events-none'
           }`} style={{ top: '240px', maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' }}>
             <div className="w-64 pr-4 overflow-x-hidden">
+              {/* Botón limpiar filtros desktop */}
+              {hasActiveFilters && (
+                <div className="mb-4">
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+                  >
+                    <span className="material-symbols-outlined text-base group-hover:text-red-500 transition-colors">
+                      filter_alt_off
+                    </span>
+                    <span>{language === 'en' ? 'Clear filters' : 'Limpiar filtros'}</span>
+                    <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  </button>
+                </div>
+              )}
+
               {/* Búsqueda */}
               <div className="mb-8">
                 <div className="relative">
                   <svg
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-black"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-8 text-black"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -406,69 +576,165 @@ function NoticiasContent() {
                     placeholder={language === 'en' ? 'Search news...' : 'Buscar noticias...'}
                     value={searchTerm}
                     onChange={(e) => updateFilter({ search: e.target.value })}
-                    className="w-full border-0 border-b border-gray-300 pl-7 pr-0 py-2 text-base bg-transparent placeholder-black"
+                    className="w-full border-0 border-b border-gray-300 pl-7 pr-0 pb-3 pt-1 text-base bg-transparent placeholder-black"
                   />
                 </div>
               </div>
 
-              {/* Categorías */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Categories' : 'Categorías'}</h4>
-                <div className="space-y-2">
+              {/* Ordenar - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'sort' ? null : 'sort')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span className="flex items-center gap-2">
+                    {sortBy === 'date' && (language === 'en' ? 'Order by date' : 'Orden por fecha')}
+                    {sortBy === 'title' && (language === 'en' ? 'Order by name' : 'Orden por nombre')}
+                    {sortBy === 'category' && (language === 'en' ? 'Order by category' : 'Orden por categoría')}
+                    {sortBy !== 'date' && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'sort' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'sort' ? 'max-h-[500px]' : 'max-h-0'
+                }`}>
+                  <button
+                    onClick={() => {
+                      setSortBy('date');
+                      setActiveAccordion(null);
+                    }}
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'date' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'date' ? 'check' : ''}
+                    </span>
+                    {language === 'en' ? 'Order by date' : 'Orden por fecha'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortBy('title');
+                      setActiveAccordion(null);
+                    }}
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'title' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'title' ? 'check' : ''}
+                    </span>
+                    {language === 'en' ? 'Order by name' : 'Orden por nombre'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortBy('category');
+                      setActiveAccordion(null);
+                    }}
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                      sortBy === 'category' ? 'text-black' : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {sortBy === 'category' ? 'check' : ''}
+                    </span>
+                    {language === 'en' ? 'Order by category' : 'Orden por categoría'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Categorías - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'categories' ? null : 'categories')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span className="flex items-center gap-2">
+                    {language === 'en' ? 'Categories' : 'Categorías'}
+                    {selectedCategory && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'categories' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                      selectedCategory === null
-                        ? 'text-black'
-                        : 'text-gray-500 hover:text-black'
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                      selectedCategory === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
-                    aria-pressed={selectedCategory === null}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedCategory === null ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'All categories' : 'Todas las categorías'}
                   </button>
                   {categories.map((category) => (
                     <button
                       key={category.id}
                       onClick={() => updateFilter({ category: category.name })}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        selectedCategory === category.name
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
+                      className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                        selectedCategory === category.name ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
-                      aria-pressed={selectedCategory === category.name}
                     >
+                      <span className="material-symbols-outlined text-sm w-5">
+                        {selectedCategory === category.name ? 'check' : ''}
+                      </span>
                       {language === 'en' && category.nameEn ? category.nameEn : category.name} ({category.count})
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Años */}
-              <div className="mb-8 pb-6 border-b border-[#E6E0E0]">
-                <h4 className="projects-h4 text-lg font-normal mb-4">{language === 'en' ? 'Year' : 'Año'}</h4>
-                <div className="space-y-2">
+              {/* Años - Acordeón */}
+              <div className="mb-8 pb-3 border-b border-[#E6E0E0]">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === 'year' ? null : 'year')}
+                  className="w-full flex justify-between items-center text-lg font-normal hover:text-gray-700"
+                >
+                  <span className="flex items-center gap-2">
+                    {language === 'en' ? 'Year' : 'Año'}
+                    {selectedYear && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </span>
+                  <span className="material-symbols-outlined text-base">
+                    {activeAccordion === 'year' ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+                <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}
-                    className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                      selectedYear === null
-                        ? 'text-black'
-                        : 'text-gray-500 hover:text-black'
+                    className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                      selectedYear === null ? 'text-black' : 'text-gray-500 hover:text-black'
                     }`}
-                    aria-pressed={selectedYear === null}
                   >
+                    <span className="material-symbols-outlined text-sm w-5">
+                      {selectedYear === null ? 'check' : ''}
+                    </span>
                     {language === 'en' ? 'All years' : 'Todos los años'}
                   </button>
                   {availableYears.map((year) => (
                     <button
                       key={year}
                       onClick={() => updateFilter({ year })}
-                      className={`block w-full text-left py-1 text-base transition-all duration-200 ${
-                        selectedYear === year
-                          ? 'text-black'
-                          : 'text-gray-500 hover:text-black'
+                      className={`flex items-center gap-2 w-full text-left py-1 text-base transition-all duration-200 ${
+                        selectedYear === year ? 'text-black' : 'text-gray-500 hover:text-black'
                       }`}
-                      aria-pressed={selectedYear === year}
                     >
+                      <span className="material-symbols-outlined text-sm w-5">
+                        {selectedYear === year ? 'check' : ''}
+                      </span>
                       {year}
                     </button>
                   ))}

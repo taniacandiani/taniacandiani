@@ -55,8 +55,10 @@ export async function GET(
     }
     const buffer = Buffer.concat(chunks);
 
-    // Generate filename
-    const filename = `${project.slug || project.id}-${language}.pdf`;
+    // Generate filename: Tania-Candiani-(titulo).pdf
+    const projectTitle = language === 'en' && project.title_en ? project.title_en : project.title;
+    const sanitizedTitle = projectTitle.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s-]/g, '').replace(/\s+/g, '-');
+    const filename = `Tania-Candiani-${sanitizedTitle}.pdf`;
 
     // Return PDF
     return new NextResponse(buffer, {

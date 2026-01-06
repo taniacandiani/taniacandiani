@@ -9,6 +9,7 @@ import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { Project, ProjectCategory } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 export default function ProyectosPage() {
   const { language } = useLanguage();
@@ -16,6 +17,9 @@ export default function ProyectosPage() {
   const [categories, setCategories] = useState<ProjectCategory[]>(PROJECT_CATEGORIES);
   const [isInitialized, setIsInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Restaurar posición de scroll cuando el contenido esté listo
+  useScrollRestoration('proyectos', !loading);
 
   useEffect(() => {
     const initializeData = async () => {
