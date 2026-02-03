@@ -965,7 +965,7 @@ export default function EditProjectPage() {
             </p>
 
             {/* Lista de videos */}
-            {(project.videoUrls || ['']).map((videoUrl, index) => (
+            {(project.videoUrls && project.videoUrls.length > 0 ? project.videoUrls : ['']).map((videoUrl, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm font-medium text-gray-700">Video {index + 1}</span>
@@ -1051,24 +1051,29 @@ export default function EditProjectPage() {
               </div>
             ))}
 
-            {/* Botón para agregar más videos */}
-            <button
-              type="button"
-              onClick={() => {
-                const currentVideos = project.videoUrls || [''];
-                // Solo agregar si el último video tiene contenido
-                const lastVideo = currentVideos[currentVideos.length - 1];
-                if (lastVideo && lastVideo.trim() !== '') {
-                  setProject({ ...project, videoUrls: [...currentVideos, ''] });
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Agregar otro video</span>
-            </button>
+            {/* Botón para agregar más videos - solo mostrar si el último video tiene contenido */}
+            {(() => {
+              const currentVideos = project.videoUrls && project.videoUrls.length > 0 ? project.videoUrls : [''];
+              const lastVideo = currentVideos[currentVideos.length - 1];
+              // Solo mostrar el botón si el último video tiene contenido
+              if (lastVideo && lastVideo.trim() !== '') {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProject({ ...project, videoUrls: [...currentVideos, ''] });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Agregar otro video</span>
+                  </button>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
 
@@ -1570,7 +1575,7 @@ export default function EditProjectPage() {
                       </p>
 
                       {/* Lista de videos del tab */}
-                      {(tab.videoUrls || ['']).map((videoUrl, videoIndex) => (
+                      {(tab.videoUrls && tab.videoUrls.length > 0 ? tab.videoUrls : ['']).map((videoUrl, videoIndex) => (
                         <div key={videoIndex} className="border border-gray-200 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs font-medium text-gray-700">Video {videoIndex + 1}</span>
@@ -1656,23 +1661,29 @@ export default function EditProjectPage() {
                         </div>
                       ))}
 
-                      {/* Botón para agregar más videos */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentVideos = tab.videoUrls || [''];
-                          const lastVideo = currentVideos[currentVideos.length - 1];
-                          if (lastVideo && lastVideo.trim() !== '') {
-                            updateTab(tabIndex, 'videoUrls', [...currentVideos, '']);
-                          }
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center text-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>Agregar otro video</span>
-                      </button>
+                      {/* Botón para agregar más videos - solo mostrar si el último video tiene contenido */}
+                      {(() => {
+                        const currentVideos = tab.videoUrls && tab.videoUrls.length > 0 ? tab.videoUrls : [''];
+                        const lastVideo = currentVideos[currentVideos.length - 1];
+                        // Solo mostrar el botón si el último video tiene contenido
+                        if (lastVideo && lastVideo.trim() !== '') {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateTab(tabIndex, 'videoUrls', [...currentVideos, '']);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center text-sm"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              <span>Agregar otro video</span>
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 </div>
