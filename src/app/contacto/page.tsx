@@ -65,19 +65,46 @@ export default function ContactPage() {
     };
   }, []);
 
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simular envío del formulario
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSubmitStatus('success');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setIsSubmitting(false);
-    
-    // Resetear el estado después de 3 segundos
-    setTimeout(() => setSubmitStatus('idle'), 3000);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/contact/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al enviar el mensaje');
+      }
+
+      setSubmitStatus('success');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+
+      // Resetear el estado después de 5 segundos
+      setTimeout(() => setSubmitStatus('idle'), 5000);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitStatus('error');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Error al enviar el mensaje'
+      );
+
+      // Resetear el error después de 5 segundos
+      setTimeout(() => {
+        setSubmitStatus('idle');
+        setErrorMessage('');
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -136,6 +163,18 @@ export default function ContactPage() {
                 <div className="text-green-500 text-6xl mb-4">✓</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{language === 'en' ? 'Message sent!' : '¡Mensaje enviado!'}</h3>
                 <p className="text-gray-600">{language === 'en' ? 'Thank you for contacting us. We will respond soon.' : 'Gracias por contactarnos. Te responderemos pronto.'}</p>
+              </div>
+            ) : submitStatus === 'error' ? (
+              <div className="text-center py-8">
+                <div className="text-red-500 text-6xl mb-4">✕</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{language === 'en' ? 'Error sending message' : 'Error al enviar el mensaje'}</h3>
+                <p className="text-gray-600 mb-4">{errorMessage || (language === 'en' ? 'Please try again later.' : 'Por favor intenta de nuevo más tarde.')}</p>
+                <button
+                  onClick={() => setSubmitStatus('idle')}
+                  className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                >
+                  {language === 'en' ? 'Try again' : 'Intentar de nuevo'}
+                </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
