@@ -10,5 +10,5 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 
 export const SOCIAL_LINKS = {
   instagram: 'https://instagram.com/taniacandiani',
-  email: 'mailto:contact@taniacandiani.com',
+  email: 'mailto:info@taniacandiani.com',
 }; 

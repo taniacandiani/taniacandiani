@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contactEmail = process.env.CONTACT_EMAIL || 'candianitania@gmail.com';
+    const contactEmail = process.env.CONTACT_EMAIL || 'info@taniacandiani.com';
 
     // Enviar email con Resend
     const { data, error } = await resend.emails.send({

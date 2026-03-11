@@ -56,13 +56,13 @@ export default function Navbar() {
           >
             <AiFillInstagram />
           </a>
-          <a
-            href={SOCIAL_LINKS.email}
+          <Link
+            href="/contacto"
             className="text-xl sm:text-2xl hover:text-gray-600 transition-colors duration-200 rounded-sm p-1"
-            aria-label="Enviar email a Tania Candiani"
+            aria-label={language === 'en' ? 'Go to contact page' : 'Ir a página de contacto'}
           >
             <MdEmail />
-          </a>
+          </Link>
           <span className="hidden sm:inline text-gray-400 text-2xl font-light" aria-hidden="true">|</span>
           <div className="hidden sm:block">
             <LanguageSelector />
