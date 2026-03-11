@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Enviar email con Resend
     const { data, error } = await resend.emails.send({
-      from: 'Tania Candiani Website <onboarding@resend.dev>',
+      from: 'Tania Candiani <info@taniacandiani.com>',
       to: [contactEmail],
       replyTo: email,
       subject: `[Contacto Web] ${subject}`,
@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Resend error:', error);
+      console.error('Resend error:', JSON.stringify(error));
       return NextResponse.json(
-        { error: 'Error al enviar el mensaje' },
+        { error: `Error al enviar: ${error.message || 'Unknown error'}` },
         { status: 500 }
       );
     }
