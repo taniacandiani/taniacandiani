@@ -15,20 +15,38 @@ import { generateNewsExcerpt } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
+function getInitialNoticiasFilters() {
+  if (typeof window === 'undefined') return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+  try {
+    const saved = sessionStorage.getItem('filters-noticias');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        searchTerm: parsed.searchTerm || '',
+        selectedCategory: parsed.selectedCategory || null,
+        selectedYear: parsed.selectedYear ?? null,
+        sortBy: (parsed.sortBy || 'date') as 'date' | 'title' | 'category'
+      };
+    }
+  } catch { /* ignore */ }
+  return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+}
+
 function NoticiasContent() {
   const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialFilters = getInitialNoticiasFilters();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState(initialFilters.searchTerm);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialFilters.selectedCategory);
+  const [selectedYear, setSelectedYear] = useState<number | null>(initialFilters.selectedYear);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>(initialFilters.sortBy);
   const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
 
   // Restaurar posición de scroll cuando el contenido esté listo
@@ -93,16 +111,30 @@ function NoticiasContent() {
     updateCategoryCounts();
   }, [news]);
 
-  // Initialize filters from URL params
+  // Override filters from URL params if present (e.g. direct/shared link)
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
-    
-    setSelectedCategory(category || null);
-    setSelectedYear(year ? parseInt(year) : null);
-    setSearchTerm(search || '');
+    const hasUrlParams = category || year || search;
+
+    if (hasUrlParams) {
+      setSelectedCategory(category || null);
+      setSelectedYear(year ? parseInt(year) : null);
+      setSearchTerm(search || '');
+    }
   }, [searchParams]);
+
+  // Save filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('filters-noticias', JSON.stringify({
+        selectedCategory, selectedYear, searchTerm, sortBy
+      }));
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedCategory, selectedYear, searchTerm, sortBy]);
 
   useEffect(() => {
     let filtered = news.filter(n => n.status === 'published');
@@ -664,7 +696,7 @@ function NoticiasContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'categories' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
@@ -711,7 +743,7 @@ function NoticiasContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'year' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}

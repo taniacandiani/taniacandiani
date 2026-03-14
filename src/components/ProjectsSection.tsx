@@ -12,37 +12,71 @@ interface ProjectsSectionProps {
   categories: ProjectCategory[];
 }
 
-const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories }) => {
-  const { language } = useLanguage();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [filterState, setFilterState] = useState<FilterState>({
+const FILTER_STORAGE_KEY = 'filters-proyectos';
+
+function getInitialFilterState(): FilterState {
+  const defaults: FilterState = {
     searchTerm: '',
     selectedCategory: null,
     selectedYear: null,
     sortBy: 'date'
-  });
+  };
+  if (typeof window === 'undefined') return defaults;
+  try {
+    const saved = sessionStorage.getItem(FILTER_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        searchTerm: parsed.searchTerm || '',
+        selectedCategory: parsed.selectedCategory || null,
+        selectedYear: parsed.selectedYear ?? null,
+        sortBy: parsed.sortBy || 'date'
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return defaults;
+}
+
+const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories }) => {
+  const { language } = useLanguage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [filterState, setFilterState] = useState<FilterState>(getInitialFilterState);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Initialize filters from URL params
+  // Override filters from URL params if present (e.g. direct/shared link)
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
     const sortByParam = searchParams.get('sortBy');
+    const hasUrlParams = category || year || search || sortByParam;
 
-    setFilterState(prev => ({
-      ...prev,
-      selectedCategory: category || null,
-      selectedYear: year ? parseInt(year) : null,
-      searchTerm: search || '',
-      sortBy: (sortByParam as 'date' | 'title' | 'category') || prev.sortBy
-    }));
+    if (hasUrlParams) {
+      setFilterState(prev => ({
+        ...prev,
+        selectedCategory: category || null,
+        selectedYear: year ? parseInt(year) : null,
+        searchTerm: search || '',
+        sortBy: (sortByParam as 'date' | 'title' | 'category') || prev.sortBy
+      }));
+    }
   }, [searchParams]);
+
+  // Save filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filterState));
+    } catch {
+      // ignore storage errors
+    }
+  }, [filterState]);
 
   // Manejar click fuera del dropdown
   useEffect(() => {
@@ -384,7 +418,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
       <div className="hidden lg:flex fixed top-36 left-8 z-50 gap-2">
         <button
           onClick={() => setSidebarVisible(!sidebarVisible)}
-          className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+          className="relative flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
           aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
         >
           <span
@@ -393,6 +427,9 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           >
             thumbnail_bar
           </span>
+          {hasActiveFilters && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-black rounded-full"></span>
+          )}
         </button>
         <button
           onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
@@ -536,7 +573,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 </span>
               </button>
               <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                activeAccordion === 'categories' ? 'max-h-[800px]' : 'max-h-0'
               }`}>
                 <button
                   onClick={() => updateFilter({ selectedCategory: null })}
@@ -583,7 +620,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
                 </span>
               </button>
               <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                activeAccordion === 'year' ? 'max-h-[800px]' : 'max-h-0'
               }`}>
                 <button
                   onClick={() => updateFilter({ selectedYear: null })}

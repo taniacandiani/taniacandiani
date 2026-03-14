@@ -926,7 +926,7 @@ export default function ProjectPage({ params }: Props) {
                     </span>
                   </button>
                   <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                    filterAccordion === 'categories' ? 'max-h-96 mt-2' : 'max-h-0'
+                    filterAccordion === 'categories' ? 'max-h-[800px] mt-2' : 'max-h-0'
                   }`}>
                     {categories.map((category) => (
                       <button
@@ -952,7 +952,7 @@ export default function ProjectPage({ params }: Props) {
                     </span>
                   </button>
                   <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                    filterAccordion === 'year' ? 'max-h-96 mt-2' : 'max-h-0'
+                    filterAccordion === 'year' ? 'max-h-[800px] mt-2' : 'max-h-0'
                   }`}>
                     {availableYears.map((year) => (
                       <button

@@ -14,16 +14,34 @@ import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 type SortOption = 'date' | 'title' | 'category';
 
+function getInitialExposicionesFilters() {
+  if (typeof window === 'undefined') return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+  try {
+    const saved = sessionStorage.getItem('filters-exposiciones');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        searchTerm: parsed.searchTerm || '',
+        selectedCategory: parsed.selectedCategory || null,
+        selectedYear: parsed.selectedYear ?? null,
+        sortBy: (parsed.sortBy || 'date') as SortOption
+      };
+    }
+  } catch { /* ignore */ }
+  return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+}
+
 function ExposicionesContent() {
   const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const initialFilters = getInitialExposicionesFilters();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [filteredExhibitions, setFilteredExhibitions] = useState<Exhibition[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // Default to all categories
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState(initialFilters.searchTerm);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialFilters.selectedCategory);
+  const [selectedYear, setSelectedYear] = useState<number | null>(initialFilters.selectedYear);
   const [categories, setCategories] = useState<ExhibitionCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
@@ -31,7 +49,7 @@ function ExposicionesContent() {
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sortBy);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Restaurar posición de scroll cuando el contenido esté listo
@@ -81,16 +99,30 @@ function ExposicionesContent() {
     };
   }, []);
 
-  // Initialize filters from URL params
+  // Override filters from URL params if present (e.g. direct/shared link)
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
+    const hasUrlParams = category || year || search;
 
-    setSelectedCategory(category || null); // Default to all categories
-    setSelectedYear(year ? parseInt(year) : null);
-    setSearchTerm(search || '');
+    if (hasUrlParams) {
+      setSelectedCategory(category || null);
+      setSelectedYear(year ? parseInt(year) : null);
+      setSearchTerm(search || '');
+    }
   }, [searchParams]);
+
+  // Save filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('filters-exposiciones', JSON.stringify({
+        selectedCategory, selectedYear, searchTerm, sortBy
+      }));
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedCategory, selectedYear, searchTerm, sortBy]);
 
   // Filter and sort exhibitions
   useEffect(() => {
@@ -597,7 +629,7 @@ function ExposicionesContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'categories' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
@@ -644,7 +676,7 @@ function ExposicionesContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'year' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}
