@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import LanguageSelector from '@/components/ui/LanguageSelector';
+import GlobalSearch from '@/components/GlobalSearch';
 import { NAVIGATION_ITEMS, SOCIAL_LINKS } from '@/constants/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AiFillInstagram } from "react-icons/ai";
 import { MdEmail } from "react-icons/md";
+import { IoSearch } from "react-icons/io5";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
   const { language } = useLanguage();
 
@@ -45,8 +48,15 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Social links + Language selector + Hamburger - a la derecha */}
+        {/* Search + Social links + Language selector + Hamburger - a la derecha */}
         <div className="flex items-center gap-3 sm:gap-4 flex-1 justify-end">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="text-xl sm:text-2xl hover:text-gray-600 transition-colors duration-200 rounded-sm p-1 cursor-pointer"
+            aria-label={language === 'en' ? 'Search' : 'Buscar'}
+          >
+            <IoSearch />
+          </button>
           <a
             href={SOCIAL_LINKS.instagram}
             className="text-xl sm:text-2xl hover:text-gray-600 transition-colors duration-200 rounded-sm p-1"
@@ -113,6 +123,7 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </nav>
   );
 } 

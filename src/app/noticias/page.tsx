@@ -11,25 +11,33 @@ import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NewsCategory } from '@/types';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
-import { generateNewsExcerpt } from '@/lib/utils';
+import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 function getInitialNoticiasFilters() {
-  if (typeof window === 'undefined') return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+  const defaults = { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+  if (typeof window === 'undefined') return defaults;
   try {
-    const saved = sessionStorage.getItem('filters-noticias');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        searchTerm: parsed.searchTerm || '',
-        selectedCategory: parsed.selectedCategory || null,
-        selectedYear: parsed.selectedYear ?? null,
-        sortBy: (parsed.sortBy || 'date') as 'date' | 'title' | 'category'
-      };
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    const comingFromSameSection = prevPath.startsWith('/noticias/');
+
+    if (comingFromSameSection) {
+      const saved = sessionStorage.getItem('filters-noticias');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          searchTerm: '', // Always reset search
+          selectedCategory: parsed.selectedCategory || null,
+          selectedYear: parsed.selectedYear ?? null,
+          sortBy: (parsed.sortBy || 'date') as 'date' | 'title' | 'category'
+        };
+      }
+    } else {
+      sessionStorage.removeItem('filters-noticias');
     }
   } catch { /* ignore */ }
-  return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+  return defaults;
 }
 
 function NoticiasContent() {
@@ -140,13 +148,14 @@ function NoticiasContent() {
     let filtered = news.filter(n => n.status === 'published');
 
     if (searchTerm) {
+      const searchNorm = normalizeSearch(searchTerm);
       filtered = filtered.filter(n => {
-        // Search in both Spanish and English content
+        // Search in both Spanish and English content (accent-insensitive)
         const titleToSearch = language === 'en' && n.titleEn ? n.titleEn : n.title;
         const contentToSearch = language === 'en' && n.contentEn ? n.contentEn : n.content;
 
-        return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
+        return normalizeSearch(titleToSearch).includes(searchNorm) ||
+               normalizeSearch(contentToSearch).includes(searchNorm);
       });
     }
 
@@ -338,7 +347,7 @@ function NoticiasContent() {
         <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
             onClick={handleSidebarToggle}
-            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            className="relative flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
             <span
@@ -347,6 +356,9 @@ function NoticiasContent() {
             >
               thumbnail_bar
             </span>
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-black rounded-full"></span>
+            )}
           </button>
         </div>
 

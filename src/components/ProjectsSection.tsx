@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Project, ProjectCategory, ViewMode, FilterState } from '@/types';
 import ProjectCard from '@/components/ui/ProjectCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { generateNewsExcerpt } from '@/lib/utils';
+import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 
 interface ProjectsSectionProps {
   projects: Project[];
@@ -23,15 +23,25 @@ function getInitialFilterState(): FilterState {
   };
   if (typeof window === 'undefined') return defaults;
   try {
-    const saved = sessionStorage.getItem(FILTER_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        searchTerm: parsed.searchTerm || '',
-        selectedCategory: parsed.selectedCategory || null,
-        selectedYear: parsed.selectedYear ?? null,
-        sortBy: parsed.sortBy || 'date'
-      };
+    // Check if user is coming back from within the proyectos section
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    const comingFromSameSection = prevPath.startsWith('/proyectos/');
+
+    if (comingFromSameSection) {
+      // Coming back from a project detail - restore filters (except search)
+      const saved = sessionStorage.getItem(FILTER_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          searchTerm: '', // Always reset search
+          selectedCategory: parsed.selectedCategory || null,
+          selectedYear: parsed.selectedYear ?? null,
+          sortBy: parsed.sortBy || 'date'
+        };
+      }
+    } else {
+      // Coming from another section - reset all filters
+      sessionStorage.removeItem(FILTER_STORAGE_KEY);
     }
   } catch {
     // ignore
@@ -140,14 +150,14 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
 
     let filtered = uniqueProjects;
 
-    // Filtrar por término de búsqueda
+    // Filtrar por término de búsqueda (accent-insensitive)
     if (filterState.searchTerm) {
-      const searchLower = filterState.searchTerm.toLowerCase();
+      const searchNorm = normalizeSearch(filterState.searchTerm);
       filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchLower) ||
-        project.categories?.some(cat => cat.toLowerCase().includes(searchLower)) ||
-        project.description?.toLowerCase().includes(searchLower) ||
-        project.tags?.some(tag => tag.toLowerCase().includes(searchLower))
+        normalizeSearch(project.title).includes(searchNorm) ||
+        project.categories?.some(cat => normalizeSearch(cat).includes(searchNorm)) ||
+        normalizeSearch(project.description || '').includes(searchNorm) ||
+        project.tags?.some(tag => normalizeSearch(tag).includes(searchNorm))
       );
     }
 

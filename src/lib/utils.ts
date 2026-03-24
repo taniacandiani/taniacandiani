@@ -1,4 +1,16 @@
 /**
+ * Normalize text for accent-insensitive search.
+ * Removes diacritical marks and lowercases the string.
+ * e.g. "Máquina" → "maquina"
+ */
+export function normalizeSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
  * Generate a URL-friendly slug from a string
  */
 export function generateSlug(text: string): string {

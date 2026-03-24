@@ -8,27 +8,35 @@ import MainLayout from '@/components/MainLayout';
 import { Exhibition, ExhibitionCategory } from '@/types';
 import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
-import { generateNewsExcerpt } from '@/lib/utils';
+import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 type SortOption = 'date' | 'title' | 'category';
 
 function getInitialExposicionesFilters() {
-  if (typeof window === 'undefined') return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+  const defaults = { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+  if (typeof window === 'undefined') return defaults;
   try {
-    const saved = sessionStorage.getItem('filters-exposiciones');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        searchTerm: parsed.searchTerm || '',
-        selectedCategory: parsed.selectedCategory || null,
-        selectedYear: parsed.selectedYear ?? null,
-        sortBy: (parsed.sortBy || 'date') as SortOption
-      };
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    const comingFromSameSection = prevPath.startsWith('/exposiciones/');
+
+    if (comingFromSameSection) {
+      const saved = sessionStorage.getItem('filters-exposiciones');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          searchTerm: '', // Always reset search
+          selectedCategory: parsed.selectedCategory || null,
+          selectedYear: parsed.selectedYear ?? null,
+          sortBy: (parsed.sortBy || 'date') as SortOption
+        };
+      }
+    } else {
+      sessionStorage.removeItem('filters-exposiciones');
     }
   } catch { /* ignore */ }
-  return { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+  return defaults;
 }
 
 function ExposicionesContent() {
@@ -54,6 +62,7 @@ function ExposicionesContent() {
 
   // Restaurar posición de scroll cuando el contenido esté listo
   useScrollRestoration('exposiciones', !loading);
+
 
   useEffect(() => {
     const initializeData = async () => {
@@ -129,12 +138,13 @@ function ExposicionesContent() {
     let filtered = exhibitions.filter(e => e.status === 'published');
 
     if (searchTerm) {
+      const searchNorm = normalizeSearch(searchTerm);
       filtered = filtered.filter(e => {
         const titleToSearch = language === 'en' && e.titleEn ? e.titleEn : e.title;
         const contentToSearch = language === 'en' && e.contentEn ? e.contentEn : e.content;
 
-        return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
+        return normalizeSearch(titleToSearch).includes(searchNorm) ||
+               normalizeSearch(contentToSearch).includes(searchNorm);
       });
     }
 
@@ -343,7 +353,7 @@ function ExposicionesContent() {
         <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
             onClick={handleSidebarToggle}
-            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            className="relative flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
             <span
@@ -352,6 +362,9 @@ function ExposicionesContent() {
             >
               thumbnail_bar
             </span>
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-black rounded-full"></span>
+            )}
           </button>
         </div>
 
