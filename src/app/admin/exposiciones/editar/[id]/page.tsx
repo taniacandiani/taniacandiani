@@ -415,30 +415,6 @@ export default function EditExhibitionPage() {
             currentImage={formData.image}
             folder={`exposiciones/${id}`}
           />
-        </div>
-
-        {/* Hero Images */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Imágenes del Slider</h2>
-          <div className="space-y-4">
-            {formData.heroImages?.map((image, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                <img src={image} alt={`Hero ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-                <span className="flex-1 text-sm truncate">{image}</span>
-                <button
-                  type="button"
-                  onClick={() => handleHeroImageRemove(index)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Eliminar
-                </button>
-              </div>
-            ))}
-            <ImageUploader
-              onImageUpload={handleHeroImageAdd}
-              folder={`exposiciones/${id}/hero`}
-            />
-          </div>
           {/* Opciones de visualización de imagen */}
           <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t">
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -462,6 +438,30 @@ export default function EditExhibitionPage() {
               />
               <span className="text-sm font-medium text-gray-700">Ajustado solo a altura</span>
             </label>
+          </div>
+        </div>
+
+        {/* Hero Images */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Imágenes del Slider</h2>
+          <div className="space-y-4">
+            {formData.heroImages?.map((image, index) => (
+              <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                <img src={image} alt={`Hero ${index + 1}`} className="w-24 h-24 object-cover rounded" />
+                <span className="flex-1 text-sm truncate">{image}</span>
+                <button
+                  type="button"
+                  onClick={() => handleHeroImageRemove(index)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            <ImageUploader
+              onImageUpload={handleHeroImageAdd}
+              folder={`exposiciones/${id}/hero`}
+            />
           </div>
         </div>
 

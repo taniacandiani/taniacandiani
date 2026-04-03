@@ -164,13 +164,15 @@ function NoticiasContent() {
     }
 
     if (selectedYear) {
-      filtered = filtered.filter(n => new Date(n.publishedAt).getFullYear() === selectedYear);
+      filtered = filtered.filter(n => new Date(n.createdAt || n.publishedAt).getFullYear() === selectedYear);
     }
 
     // Ordenar
     filtered = [...filtered].sort((a, b) => {
       if (sortBy === 'date') {
-        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        const dateA = new Date(a.createdAt || a.publishedAt).getTime();
+        const dateB = new Date(b.createdAt || b.publishedAt).getTime();
+        return dateB - dateA;
       } else if (sortBy === 'category') {
         const catA = a.categories?.[0] || '';
         const catB = b.categories?.[0] || '';
@@ -257,7 +259,7 @@ function NoticiasContent() {
   const availableYears = useMemo(() => {
     if (!Array.isArray(news)) return [];
 
-    const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
+    const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.createdAt || n.publishedAt).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [news]);
 

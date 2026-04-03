@@ -12,7 +12,7 @@ export class NewsService {
     const result = await nile.db.query(
       `SELECT * FROM news
        WHERE status = 'published'
-       ORDER BY created_at DESC, published_at DESC`
+       ORDER BY COALESCE(created_at, published_at) DESC`
     );
     return result.rows.map(row => this.rowToNews(row));
   }
@@ -22,7 +22,7 @@ export class NewsService {
     const nile = await this.getClient();
     const result = await nile.db.query(
       `SELECT * FROM news
-       ORDER BY created_at DESC, published_at DESC`
+       ORDER BY COALESCE(created_at, published_at) DESC`
     );
     return result.rows.map(row => this.rowToNews(row));
   }
@@ -53,7 +53,7 @@ export class NewsService {
     const result = await nile.db.query(
       `SELECT * FROM news
        WHERE categories @> $1::jsonb AND status = 'published'
-       ORDER BY created_at DESC, published_at DESC`,
+       ORDER BY COALESCE(created_at, published_at) DESC`,
       [JSON.stringify([category])]
     );
     return result.rows.map(row => this.rowToNews(row));
