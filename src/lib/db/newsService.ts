@@ -67,9 +67,9 @@ export class NewsService {
     const result = await nile.db.query(
       `INSERT INTO news (
         id, title, content, image, slug, published_at, categories,
-        author, status, tags, hero_images, title_en, content_en, created_at
+        author, status, tags, hero_images, hero_image_contain, title_en, content_en, created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb, $12, $13, COALESCE($14, NOW())
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10::jsonb, $11::jsonb, $12, $13, $14, COALESCE($15, NOW())
       ) RETURNING *`,
       [
         id,
@@ -83,6 +83,7 @@ export class NewsService {
         news.status || 'draft',
         JSON.stringify(news.tags || []),
         JSON.stringify(news.heroImages || []),
+        news.heroImageContain ?? false,
         news.titleEn || null,
         news.contentEn || null,
         news.createdAt || null,
@@ -108,9 +109,10 @@ export class NewsService {
         status = COALESCE($9, status),
         tags = COALESCE($10::jsonb, tags),
         hero_images = COALESCE($11::jsonb, hero_images),
-        title_en = COALESCE($12, title_en),
-        content_en = COALESCE($13, content_en),
-        created_at = COALESCE($14, created_at),
+        hero_image_contain = COALESCE($12, hero_image_contain),
+        title_en = COALESCE($13, title_en),
+        content_en = COALESCE($14, content_en),
+        created_at = COALESCE($15, created_at),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -126,6 +128,7 @@ export class NewsService {
         news.status,
         news.tags ? JSON.stringify(news.tags) : null,
         news.heroImages ? JSON.stringify(news.heroImages) : null,
+        news.heroImageContain ?? null,
         news.titleEn,
         news.contentEn,
         news.createdAt,
@@ -159,6 +162,7 @@ export class NewsService {
       status: row.status,
       tags: row.tags || [],
       heroImages: row.hero_images || [],
+      heroImageContain: row.hero_image_contain ?? false,
       titleEn: row.title_en,
       contentEn: row.content_en,
       createdAt: row.created_at,

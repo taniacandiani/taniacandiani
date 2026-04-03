@@ -126,10 +126,10 @@ export class ExhibitionService {
       `INSERT INTO exhibitions (
         id, title, content, image, slug, published_at, categories,
         venue, start_date, end_date, curator, status, tags, hero_images,
-        title_en, content_en, venue_en, curator_en, external_link, created_at
+        hero_image_contain, title_en, content_en, venue_en, curator_en, external_link, created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13::jsonb, $14::jsonb,
-        $15, $16, $17, $18, $19, COALESCE($20, NOW())
+        $15, $16, $17, $18, $19, $20, COALESCE($21, NOW())
       ) RETURNING *`,
       [
         id,
@@ -146,6 +146,7 @@ export class ExhibitionService {
         exhibition.status ?? 'draft',
         JSON.stringify(exhibition.tags || []),
         JSON.stringify(exhibition.heroImages || []),
+        exhibition.heroImageContain ?? false,
         exhibition.titleEn ?? null,
         exhibition.contentEn ?? null,
         exhibition.venueEn ?? null,
@@ -192,12 +193,13 @@ export class ExhibitionService {
         status = COALESCE($12, status),
         tags = COALESCE($13::jsonb, tags),
         hero_images = COALESCE($14::jsonb, hero_images),
-        title_en = $15,
-        content_en = $16,
-        venue_en = $17,
-        curator_en = $18,
-        external_link = $19,
-        created_at = COALESCE($20, created_at),
+        hero_image_contain = COALESCE($15, hero_image_contain),
+        title_en = $16,
+        content_en = $17,
+        venue_en = $18,
+        curator_en = $19,
+        external_link = $20,
+        created_at = COALESCE($21, created_at),
         updated_at = NOW()
       WHERE id = $1
       RETURNING *`,
@@ -216,6 +218,7 @@ export class ExhibitionService {
         exhibition.status,
         exhibition.tags ? JSON.stringify(exhibition.tags) : null,
         exhibition.heroImages ? JSON.stringify(exhibition.heroImages) : null,
+        exhibition.heroImageContain ?? null,
         emptyToNull(exhibition.titleEn),
         emptyToNull(exhibition.contentEn),
         emptyToNull(exhibition.venueEn),
@@ -255,6 +258,7 @@ export class ExhibitionService {
       status: row.status,
       tags: row.tags || [],
       heroImages: row.hero_images || [],
+      heroImageContain: row.hero_image_contain ?? false,
       titleEn: row.title_en,
       contentEn: row.content_en,
       venueEn: row.venue_en,
