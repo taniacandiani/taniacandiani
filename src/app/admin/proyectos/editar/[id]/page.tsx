@@ -832,10 +832,10 @@ export default function EditProjectPage() {
               <RichTextEditor
                 label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
                 value={editingLanguage === 'es' ? (project.projectDetails || '') : (project.projectDetails_en || '')}
-                onChange={(content) => setProject({
-                  ...project,
+                onChange={(content) => setProject(prev => prev ? ({
+                  ...prev,
                   [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
-                })}
+                }) : prev)}
                 placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
                 height={250}
               />
@@ -845,10 +845,10 @@ export default function EditProjectPage() {
               <RichTextEditor
                 label={editingLanguage === 'es' ? 'Créditos' : 'Credits'}
                 value={editingLanguage === 'es' ? (project.credits || '') : (project.credits_en || '')}
-                onChange={(content) => setProject({
-                  ...project,
+                onChange={(content) => setProject(prev => prev ? ({
+                  ...prev,
                   [editingLanguage === 'es' ? 'credits' : 'credits_en']: content
-                })}
+                }) : prev)}
                 placeholder={editingLanguage === 'es' ? 'Escribe los créditos aquí...' : 'Write the credits here...'}
                 height={250}
               />
@@ -858,10 +858,10 @@ export default function EditProjectPage() {
               <RichTextEditor
                 label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
                 value={editingLanguage === 'es' ? (project.technicalSheet || '') : (project.technicalSheet_en || '')}
-                onChange={(content) => setProject({
-                  ...project,
+                onChange={(content) => setProject(prev => prev ? ({
+                  ...prev,
                   [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
-                })}
+                }) : prev)}
                 placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
                 height={250}
               />

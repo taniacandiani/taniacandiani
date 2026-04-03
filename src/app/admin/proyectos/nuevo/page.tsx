@@ -787,10 +787,10 @@ export default function NewProjectPage() {
                   <RichTextEditor
                     label={editingLanguage === 'es' ? 'Detalles del Proyecto' : 'Project Details'}
                     value={editingLanguage === 'es' ? (formData.projectDetails || '') : (formData.projectDetails_en || '')}
-                    onChange={(content) => setFormData({
-                      ...formData,
+                    onChange={(content) => setFormData(prev => ({
+                      ...prev,
                       [editingLanguage === 'es' ? 'projectDetails' : 'projectDetails_en']: content
-                    })}
+                    }))}
                     placeholder={editingLanguage === 'es' ? 'Escribe los detalles del proyecto aquí...' : 'Write the project details here...'}
                     height={250}
                   />
@@ -800,10 +800,10 @@ export default function NewProjectPage() {
                   <RichTextEditor
                     label={editingLanguage === 'es' ? 'Créditos' : 'Credits'}
                     value={editingLanguage === 'es' ? (formData.credits || '') : (formData.credits_en || '')}
-                    onChange={(content) => setFormData({
-                      ...formData,
+                    onChange={(content) => setFormData(prev => ({
+                      ...prev,
                       [editingLanguage === 'es' ? 'credits' : 'credits_en']: content
-                    })}
+                    }))}
                     placeholder={editingLanguage === 'es' ? 'Escribe los créditos aquí...' : 'Write the credits here...'}
                     height={250}
                   />
@@ -813,10 +813,10 @@ export default function NewProjectPage() {
                   <RichTextEditor
                     label={editingLanguage === 'es' ? 'Ficha Técnica' : 'Technical Sheet'}
                     value={editingLanguage === 'es' ? (formData.technicalSheet || '') : (formData.technicalSheet_en || '')}
-                    onChange={(content) => setFormData({
-                      ...formData,
+                    onChange={(content) => setFormData(prev => ({
+                      ...prev,
                       [editingLanguage === 'es' ? 'technicalSheet' : 'technicalSheet_en']: content
-                    })}
+                    }))}
                     placeholder={editingLanguage === 'es' ? 'Escribe la ficha técnica aquí...' : 'Write the technical sheet here...'}
                     height={250}
                   />
