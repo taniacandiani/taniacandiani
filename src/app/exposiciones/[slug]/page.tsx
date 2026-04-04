@@ -44,7 +44,8 @@ export default function ExhibitionDetailPage() {
     return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
