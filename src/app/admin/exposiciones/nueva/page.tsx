@@ -325,7 +325,7 @@ export default function NewExhibitionPage() {
                 value={formData.startDate ? formData.startDate.split('T')[0] : ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  startDate: e.target.value ? new Date(e.target.value).toISOString() : ''
+                  startDate: e.target.value ? e.target.value + 'T12:00:00.000Z' : ''
                 })}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -340,7 +340,7 @@ export default function NewExhibitionPage() {
                 value={formData.endDate ? formData.endDate.split('T')[0] : ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  endDate: e.target.value ? new Date(e.target.value).toISOString() : ''
+                  endDate: e.target.value ? e.target.value + 'T12:00:00.000Z' : ''
                 })}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
