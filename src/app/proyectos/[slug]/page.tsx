@@ -324,7 +324,8 @@ export default function ProjectPage({ params }: Props) {
           PROJECTS.find(p => p.slug === slug && p.status === 'published');
 
         if (!project) {
-          notFound();
+          // No llamar a notFound() aquí: dentro de un efecto asíncrono Next
+          // no lo intercepta. El guard en el render se encarga del 404.
           return;
         }
 
@@ -356,7 +357,6 @@ export default function ProjectPage({ params }: Props) {
           .catch(() => setCategories(PROJECT_CATEGORIES));
       } catch (error) {
         console.error('Error loading project:', error);
-        notFound();
       } finally {
         setLoading(false);
       }
@@ -543,12 +543,18 @@ export default function ProjectPage({ params }: Props) {
   }, [sidebarVisible, userManuallyToggled, loading]);
 
   // Render loading state
-  if (loading || !project) {
+  if (loading) {
     return (
       <MainLayout>
         <DetailSkeleton />
       </MainLayout>
     );
+  }
+
+  // Proyecto inexistente o borrador sin sesión de admin: lanzar el 404
+  // durante el render para que Next muestre la página "no encontrada"
+  if (!project) {
+    return notFound();
   }
 
   return (

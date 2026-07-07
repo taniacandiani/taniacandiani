@@ -25,13 +25,10 @@ export default function ExhibitionDetailPage() {
       try {
         setLoading(true);
         const data = await ExhibitionStorage.getBySlug(slug);
-        if (!data) {
-          notFound();
-        }
+        // Si no existe, el guard del render se encarga del 404
         setExhibition(data);
       } catch (error) {
         console.error('Error fetching exhibition:', error);
-        notFound();
       } finally {
         setLoading(false);
       }

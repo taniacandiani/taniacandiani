@@ -67,7 +67,7 @@ export default function NoticiaPage({ params }: Props) {
                           SAMPLE_NEWS.find(n => n.slug === slug && n.status === 'published');
 
         if (!foundNews) {
-          notFound();
+          // El guard del render se encarga del 404
           return;
         }
         
@@ -77,7 +77,6 @@ export default function NoticiaPage({ params }: Props) {
         
       } catch (error) {
         console.error('Error loading news:', error);
-        notFound();
       } finally {
         setLoading(false);
       }
