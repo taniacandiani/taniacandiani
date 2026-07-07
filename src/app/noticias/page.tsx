@@ -14,6 +14,7 @@ import { SAMPLE_NEWS } from '@/data/content';
 import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
+import { CardGridSkeleton } from '@/components/ui/PageSkeletons';
 
 function getInitialNoticiasFilters() {
   const defaults = { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
@@ -330,14 +331,7 @@ function NoticiasContent() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="container-mobile py-8 pt-16">
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-              
-            </div>
-          </div>
-        </div>
+        <CardGridSkeleton />
       </MainLayout>
     );
   }
@@ -864,14 +858,7 @@ function NoticiasPageFallback() {
   const { language } = useLanguage();
   return (
     <MainLayout>
-      <div className="container-mobile py-8 pt-16">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            
-          </div>
-        </div>
-      </div>
+      <CardGridSkeleton />
     </MainLayout>
   );
 }

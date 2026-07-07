@@ -10,6 +10,7 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { Project, ProjectCategory } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
+import { CardGridSkeleton } from '@/components/ui/PageSkeletons';
 
 export default function ProyectosPage() {
   const { language } = useLanguage();
@@ -26,18 +27,9 @@ export default function ProyectosPage() {
       try {
         setLoading(true);
         
-        // Solo ejecutar migración en el cliente
-        if (typeof window !== 'undefined') {
-          try {
-            // Migrar proyectos existentes a múltiples categorías
-            await ProjectStorage.migrateToMultipleCategories();
-          } catch (error) {
-            console.error('Error durante migración:', error);
-          }
-        }
-        
         // Initialize with existing projects if storage is empty
-        const storedProjects = await ProjectStorage.getAll();
+        // (versión resumen: sin tabs ni HTML pesado, carga mucho más rápido)
+        const storedProjects = await ProjectStorage.getSummaries();
         if (storedProjects.length === 0 && !isInitialized) {
           // Note: saveAll is not implemented in the new async version
           // We'll rely on the JSON files for now
@@ -108,12 +100,7 @@ export default function ProyectosPage() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            
-          </div>
-        </div>
+        <CardGridSkeleton />
       </MainLayout>
     );
   }

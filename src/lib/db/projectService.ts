@@ -9,21 +9,36 @@ export class ProjectService {
   // Get all projects with tabs
   static async getAll(): Promise<Project[]> {
     const nile = await this.getClient();
-    const result = await nile.db.query(
-      `SELECT * FROM projects
-       ORDER BY year DESC, created_at DESC`
-    );
 
-    // Get tabs for all projects
-    const projects = await Promise.all(
-      result.rows.map(async (row) => {
-        const project = this.rowToProject(row);
-        project.tabs = await this.getProjectTabs(project.id);
-        return project;
-      })
-    );
+    // Dos consultas en total (proyectos + todos los tabs) en lugar de una
+    // consulta de tabs por proyecto (N+1), que hacía muy lenta esta ruta
+    const [result, tabsResult] = await Promise.all([
+      nile.db.query(
+        `SELECT * FROM projects
+         ORDER BY year DESC, created_at DESC`
+      ),
+      nile.db.query(
+        `SELECT * FROM project_tabs
+         ORDER BY tab_order ASC`
+      ),
+    ]);
 
-    return projects;
+    const tabsByProject = new Map<string, ProjectTab[]>();
+    for (const row of tabsResult.rows) {
+      const tab = this.rowToProjectTab(row);
+      const list = tabsByProject.get(tab.projectId);
+      if (list) {
+        list.push(tab);
+      } else {
+        tabsByProject.set(tab.projectId, [tab]);
+      }
+    }
+
+    return result.rows.map(row => {
+      const project = this.rowToProject(row);
+      project.tabs = tabsByProject.get(project.id) || [];
+      return project;
+    });
   }
 
   // Get project by ID with tabs
@@ -414,7 +429,11 @@ export class ProjectService {
        ORDER BY tab_order ASC`,
       [projectId]
     );
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row: any) => this.rowToProjectTab(row));
+  }
+
+  private static rowToProjectTab(row: any): ProjectTab {
+    return {
       id: row.id,
       projectId: row.project_id,
       tabOrder: row.tab_order,
@@ -438,7 +457,7 @@ export class ProjectService {
       projectDetails_en: row.project_details_en,
       credits_en: row.credits_en,
       technicalSheet_en: row.technical_sheet_en,
-    }));
+    };
   }
 
   // Create tabs for a project

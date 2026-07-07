@@ -13,6 +13,7 @@ import RichContent from '@/components/ui/RichContent';
 import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
 import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { DetailSkeleton } from '@/components/ui/PageSkeletons';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -161,12 +162,7 @@ export default function NoticiaPage({ params }: Props) {
   if (loading) {
     return (
       <MainLayout>
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            
-          </div>
-        </div>
+        <DetailSkeleton />
       </MainLayout>
     );
   }

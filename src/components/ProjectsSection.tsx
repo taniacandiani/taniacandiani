@@ -683,10 +683,13 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, categories 
           ) : (
             <div className="space-y-12 animate-fadeIn">
               {filteredAndSortedProjects.map((project) => {
+                const precomputedExcerpt = language === 'en'
+                  ? (project.excerpt_en || project.excerpt)
+                  : (project.excerpt || project.excerpt_en);
                 const projectDetails = language === 'en' && project.projectDetails_en
                   ? project.projectDetails_en
                   : project.projectDetails;
-                const excerpt = generateNewsExcerpt(projectDetails || project.description || '', 200);
+                const excerpt = precomputedExcerpt || generateNewsExcerpt(projectDetails || project.description || '', 200);
 
                 return (
                   <div

@@ -42,7 +42,8 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       setLoading(true);
       try {
         const [p, n, e] = await Promise.all([
-          ProjectStorage.getAll(),
+          // Versión resumen: la búsqueda solo usa título/descripción/categorías/tags
+          ProjectStorage.getSummaries(),
           NewsStorage.getAll(),
           ExhibitionStorage.getAll(),
         ]);

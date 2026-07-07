@@ -2,17 +2,83 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/db/projectService';
 import { moveFolderInCloudinary } from '@/lib/cloudinary';
 import { isAdminRequest } from '@/lib/adminAuth';
+import { generateNewsExcerpt } from '@/lib/utils';
+import type { Project } from '@/types';
+
+// Caché en memoria (por instancia del servidor) para las respuestas públicas.
+// El admin siempre lee directo de la base para ver sus cambios al instante.
+let projectsCache: { data: Project[]; ts: number } | null = null;
+const PROJECTS_CACHE_TTL = 60 * 1000;
+
+function invalidateProjectsCache() {
+  projectsCache = null;
+}
+
+async function getAllProjectsCached(isAdmin: boolean): Promise<Project[]> {
+  if (!isAdmin && projectsCache && Date.now() - projectsCache.ts < PROJECTS_CACHE_TTL) {
+    return projectsCache.data;
+  }
+  const projects = await ProjectService.getAll();
+  projectsCache = { data: projects, ts: Date.now() };
+  return projects;
+}
+
+// Versión ligera para listados: sin tabs ni HTML pesado, con extracto
+// precalculado para las tarjetas. Reduce el payload de ~1.3MB a ~200KB.
+function toSummary(project: Project) {
+  const {
+    tabs,
+    projectDetails,
+    projectDetails_en,
+    technicalSheet,
+    technicalSheet_en,
+    credits,
+    credits_en,
+    heroImageDescriptions,
+    heroImageDescriptions_en,
+    ...rest
+  } = project as any;
+
+  return {
+    ...rest,
+    heroImages: project.heroImages?.slice(0, 1) || [],
+    excerpt: generateNewsExcerpt(projectDetails || project.description || '', 200),
+    excerpt_en: generateNewsExcerpt(projectDetails_en || (project as any).description_en || '', 200),
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const projects = await ProjectService.getAll();
+    const isAdmin = isAdminRequest(request);
+    const searchParams = request.nextUrl.searchParams;
+    const slug = searchParams.get('slug');
+    const heroOnly = searchParams.get('hero') === 'true';
+    const summary = searchParams.get('summary') === 'true';
 
-    // Los borradores/archivados solo son visibles para el admin con sesión iniciada
-    if (isAdminRequest(request)) {
-      return NextResponse.json(projects);
+    // Un solo proyecto por slug (para la página de detalle)
+    if (slug) {
+      const project = await ProjectService.getBySlug(slug);
+
+      // Los borradores/archivados solo son visibles para el admin con sesión iniciada
+      if (!project || (project.status !== 'published' && !isAdmin)) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(project);
     }
 
-    return NextResponse.json(projects.filter(p => p.status === 'published'));
+    // Solo los proyectos del carrusel de la home (payload mínimo)
+    if (heroOnly) {
+      const heroProjects = await ProjectService.getHeroProjects();
+      return NextResponse.json(heroProjects);
+    }
+
+    const projects = await getAllProjectsCached(isAdmin);
+
+    // Los borradores/archivados solo son visibles para el admin con sesión iniciada
+    const visible = isAdmin ? projects : projects.filter(p => p.status === 'published');
+
+    return NextResponse.json(summary ? visible.map(toSummary) : visible);
   } catch (error) {
     console.error('Error reading projects data:', error);
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
@@ -142,6 +208,7 @@ export async function POST(request: NextRequest) {
     });
 
     const project = await ProjectService.create(projectDataWithoutId);
+    invalidateProjectsCache();
 
     console.log('Project created successfully:', project.id);
     // Retornar el proyecto completo para que el frontend pueda usarlo
@@ -245,6 +312,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    invalidateProjectsCache();
     return NextResponse.json({ success: true, project });
   } catch (error) {
     console.error('Error updating projects data:', error);
@@ -271,6 +339,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    invalidateProjectsCache();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting projects data:', error);

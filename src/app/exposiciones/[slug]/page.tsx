@@ -10,6 +10,7 @@ import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
 import { Exhibition } from '@/types';
 import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { DetailSkeleton } from '@/components/ui/PageSkeletons';
 
 export default function ExhibitionDetailPage() {
   const params = useParams();
@@ -53,13 +54,7 @@ export default function ExhibitionDetailPage() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="container-mobile py-8 pt-16">
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-            </div>
-          </div>
-        </div>
+        <DetailSkeleton />
       </MainLayout>
     );
   }

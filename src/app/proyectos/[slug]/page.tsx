@@ -11,6 +11,7 @@ import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
+import { DetailSkeleton } from '@/components/ui/PageSkeletons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { optimizeCloudinaryUrl, CLOUDINARY_PRESETS } from '@/lib/cloudinaryUtils';
 
@@ -306,43 +307,19 @@ export default function ProjectPage({ params }: Props) {
     }
   };
 
-  // Main data loading effect - optimizado con llamadas paralelas
+  // Main data loading effect: cargar primero el proyecto (petición pequeña
+  // por slug) para pintar la página lo antes posible, y después el resto
+  // (sidebar, categorías) en segundo plano
   useEffect(() => {
     async function loadProject() {
       try {
         // Await params to get the slug
         const { slug } = await params;
 
-        // Paralelizar todas las llamadas API
-        const [storedProjects, publishedProjects, storedCategories, foundProject] = await Promise.all([
-          ProjectStorage.getAll().catch(() => []),
-          ProjectStorage.getPublished().catch(() => []),
-          CategoryStorage.getAll().catch(() => []),
-          ProjectStorage.getBySlug(slug).catch(() => null)
-        ]);
-
-        // Set all projects for sidebar
-        if (publishedProjects.length > 0) {
-          setAllProjects(publishedProjects);
-        } else if (storedProjects.length === 0) {
-          console.log('Using default projects from content.ts');
-          setAllProjects(PROJECTS);
-        }
-
-        // Set categories
-        if (storedCategories.length > 0) {
-          // Update categories count in background (no await)
-          CategoryStorage.updateCounts().then(updatedCategories => {
-            setCategories(updatedCategories);
-          });
-        } else {
-          console.log('Using default categories from content.ts');
-          setCategories(PROJECT_CATEGORIES);
-        }
-
-        // Check if project was found. La API solo devuelve borradores al
-        // admin con sesión iniciada; el público recibe únicamente publicados,
-        // por lo que un borrador aquí es una vista previa legítima.
+        // 1) El proyecto en sí. La API solo devuelve borradores al admin con
+        // sesión iniciada; el público recibe únicamente publicados, por lo
+        // que un borrador aquí es una vista previa legítima.
+        const foundProject = await ProjectStorage.getBySlug(slug).catch(() => null);
         const project = foundProject ||
           PROJECTS.find(p => p.slug === slug && p.status === 'published');
 
@@ -352,6 +329,31 @@ export default function ProjectPage({ params }: Props) {
         }
 
         setProject(project);
+        setLoading(false);
+
+        // 2) Lista para el sidebar y navegación (versión resumen, ligera)
+        ProjectStorage.getSummaries()
+          .then(summaries => {
+            const published = summaries.filter(p => p.status === 'published');
+            setAllProjects(published.length > 0 ? published : PROJECTS);
+          })
+          .catch(() => {
+            setAllProjects(PROJECTS);
+          });
+
+        // 3) Categorías para los filtros
+        CategoryStorage.getAll()
+          .then(storedCategories => {
+            if (storedCategories.length > 0) {
+              CategoryStorage.updateCounts()
+                .then(updatedCategories => setCategories(updatedCategories))
+                .catch(() => setCategories(storedCategories));
+            } else {
+              console.log('Using default categories from content.ts');
+              setCategories(PROJECT_CATEGORIES);
+            }
+          })
+          .catch(() => setCategories(PROJECT_CATEGORIES));
       } catch (error) {
         console.error('Error loading project:', error);
         notFound();
@@ -544,11 +546,7 @@ export default function ProjectPage({ params }: Props) {
   if (loading || !project) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          </div>
-        </div>
+        <DetailSkeleton />
       </MainLayout>
     );
   }

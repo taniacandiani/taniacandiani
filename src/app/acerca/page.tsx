@@ -10,6 +10,7 @@ import { PublicationStorage } from '@/lib/publicationStorage';
 import { SAMPLE_PUBLICATIONS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function AcercaPage() {
   const { language } = useLanguage();
@@ -202,9 +203,14 @@ export default function AcercaPage() {
             </h2>
             
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-                
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="aspect-[3/4]"><Skeleton height="100%" /></div>
+                    <Skeleton variant="text" height={18} width="80%" />
+                    <Skeleton variant="text" height={14} width="50%" />
+                  </div>
+                ))}
               </div>
             ) : publications.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

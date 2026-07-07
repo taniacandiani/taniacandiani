@@ -11,6 +11,7 @@ import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
 import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
+import { CardGridSkeleton } from '@/components/ui/PageSkeletons';
 
 type SortOption = 'date' | 'title' | 'category';
 
@@ -336,13 +337,7 @@ function ExposicionesContent() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="container-mobile py-8 pt-16">
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            </div>
-          </div>
-        </div>
+        <CardGridSkeleton />
       </MainLayout>
     );
   }
@@ -821,13 +816,7 @@ function ExposicionesPageFallback() {
   const { language } = useLanguage();
   return (
     <MainLayout>
-      <div className="container-mobile py-8 pt-16">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          </div>
-        </div>
-      </div>
+      <CardGridSkeleton />
     </MainLayout>
   );
 }

@@ -74,7 +74,7 @@ export default function Home() {
 
         // Verificar si storage está vacío (baja prioridad)
         Promise.all([
-          ProjectStorage.getAll().catch(() => []),
+          ProjectStorage.getSummaries().catch(() => []),
           NewsStorage.getAll().catch(() => [])
         ]).then(([storedProjects, storedNews]) => {
           if (storedProjects.length === 0 && !isInitialized) {

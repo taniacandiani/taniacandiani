@@ -5,6 +5,7 @@ import MainLayout from '@/components/MainLayout';
 import { ContactContent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import RichContent from '@/components/ui/RichContent';
+import { TextPageSkeleton } from '@/components/ui/PageSkeletons';
 
 export default function ContactPage() {
   const { language } = useLanguage();
@@ -117,11 +118,7 @@ export default function ContactPage() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto"></div>
-          </div>
-        </div>
+        <TextPageSkeleton />
       </MainLayout>
     );
   }

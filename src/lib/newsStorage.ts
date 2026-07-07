@@ -11,6 +11,10 @@ export class NewsStorage {
   };
   private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+  // Promesas en vuelo para no disparar el mismo fetch varias veces en paralelo
+  private static inFlightAll: Promise<NewsItem[]> | null = null;
+  private static inFlightIncludingDrafts: Promise<NewsItem[]> | null = null;
+
   // Invalidar caché cuando se modifica data
   private static invalidateCache(): void {
     this.cache = {
@@ -29,16 +33,25 @@ export class NewsStorage {
         return this.cache.all.data;
       }
 
-      const response = await fetch('/api/news');
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
+      if (!forceRefresh && this.inFlightAll) {
+        return await this.inFlightAll;
       }
-      const news = await response.json();
 
-      // Actualizar caché
-      this.cache.all = { data: news, timestamp: now };
+      this.inFlightAll = (async () => {
+        try {
+          const response = await fetch('/api/news');
+          if (!response.ok) {
+            throw new Error('Failed to fetch news');
+          }
+          const news = await response.json();
+          this.cache.all = { data: news, timestamp: Date.now() };
+          return news;
+        } finally {
+          this.inFlightAll = null;
+        }
+      })();
 
-      return news;
+      return await this.inFlightAll;
     } catch (error) {
       console.error('Error fetching news:', error);
       // Si hay error y tenemos caché, devolver caché aunque esté expirado
@@ -56,16 +69,25 @@ export class NewsStorage {
         return this.cache.allIncludingDrafts.data;
       }
 
-      const response = await fetch('/api/news?includeAll=true');
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
+      if (!forceRefresh && this.inFlightIncludingDrafts) {
+        return await this.inFlightIncludingDrafts;
       }
-      const news = await response.json();
 
-      // Actualizar caché
-      this.cache.allIncludingDrafts = { data: news, timestamp: now };
+      this.inFlightIncludingDrafts = (async () => {
+        try {
+          const response = await fetch('/api/news?includeAll=true');
+          if (!response.ok) {
+            throw new Error('Failed to fetch news');
+          }
+          const news = await response.json();
+          this.cache.allIncludingDrafts = { data: news, timestamp: Date.now() };
+          return news;
+        } finally {
+          this.inFlightIncludingDrafts = null;
+        }
+      })();
 
-      return news;
+      return await this.inFlightIncludingDrafts;
     } catch (error) {
       console.error('Error fetching news:', error);
       // Si hay error y tenemos caché, devolver caché aunque esté expirado

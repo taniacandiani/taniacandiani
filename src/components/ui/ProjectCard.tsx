@@ -19,11 +19,16 @@ export default function ProjectCard({ project, priority = false }: ProjectCardPr
   const title = language === 'en' && project.title_en ? project.title_en : project.title;
   const subtitle = language === 'en' && project.subtitle_en ? project.subtitle_en : project.subtitle;
 
-  // Get project details excerpt
+  // Usar el extracto precalculado por la API (modo resumen) si está disponible;
+  // si no, calcularlo a partir del contenido completo
+  const precomputedExcerpt = language === 'en'
+    ? (project.excerpt_en || project.excerpt)
+    : (project.excerpt || project.excerpt_en);
+
   const projectDetails = language === 'en' && project.projectDetails_en
     ? project.projectDetails_en
     : project.projectDetails;
-  const excerpt = generateNewsExcerpt(projectDetails || project.description || '', 150);
+  const excerpt = precomputedExcerpt || generateNewsExcerpt(projectDetails || project.description || '', 150);
 
   return (
     <Link href={`/proyectos/${project.slug}`} className="group cursor-pointer block">

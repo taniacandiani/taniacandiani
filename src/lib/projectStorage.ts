@@ -6,7 +6,15 @@ export class ProjectStorage {
     data: null,
     timestamp: 0
   };
+  private static summariesCache: { data: Project[] | null; timestamp: number } = {
+    data: null,
+    timestamp: 0
+  };
   private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  // Promesas en vuelo para no disparar el mismo fetch varias veces en paralelo
+  private static inFlightAll: Promise<Project[]> | null = null;
+  private static inFlightSummaries: Promise<Project[]> | null = null;
 
   static async getAll(forceRefresh: boolean = false): Promise<Project[]> {
     try {
@@ -18,20 +26,25 @@ export class ProjectStorage {
         return this.cache.data;
       }
 
-      const response = await fetch('/api/projects');
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects');
+      if (!forceRefresh && this.inFlightAll) {
+        return await this.inFlightAll;
       }
 
-      const projects = await response.json();
+      this.inFlightAll = (async () => {
+        try {
+          const response = await fetch('/api/projects');
+          if (!response.ok) {
+            throw new Error('Failed to fetch projects');
+          }
+          const projects = await response.json();
+          this.cache = { data: projects, timestamp: Date.now() };
+          return projects;
+        } finally {
+          this.inFlightAll = null;
+        }
+      })();
 
-      // Actualizar caché
-      this.cache = {
-        data: projects,
-        timestamp: now
-      };
-
-      return projects;
+      return await this.inFlightAll;
     } catch (error) {
       console.error('Error fetching projects:', error);
       // Si hay error y tenemos caché, devolver caché aunque esté expirado
@@ -39,9 +52,47 @@ export class ProjectStorage {
     }
   }
 
+  // Versión ligera para listados y sidebars: sin tabs ni HTML pesado,
+  // con extracto precalculado (campo excerpt). Mucho más rápida de descargar.
+  static async getSummaries(forceRefresh: boolean = false): Promise<Project[]> {
+    try {
+      const now = Date.now();
+      if (!forceRefresh &&
+          this.summariesCache.data &&
+          (now - this.summariesCache.timestamp) < this.CACHE_DURATION) {
+        return this.summariesCache.data;
+      }
+
+      if (!forceRefresh && this.inFlightSummaries) {
+        return await this.inFlightSummaries;
+      }
+
+      this.inFlightSummaries = (async () => {
+        try {
+          const response = await fetch('/api/projects?summary=true');
+          if (!response.ok) {
+            throw new Error('Failed to fetch project summaries');
+          }
+          const projects = await response.json();
+          this.summariesCache = { data: projects, timestamp: Date.now() };
+          return projects;
+        } finally {
+          this.inFlightSummaries = null;
+        }
+      })();
+
+      return await this.inFlightSummaries;
+    } catch (error) {
+      console.error('Error fetching project summaries:', error);
+      return this.summariesCache.data || this.cache.data || [];
+    }
+  }
+
   // Invalidar caché cuando se modifica data
   private static invalidateCache(): void {
     this.cache = { data: null, timestamp: 0 };
+    this.summariesCache = { data: null, timestamp: 0 };
+    this.featuredCache = { data: null, timestamp: 0 };
   }
 
   static async getById(id: string): Promise<Project | null> {
@@ -56,11 +107,20 @@ export class ProjectStorage {
 
   static async getBySlug(slug: string): Promise<Project | null> {
     try {
-      const projects = await this.getAll();
-      return projects.find(p => p.slug === slug) || null;
+      // Pedir solo el proyecto necesario: evita descargar la lista completa
+      // (~1.3MB) para pintar la página de detalle
+      const response = await fetch(`/api/projects?slug=${encodeURIComponent(slug)}`);
+      if (response.ok) {
+        return await response.json();
+      }
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error('Failed to fetch project by slug');
     } catch (error) {
       console.error('Error getting project by slug:', error);
-      return null;
+      // Fallback: buscar en el caché completo si existe
+      return this.cache.data?.find(p => p.slug === slug) || null;
     }
   }
 
@@ -150,13 +210,47 @@ export class ProjectStorage {
     }
   }
 
+  private static featuredCache: { data: Project[] | null; timestamp: number } = {
+    data: null,
+    timestamp: 0
+  };
+  private static inFlightFeatured: Promise<Project[]> | null = null;
+
   static async getFeatured(): Promise<Project[]> {
     try {
-      const projects = await this.getAll();
-      return projects.filter(p => p.showInHomeHero && p.status === 'published');
+      const now = Date.now();
+      if (this.featuredCache.data &&
+          (now - this.featuredCache.timestamp) < this.CACHE_DURATION) {
+        return this.featuredCache.data;
+      }
+
+      if (this.inFlightFeatured) {
+        return await this.inFlightFeatured;
+      }
+
+      this.inFlightFeatured = (async () => {
+        try {
+          // Endpoint dedicado: devuelve solo los proyectos del carrusel de la
+          // home (publicados y con showInHomeHero) sin descargar la lista completa
+          const response = await fetch('/api/projects?hero=true');
+          if (!response.ok) {
+            throw new Error('Failed to fetch hero projects');
+          }
+          const projects: Project[] = await response.json();
+          const featured = projects.filter(p => p.showInHomeHero && p.status === 'published');
+          this.featuredCache = { data: featured, timestamp: Date.now() };
+          return featured;
+        } finally {
+          this.inFlightFeatured = null;
+        }
+      })();
+
+      return await this.inFlightFeatured;
     } catch (error) {
       console.error('Error getting featured projects:', error);
-      return [];
+      // Fallback al caché completo si existe
+      return this.featuredCache.data ||
+        (this.cache.data || []).filter(p => p.showInHomeHero && p.status === 'published');
     }
   }
 

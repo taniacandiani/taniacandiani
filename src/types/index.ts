@@ -71,6 +71,10 @@ export interface Project {
   featured?: boolean;
   status?: 'published' | 'draft' | 'archived';
 
+  // Extractos precalculados que envía la API en modo resumen (?summary=true)
+  excerpt?: string;
+  excerpt_en?: string;
+
   // Extended fields for full project page
   heroImages?: string[]; // Slider images for hero
   heroImageDescriptions?: string[]; // Descriptions for each hero image (for project slider)
