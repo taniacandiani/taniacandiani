@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import LanguageSelector from '@/components/ui/LanguageSelector';
+import AdminNavMenu from '@/components/ui/AdminNavMenu';
 import GlobalSearch from '@/components/GlobalSearch';
 import { NAVIGATION_ITEMS, SOCIAL_LINKS } from '@/constants/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,6 +47,8 @@ export default function Navbar() {
               </Link>
             );
           })}
+          {/* Acceso al panel: solo se renderiza con sesión de admin */}
+          <AdminNavMenu />
         </div>
 
         {/* Search + Social links + Language selector + Hamburger - a la derecha */}
@@ -120,6 +123,8 @@ export default function Navbar() {
             <div className="pt-4 border-t border-gray-200">
               <LanguageSelector />
             </div>
+            {/* Acceso al panel: solo se renderiza con sesión de admin */}
+            <AdminNavMenu mobile onNavigate={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       )}
