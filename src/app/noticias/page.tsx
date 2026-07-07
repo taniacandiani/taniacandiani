@@ -11,24 +11,50 @@ import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NewsCategory } from '@/types';
 import { NEWS_CATEGORIES } from '@/data/content';
 import { SAMPLE_NEWS } from '@/data/content';
-import { generateNewsExcerpt } from '@/lib/utils';
+import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
+
+function getInitialNoticiasFilters() {
+  const defaults = { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as 'date' | 'title' | 'category' };
+  if (typeof window === 'undefined') return defaults;
+  try {
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    const comingFromSameSection = prevPath.startsWith('/noticias/');
+
+    if (comingFromSameSection) {
+      const saved = sessionStorage.getItem('filters-noticias');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          searchTerm: '', // Always reset search
+          selectedCategory: parsed.selectedCategory || null,
+          selectedYear: parsed.selectedYear ?? null,
+          sortBy: (parsed.sortBy || 'date') as 'date' | 'title' | 'category'
+        };
+      }
+    } else {
+      sessionStorage.removeItem('filters-noticias');
+    }
+  } catch { /* ignore */ }
+  return defaults;
+}
 
 function NoticiasContent() {
   const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialFilters = getInitialNoticiasFilters();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState(initialFilters.searchTerm);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialFilters.selectedCategory);
+  const [selectedYear, setSelectedYear] = useState<number | null>(initialFilters.selectedYear);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>(initialFilters.sortBy);
   const [activeAccordion, setActiveAccordion] = useState<'categories' | 'year' | 'sort' | null>(null);
 
   // Restaurar posición de scroll cuando el contenido esté listo
@@ -93,28 +119,43 @@ function NoticiasContent() {
     updateCategoryCounts();
   }, [news]);
 
-  // Initialize filters from URL params
+  // Override filters from URL params if present (e.g. direct/shared link)
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
-    
-    setSelectedCategory(category || null);
-    setSelectedYear(year ? parseInt(year) : null);
-    setSearchTerm(search || '');
+    const hasUrlParams = category || year || search;
+
+    if (hasUrlParams) {
+      setSelectedCategory(category || null);
+      setSelectedYear(year ? parseInt(year) : null);
+      setSearchTerm(search || '');
+    }
   }, [searchParams]);
+
+  // Save filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('filters-noticias', JSON.stringify({
+        selectedCategory, selectedYear, searchTerm, sortBy
+      }));
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedCategory, selectedYear, searchTerm, sortBy]);
 
   useEffect(() => {
     let filtered = news.filter(n => n.status === 'published');
 
     if (searchTerm) {
+      const searchNorm = normalizeSearch(searchTerm);
       filtered = filtered.filter(n => {
-        // Search in both Spanish and English content
+        // Search in both Spanish and English content (accent-insensitive)
         const titleToSearch = language === 'en' && n.titleEn ? n.titleEn : n.title;
         const contentToSearch = language === 'en' && n.contentEn ? n.contentEn : n.content;
 
-        return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
+        return normalizeSearch(titleToSearch).includes(searchNorm) ||
+               normalizeSearch(contentToSearch).includes(searchNorm);
       });
     }
 
@@ -123,13 +164,15 @@ function NoticiasContent() {
     }
 
     if (selectedYear) {
-      filtered = filtered.filter(n => new Date(n.publishedAt).getFullYear() === selectedYear);
+      filtered = filtered.filter(n => new Date(n.createdAt || n.publishedAt).getFullYear() === selectedYear);
     }
 
     // Ordenar
     filtered = [...filtered].sort((a, b) => {
       if (sortBy === 'date') {
-        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        const dateA = new Date(a.createdAt || a.publishedAt).getTime();
+        const dateB = new Date(b.createdAt || b.publishedAt).getTime();
+        return dateB - dateA;
       } else if (sortBy === 'category') {
         const catA = a.categories?.[0] || '';
         const catB = b.categories?.[0] || '';
@@ -216,7 +259,7 @@ function NoticiasContent() {
   const availableYears = useMemo(() => {
     if (!Array.isArray(news)) return [];
 
-    const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.publishedAt).getFullYear()))];
+    const years = [...new Set(news.filter(n => n.status === 'published').map(n => new Date(n.createdAt || n.publishedAt).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [news]);
 
@@ -306,7 +349,7 @@ function NoticiasContent() {
         <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
             onClick={handleSidebarToggle}
-            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            className="relative flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
             <span
@@ -315,6 +358,9 @@ function NoticiasContent() {
             >
               thumbnail_bar
             </span>
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-black rounded-full"></span>
+            )}
           </button>
         </div>
 
@@ -664,7 +710,7 @@ function NoticiasContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'categories' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
@@ -711,7 +757,7 @@ function NoticiasContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'year' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}

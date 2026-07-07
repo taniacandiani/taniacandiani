@@ -4,13 +4,28 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Hook para restaurar la posición del scroll cuando el usuario regresa a una página.
+ * Solo restaura si el usuario viene de una sub-página de la misma sección.
+ * Si viene de otra sección (home, noticias, etc.) se resetea al top.
  *
- * @param key - Identificador único para la página (ej: 'proyectos', 'noticias')
+ * @param key - Identificador único para la página (ej: 'proyectos', 'noticias', 'exposiciones')
  * @param isReady - Indica si el contenido está listo (loading === false)
  */
 export function useScrollRestoration(key: string, isReady: boolean = true) {
   const hasRestored = useRef(false);
+  const shouldRestore = useRef(false);
   const storageKey = `scroll-${key}`;
+
+  // On mount, determine if we should restore based on prev-path
+  useEffect(() => {
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    // Only restore scroll if coming back from a detail page within the same section
+    shouldRestore.current = prevPath.startsWith(`/${key}/`);
+
+    if (!shouldRestore.current) {
+      // Coming from another section - clear saved scroll position
+      sessionStorage.removeItem(storageKey);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guardar posición continuamente mientras el usuario hace scroll
   useEffect(() => {
@@ -35,7 +50,7 @@ export function useScrollRestoration(key: string, isReady: boolean = true) {
 
   // Restaurar posición cuando el contenido esté listo
   useEffect(() => {
-    if (!isReady || hasRestored.current) return;
+    if (!isReady || hasRestored.current || !shouldRestore.current) return;
 
     const savedPosition = sessionStorage.getItem(storageKey);
     if (!savedPosition) return;

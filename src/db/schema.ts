@@ -108,6 +108,7 @@ export const news = pgTable('news', {
   status: varchar('status', { length: 50 }).default('draft'),
   tags: jsonb('tags').$type<string[]>(),
   heroImages: jsonb('hero_images').$type<string[]>(),
+  heroImageContain: boolean('hero_image_contain').default(false),
 
   // English translations
   titleEn: varchar('title_en', { length: 500 }),
@@ -215,6 +216,7 @@ export const exhibitions = pgTable('exhibitions', {
   status: varchar('status', { length: 50 }).default('draft'),
   tags: jsonb('tags').$type<string[]>(),
   heroImages: jsonb('hero_images').$type<string[]>(),
+  heroImageContain: boolean('hero_image_contain').default(false),
   externalLink: text('external_link'),
 
   // English translations

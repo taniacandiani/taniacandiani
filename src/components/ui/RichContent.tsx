@@ -1,20 +1,39 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 
 interface RichContentProps {
   content: string;
   className?: string;
 }
 
-export default function RichContent({ content, className = '' }: RichContentProps) {
-  const processedContent = useMemo(() => {
-    if (!content) {
-      return '';
-    }
+// Componente estable para iframes de Vimeo - no se destruye en re-renders
+const VimeoEmbed = memo(function VimeoEmbed({ videoId }: { videoId: string }) {
+  return (
+    <div style={{ position: 'relative', maxWidth: '1200px', margin: '2rem auto', paddingTop: '56.25%' }}>
+      <iframe
+        src={`https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&autopause=0&muted=0&loop=0&controls=1`}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', borderRadius: '8px', background: '#f3f4f6' }}
+      />
+    </div>
+  );
+});
 
-    // Debug: Ver qué contenido estamos recibiendo (solo se ejecuta cuando content cambia)
-    console.log('RichContent processing content:', content.substring(0, 200));
+// Marcador usado para separar contenido HTML de los embeds de Vimeo
+const VIMEO_PLACEHOLDER = '___VIMEO_EMBED___';
+
+interface ContentPart {
+  type: 'html' | 'vimeo';
+  value: string; // HTML string o video ID
+}
+
+function RichContent({ content, className = '' }: RichContentProps) {
+  const parts = useMemo((): ContentPart[] => {
+    if (!content) {
+      return [];
+    }
 
     // Decodificar entidades HTML si el contenido está escapado
     const decodeHTMLEntities = (text: string): string => {
@@ -23,281 +42,104 @@ export default function RichContent({ content, className = '' }: RichContentProp
       return textarea.value;
     };
 
-    // Si el contenido contiene entidades HTML escapadas, decodificarlas
     let processed = content;
     if (content.includes('&lt;') || content.includes('&gt;') || content.includes('&quot;')) {
       processed = decodeHTMLEntities(content);
-      console.log('Content was HTML-encoded, decoded to:', processed.substring(0, 200));
     }
 
-    // Actualizar URLs de Vimeo para agregar/corregir parámetros
-    // Reemplazar TODAS las URLs de Vimeo con los parámetros correctos
+    // Extraer iframes de Vimeo (con o sin wrapper) y reemplazar con placeholders
+    const vimeoIds: string[] = [];
+    // Primero: capturar wrapper + iframe juntos
     processed = processed.replace(
-      /src="https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?"/g,
-      (match, videoId) => {
-        // Parámetros optimizados para evitar pausa automática:
-        // title=0, byline=0, portrait=0: Ocultar información del video
-        // autopause=0: CRÍTICO - No pausar cuando el iframe pierde el foco
-        // muted=0: No silenciar (permite reproducción normal)
-        // loop=0: No repetir en bucle
-        // controls=1: Mostrar controles del reproductor
-        console.log(`Transforming Vimeo URL for video ID: ${videoId}`);
-        return `src="https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&autopause=0&muted=0&loop=0&controls=1"`;
+      /<div[^>]*class="video-wrapper"[^>]*>\s*<iframe[^>]*src="https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?\"[^>]*>(?:<\/iframe>)?\s*<\/div>/gi,
+      (_match, videoId) => {
+        vimeoIds.push(videoId);
+        return VIMEO_PLACEHOLDER;
+      }
+    );
+    // Segundo: capturar iframes sueltos (sin wrapper)
+    processed = processed.replace(
+      /<iframe[^>]*src="https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?[^"]*)?\"[^>]*>(?:<\/iframe>)?/gi,
+      (_match, videoId) => {
+        vimeoIds.push(videoId);
+        return VIMEO_PLACEHOLDER;
+      }
+    );
+    // Limpiar wrappers vacíos residuales
+    processed = processed.replace(/<div[^>]*class="video-wrapper"[^>]*>\s*<\/div>/gi, '');
+
+    // También capturar enlaces directos de Vimeo que no sean iframes (por si hay solo URLs)
+    processed = processed.replace(
+      /(?:<p[^>]*>)?\s*https:\/\/(?:www\.)?vimeo\.com\/(\d+)\s*(?:<\/p>)?/gi,
+      (_match, videoId) => {
+        vimeoIds.push(videoId);
+        return VIMEO_PLACEHOLDER;
       }
     );
 
-    // Asegurar que los iframes de Vimeo tengan los atributos necesarios
+    // Procesar formato del HTML restante (sin iframes de Vimeo)
+    if (!processed.includes('<p>') && !processed.includes('<div') && !processed.includes('<iframe') && !processed.includes('<br') && !processed.includes(VIMEO_PLACEHOLDER)) {
+      const paragraphs = processed.split(/\n\s*\n/).filter(p => p.trim());
+      if (paragraphs.length > 1) {
+        processed = paragraphs.map(p => `<p class="paragraph">${p.trim().replace(/\n/g, '<br>')}</p>`).join('');
+      } else {
+        processed = `<p class="paragraph">${processed.replace(/\n/g, '<br>')}</p>`;
+      }
+    } else {
+      processed = processed.replace(/<br\s*\/?>/gi, '<br class="line-break">');
+      processed = processed.replace(/<p>/gi, '<p class="paragraph">');
+      processed = processed.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p class="paragraph">');
+      if (!processed.includes('<p>') && !processed.includes('<div') && !processed.includes('<iframe') && !processed.includes(VIMEO_PLACEHOLDER)) {
+        processed = `<p class="paragraph">${processed}</p>`;
+      }
+    }
+
+    // Asegurar que iframes no-Vimeo tengan atributos necesarios
     processed = processed.replace(
       /<iframe([^>]*src="https:\/\/player\.vimeo\.com[^"]*")([^>]*)>/g,
       (match, srcPart, restPart) => {
         let newIframe = `<iframe${srcPart}`;
-
-        // Agregar frameborder="0" si no existe (mejor compatibilidad)
-        if (!restPart.includes('frameborder')) {
-          newIframe += ' frameborder="0"';
-        }
-
-        // Agregar atributo allow (incluye fullscreen, evitando el warning de allowfullscreen)
-        if (!restPart.includes('allow=')) {
-          newIframe += ' allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"';
-        }
-
-        // Solo agregar allowfullscreen si NO tiene el atributo allow (para compatibilidad legacy)
-        if (!restPart.includes('allow=') && !restPart.includes('allowfullscreen') && !restPart.includes('allowFullScreen')) {
-          newIframe += ' allowfullscreen';
-        }
-
+        if (!restPart.includes('frameborder')) newIframe += ' frameborder="0"';
+        if (!restPart.includes('allow=')) newIframe += ' allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"';
         newIframe += restPart + '>';
         return newIframe;
       }
     );
 
-    // Mantener iframes y videos intactos (no modificar su HTML)
-    // Esto preserva los iframes de Vimeo y YouTube
+    // Dividir el contenido en partes: HTML y embeds de Vimeo
+    const segments = processed.split(VIMEO_PLACEHOLDER);
+    const result: ContentPart[] = [];
+    let vimeoIndex = 0;
 
-    // Si el texto no tiene tags HTML, convertir saltos de línea en párrafos
-    if (!processed.includes('<p>') && !processed.includes('<div') && !processed.includes('<iframe') && !processed.includes('<br')) {
-      // Convertir saltos de línea dobles en separadores de párrafo
-      const paragraphs = processed.split(/\n\s*\n/).filter(p => p.trim());
-      if (paragraphs.length > 1) {
-        processed = paragraphs.map(p => `<p class="paragraph">${p.trim().replace(/\n/g, '<br>')}</p>`).join('');
-      } else {
-        // Si solo hay un párrafo, convertir saltos simples en <br>
-        processed = `<p class="paragraph">${processed.replace(/\n/g, '<br>')}</p>`;
+    for (let i = 0; i < segments.length; i++) {
+      const html = segments[i].trim();
+      if (html) {
+        result.push({ type: 'html', value: html });
       }
-    } else {
-      // Convertir saltos de línea simples en espaciado visual (solo fuera de iframes)
-      processed = processed.replace(/<br\s*\/?>/gi, '<br class="line-break">');
-
-      // Asegurar que los párrafos tengan espaciado consistente
-      processed = processed.replace(/<p>/gi, '<p class="paragraph">');
-
-      // Convertir múltiples saltos de línea consecutivos en párrafos separados
-      processed = processed.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p class="paragraph">');
-
-      // Envolver en un párrafo si no hay tags de párrafo (y no es un iframe directo)
-      if (!processed.includes('<p>') && !processed.includes('<div') && !processed.includes('<iframe')) {
-        processed = `<p class="paragraph">${processed}</p>`;
+      if (i < segments.length - 1 && vimeoIndex < vimeoIds.length) {
+        result.push({ type: 'vimeo', value: vimeoIds[vimeoIndex] });
+        vimeoIndex++;
       }
     }
 
-    return processed;
+    return result;
   }, [content]);
 
-  if (!processedContent) {
+  if (parts.length === 0) {
     return null;
   }
 
   return (
-    <>
-      {/* CSS para videos responsivos */}
-      <style jsx global>{`
-        .rich-content .video-wrapper {
-          position: relative;
-          max-width: 1200px; /* Aumentar ancho máximo para videos más grandes */
-          margin: 2rem auto; /* Centrar el video */
-        }
-
-        .rich-content .video-wrapper::before {
-          content: '';
-          display: block;
-          padding-top: 56.25%; /* 16:9 aspect ratio */
-        }
-
-        .rich-content .video-wrapper iframe {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: none;
-          border-radius: 8px;
-          background: #f3f4f6;
-        }
-
-        /* YouTube embeds from TipTap */
-        .rich-content div[data-youtube-video] {
-          position: relative;
-          max-width: 1200px; /* Aumentar ancho máximo para consistencia */
-          margin: 2rem auto; /* Centrar el video */
-          padding-bottom: 0;
-          height: auto;
-          overflow: hidden;
-          border-radius: 8px;
-        }
-
-        .rich-content div[data-youtube-video]::before {
-          content: '';
-          display: block;
-          padding-top: 56.25%; /* 16:9 aspect ratio */
-        }
-
-        .rich-content div[data-youtube-video] iframe {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: none;
-          border-radius: 8px;
-        }
-
-        /* Images - Full Width */
-        .rich-content img {
-          width: 100%; /* Ancho completo */
-          height: auto;
-          border-radius: 8px;
-          margin: 2rem 0;
-          display: block;
-          object-fit: cover;
-        }
-
-        /* PDF Embed Container */
-        .rich-content .pdf-embed-container {
-          margin: 2rem 0;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #fff;
-        }
-
-        .rich-content .pdf-embed-header {
-          padding: 12px 16px;
-          background: #f3f4f6;
-          border-bottom: 1px solid #e5e7eb;
-          font-weight: 500;
-          color: #374151;
-        }
-
-        .rich-content .pdf-embed-container iframe {
-          width: 100%;
-          height: 600px;
-          border: none;
-          display: block;
-        }
-
-        .rich-content .pdf-embed-footer {
-          padding: 12px 16px;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-          text-align: center;
-        }
-
-        .rich-content .pdf-embed-footer a {
-          color: #2563eb;
-          text-decoration: underline;
-        }
-
-        /* Legacy PDF wrapper support */
-        .rich-content .pdf-wrapper {
-          position: relative;
-          width: 100%;
-          padding-bottom: 141.42%;
-          margin: 2rem 0;
-        }
-
-        .rich-content .pdf-wrapper iframe {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          background: #f9f9f9;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .rich-content .video-wrapper,
-          .rich-content div[data-youtube-video] {
-            max-width: 100%;
-          }
-        }
-
-        /* Paragraphs and text */
-        .rich-content .paragraph {
-          margin-bottom: 1em;
-        }
-
-        /* Los <br> bajan exactamente una línea (comportamiento nativo) */
-        .rich-content .line-break {
-          display: inline;
-          height: auto;
-        }
-
-        .rich-content p:last-child {
-          margin-bottom: 0;
-        }
-
-        /* Lists */
-        .rich-content ul,
-        .rich-content ol {
-          margin: 1em 0;
-          padding-left: 2em;
-        }
-
-        .rich-content li {
-          margin: 0.5em 0;
-        }
-
-        /* Links */
-        .rich-content a {
-          color: #2563eb;
-          text-decoration: underline;
-          transition: color 0.2s;
-        }
-
-        .rich-content a:hover {
-          color: #1d4ed8;
-        }
-
-        /* Headings */
-        .rich-content h1,
-        .rich-content h2,
-        .rich-content h3 {
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
-          font-weight: 600;
-        }
-
-        .rich-content h1 {
-          font-size: 2em;
-        }
-
-        .rich-content h2 {
-          font-size: 1.5em;
-        }
-
-        .rich-content h3 {
-          font-size: 1.25em;
-        }
-      `}</style>
-
-      <div
-        className={`rich-content ${className}`}
-        dangerouslySetInnerHTML={{ __html: processedContent }}
-      />
-    </>
+    <div className={`rich-content ${className}`}>
+      {parts.map((part, i) =>
+        part.type === 'vimeo' ? (
+          <VimeoEmbed key={`vimeo-${part.value}`} videoId={part.value} />
+        ) : (
+          <div key={`html-${i}`} dangerouslySetInnerHTML={{ __html: part.value }} />
+        )
+      )}
+    </div>
   );
 }
+
+export default memo(RichContent);

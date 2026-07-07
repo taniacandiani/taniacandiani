@@ -318,7 +318,7 @@ export default function EditExhibitionPage() {
                 value={formData.startDate ? formData.startDate.split('T')[0] : ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  startDate: e.target.value ? new Date(e.target.value).toISOString() : ''
+                  startDate: e.target.value ? e.target.value + 'T12:00:00.000Z' : ''
                 })}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -333,7 +333,7 @@ export default function EditExhibitionPage() {
                 value={formData.endDate ? formData.endDate.split('T')[0] : ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  endDate: e.target.value ? new Date(e.target.value).toISOString() : ''
+                  endDate: e.target.value ? e.target.value + 'T12:00:00.000Z' : ''
                 })}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -415,6 +415,30 @@ export default function EditExhibitionPage() {
             currentImage={formData.image}
             folder={`exposiciones/${id}`}
           />
+          {/* Opciones de visualización de imagen */}
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="heroImageDisplayMode"
+                checked={!formData.heroImageContain}
+                onChange={() => setFormData({ ...formData, heroImageContain: false })}
+                className="text-black focus:ring-black"
+              />
+              <span className="text-sm font-medium text-gray-700">Ajustado al ancho</span>
+              <span className="text-xs text-gray-500 font-normal">(Por defecto)</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="heroImageDisplayMode"
+                checked={formData.heroImageContain === true}
+                onChange={() => setFormData({ ...formData, heroImageContain: true })}
+                className="text-black focus:ring-black"
+              />
+              <span className="text-sm font-medium text-gray-700">Ajustado solo a altura</span>
+            </label>
+          </div>
         </div>
 
         {/* Hero Images */}

@@ -158,7 +158,7 @@ export default function Home() {
     "description": "Artista contemporánea especializada en sitio específico, arqueología de los medios y prácticas sociales",
     "url": "https://taniacandiani.com",
     "sameAs": [
-      "https://instagram.com/taniacandiani",
+      "https://www.instagram.com/tcandiani/",
       // Add other social media URLs
     ],
     "knowsAbout": [

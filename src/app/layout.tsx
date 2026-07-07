@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import PathTracker from '@/components/PathTracker';
 
 export const metadata: Metadata = {
   title: {
@@ -122,6 +123,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body>
         <LanguageProvider>
+          <PathTracker />
           {children}
         </LanguageProvider>
       </body>

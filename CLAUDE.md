@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Rules
+
+- **Never add Co-Authored-By lines** in git commits. Do not include Claude as co-author.
+- **Never mention Claude or AI** as author/co-author in any text content, comments, or generated files.
+
 ## Development Commands
 
 ```bash

@@ -11,6 +11,7 @@ export interface NewsItem {
   content: string; // Full article content (required)
   image: string; // Main card image
   heroImages?: string[]; // Slider images for hero (like projects)
+  heroImageContain?: boolean; // Display hero image with object-contain instead of object-cover
   slug: string;
   publishedAt: string;
   categories?: string[]; // Changed from single category to array
@@ -139,6 +140,7 @@ export interface Exhibition {
   content: string; // Full exhibition content (required)
   image: string; // Main card image
   heroImages?: string[]; // Slider images for hero (like projects)
+  heroImageContain?: boolean; // Display hero image with object-contain instead of object-cover
   slug: string;
   publishedAt: string;
   categories?: string[]; // Multiple categories

@@ -8,22 +8,48 @@ import MainLayout from '@/components/MainLayout';
 import { Exhibition, ExhibitionCategory } from '@/types';
 import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { ExhibitionCategoryStorage } from '@/lib/exhibitionCategoryStorage';
-import { generateNewsExcerpt } from '@/lib/utils';
+import { generateNewsExcerpt, normalizeSearch } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 type SortOption = 'date' | 'title' | 'category';
+
+function getInitialExposicionesFilters() {
+  const defaults = { searchTerm: '', selectedCategory: null as string | null, selectedYear: null as number | null, sortBy: 'date' as SortOption };
+  if (typeof window === 'undefined') return defaults;
+  try {
+    const prevPath = sessionStorage.getItem('prev-path') || '';
+    const comingFromSameSection = prevPath.startsWith('/exposiciones/');
+
+    if (comingFromSameSection) {
+      const saved = sessionStorage.getItem('filters-exposiciones');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          searchTerm: '', // Always reset search
+          selectedCategory: parsed.selectedCategory || null,
+          selectedYear: parsed.selectedYear ?? null,
+          sortBy: (parsed.sortBy || 'date') as SortOption
+        };
+      }
+    } else {
+      sessionStorage.removeItem('filters-exposiciones');
+    }
+  } catch { /* ignore */ }
+  return defaults;
+}
 
 function ExposicionesContent() {
   const { language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const initialFilters = getInitialExposicionesFilters();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [filteredExhibitions, setFilteredExhibitions] = useState<Exhibition[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // Default to all categories
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState(initialFilters.searchTerm);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialFilters.selectedCategory);
+  const [selectedYear, setSelectedYear] = useState<number | null>(initialFilters.selectedYear);
   const [categories, setCategories] = useState<ExhibitionCategory[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
@@ -31,11 +57,12 @@ function ExposicionesContent() {
   const [categoriesAccordionOpen, setCategoriesAccordionOpen] = useState(false);
   const [yearAccordionOpen, setYearAccordionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sortBy);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Restaurar posición de scroll cuando el contenido esté listo
   useScrollRestoration('exposiciones', !loading);
+
 
   useEffect(() => {
     const initializeData = async () => {
@@ -81,28 +108,43 @@ function ExposicionesContent() {
     };
   }, []);
 
-  // Initialize filters from URL params
+  // Override filters from URL params if present (e.g. direct/shared link)
   useEffect(() => {
     const category = searchParams.get('category');
     const year = searchParams.get('year');
     const search = searchParams.get('search');
+    const hasUrlParams = category || year || search;
 
-    setSelectedCategory(category || null); // Default to all categories
-    setSelectedYear(year ? parseInt(year) : null);
-    setSearchTerm(search || '');
+    if (hasUrlParams) {
+      setSelectedCategory(category || null);
+      setSelectedYear(year ? parseInt(year) : null);
+      setSearchTerm(search || '');
+    }
   }, [searchParams]);
+
+  // Save filter state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('filters-exposiciones', JSON.stringify({
+        selectedCategory, selectedYear, searchTerm, sortBy
+      }));
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedCategory, selectedYear, searchTerm, sortBy]);
 
   // Filter and sort exhibitions
   useEffect(() => {
     let filtered = exhibitions.filter(e => e.status === 'published');
 
     if (searchTerm) {
+      const searchNorm = normalizeSearch(searchTerm);
       filtered = filtered.filter(e => {
         const titleToSearch = language === 'en' && e.titleEn ? e.titleEn : e.title;
         const contentToSearch = language === 'en' && e.contentEn ? e.contentEn : e.content;
 
-        return titleToSearch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               contentToSearch.toLowerCase().includes(searchTerm.toLowerCase());
+        return normalizeSearch(titleToSearch).includes(searchNorm) ||
+               normalizeSearch(contentToSearch).includes(searchNorm);
       });
     }
 
@@ -286,7 +328,8 @@ function ExposicionesContent() {
     return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
@@ -311,7 +354,7 @@ function ExposicionesContent() {
         <div className="hidden lg:block fixed top-36 left-8 z-50">
           <button
             onClick={handleSidebarToggle}
-            className="flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
+            className="relative flex p-1 bg-white hover:bg-gray-100 rounded-md transition-colors items-center justify-center cursor-pointer shadow-lg border border-gray-200"
             aria-label={sidebarVisible ? "Ocultar sidebar" : "Mostrar sidebar"}
           >
             <span
@@ -320,6 +363,9 @@ function ExposicionesContent() {
             >
               thumbnail_bar
             </span>
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-black rounded-full"></span>
+            )}
           </button>
         </div>
 
@@ -597,7 +643,7 @@ function ExposicionesContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'categories' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'categories' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ category: null })}
@@ -644,7 +690,7 @@ function ExposicionesContent() {
                   </span>
                 </button>
                 <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'year' ? 'max-h-96' : 'max-h-0'
+                  activeAccordion === 'year' ? 'max-h-[800px]' : 'max-h-0'
                 }`}>
                   <button
                     onClick={() => updateFilter({ year: null })}

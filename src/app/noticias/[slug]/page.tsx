@@ -285,12 +285,12 @@ export default function NoticiaPage({ params }: Props) {
             !sidebarVisible ? '-ml-0' : ''
           }`}>
             {/* Featured Image - FIRST */}
-            <div className="relative h-96 w-full mb-8 rounded-lg overflow-hidden">
+            <div className={`relative h-96 w-full mb-8 rounded-lg overflow-hidden ${newsItem.heroImageContain ? 'bg-transparent' : ''}`}>
               <Image
                 src={newsItem.image}
                 alt={title}
                 fill
-                className="object-cover"
+                className={newsItem.heroImageContain ? "object-contain" : "object-cover"}
                 priority
               />
             </div>

@@ -45,7 +45,8 @@ export default function ExhibitionDetailPage() {
     return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
@@ -89,12 +90,12 @@ export default function ExhibitionDetailPage() {
         {/* Hero Image Slider */}
         {exhibition.heroImages && exhibition.heroImages.length > 0 ? (
           <div className="mb-12 relative">
-            <div className="relative aspect-[16/7] max-h-[500px] w-full overflow-hidden rounded-lg bg-gray-100">
+            <div className="relative aspect-[16/7] max-h-[500px] w-full overflow-hidden rounded-lg bg-gray-100" style={{ backgroundColor: exhibition.heroImageContain ? 'transparent' : undefined }}>
               <Image
                 src={exhibition.heroImages[currentSlide]}
                 alt={`${language === 'en' && exhibition.titleEn ? exhibition.titleEn : exhibition.title} - Image ${currentSlide + 1}`}
                 fill
-                className="object-cover"
+                className={exhibition.heroImageContain ? "object-contain" : "object-cover"}
                 priority
               />
 
@@ -138,12 +139,12 @@ export default function ExhibitionDetailPage() {
             </div>
           </div>
         ) : exhibition.image ? (
-          <div className="mb-12 relative aspect-[16/7] max-h-[500px] w-full overflow-hidden rounded-lg bg-gray-100">
+          <div className="mb-12 relative aspect-[16/7] max-h-[500px] w-full overflow-hidden rounded-lg bg-gray-100" style={{ backgroundColor: exhibition.heroImageContain ? 'transparent' : undefined }}>
             <Image
               src={exhibition.image}
               alt={language === 'en' && exhibition.titleEn ? exhibition.titleEn : exhibition.title}
               fill
-              className="object-cover"
+              className={exhibition.heroImageContain ? "object-contain" : "object-cover"}
               priority
             />
           </div>

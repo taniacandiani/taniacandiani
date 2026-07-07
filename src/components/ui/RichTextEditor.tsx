@@ -358,6 +358,29 @@ export default function RichTextEditor({
 
       {/* CSS para los párrafos y elementos dentro del editor */}
       <style jsx global>{`
+        .ProseMirror h1 {
+          font-size: 1.75em;
+          font-weight: 700;
+          line-height: 1.2;
+          margin-bottom: 0.5em;
+          margin-top: 0.5em;
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 0.25em;
+        }
+        .ProseMirror h2 {
+          font-size: 1.4em;
+          font-weight: 600;
+          line-height: 1.3;
+          margin-bottom: 0.5em;
+          margin-top: 0.5em;
+        }
+        .ProseMirror h3 {
+          font-size: 1.15em;
+          font-weight: 600;
+          line-height: 1.4;
+          margin-bottom: 0.5em;
+          margin-top: 0.5em;
+        }
         .ProseMirror p {
           margin-bottom: 1em;
         }
@@ -446,6 +469,8 @@ export default function RichTextEditor({
           <strong>B</strong>
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('italic') ? 'bg-gray-300' : ''}`}
           title="Cursiva"
@@ -453,6 +478,8 @@ export default function RichTextEditor({
           <em>I</em>
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('underline') ? 'bg-gray-300' : ''}`}
           title="Subrayado"
@@ -464,21 +491,80 @@ export default function RichTextEditor({
         
         {/* Headings */}
         <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (editor.isActive('heading', { level: 1 })) {
+              editor.chain().focus().setParagraph().run();
+            } else {
+              // Check if there are any H1 in the document (cursor might not be in them)
+              let hasH1 = false;
+              editor.state.doc.descendants((node) => {
+                if (node.type.name === 'heading' && node.attrs.level === 1) {
+                  hasH1 = true;
+                  return false;
+                }
+              });
+              if (hasH1) {
+                // Select all and convert to paragraph to remove all H1s
+                editor.chain().focus().selectAll().setParagraph().run();
+              } else {
+                editor.chain().focus().setHeading({ level: 1 }).run();
+              }
+            }
+          }}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('heading', { level: 1 }) ? 'bg-gray-300' : ''}`}
           title="Título 1"
         >
           H1
         </button>
         <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (editor.isActive('heading', { level: 2 })) {
+              editor.chain().focus().setParagraph().run();
+            } else {
+              let hasH2 = false;
+              editor.state.doc.descendants((node) => {
+                if (node.type.name === 'heading' && node.attrs.level === 2) {
+                  hasH2 = true;
+                  return false;
+                }
+              });
+              if (hasH2) {
+                editor.chain().focus().selectAll().setParagraph().run();
+              } else {
+                editor.chain().focus().setHeading({ level: 2 }).run();
+              }
+            }
+          }}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('heading', { level: 2 }) ? 'bg-gray-300' : ''}`}
           title="Título 2"
         >
           H2
         </button>
         <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (editor.isActive('heading', { level: 3 })) {
+              editor.chain().focus().setParagraph().run();
+            } else {
+              let hasH3 = false;
+              editor.state.doc.descendants((node) => {
+                if (node.type.name === 'heading' && node.attrs.level === 3) {
+                  hasH3 = true;
+                  return false;
+                }
+              });
+              if (hasH3) {
+                editor.chain().focus().selectAll().setParagraph().run();
+              } else {
+                editor.chain().focus().setHeading({ level: 3 }).run();
+              }
+            }
+          }}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('heading', { level: 3 }) ? 'bg-gray-300' : ''}`}
           title="Título 3"
         >
@@ -489,6 +575,8 @@ export default function RichTextEditor({
         
         {/* Lists */}
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('bulletList') ? 'bg-gray-300' : ''}`}
           title="Lista con viñetas"
@@ -496,6 +584,8 @@ export default function RichTextEditor({
           •
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('orderedList') ? 'bg-gray-300' : ''}`}
           title="Lista numerada"
@@ -507,6 +597,8 @@ export default function RichTextEditor({
         
         {/* Alignment */}
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-300' : ''}`}
           title="Alinear izquierda"
@@ -516,6 +608,8 @@ export default function RichTextEditor({
           </svg>
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-300' : ''}`}
           title="Centrar"
@@ -525,6 +619,8 @@ export default function RichTextEditor({
           </svg>
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-300' : ''}`}
           title="Alinear derecha"
@@ -534,6 +630,8 @@ export default function RichTextEditor({
           </svg>
         </button>
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
           className={`p-2 rounded hover:bg-gray-200 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-gray-300' : ''}`}
           title="Justificar"
@@ -578,15 +676,19 @@ export default function RichTextEditor({
         
         {/* Clear formatting */}
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
           className="p-2 rounded hover:bg-gray-200"
           title="Limpiar formato"
         >
           🧹
         </button>
-        
+
         {/* Clean HTML button */}
         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             if (editor) {
               const cleanContent = getCleanContent();
