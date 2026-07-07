@@ -10,6 +10,7 @@ import { ProjectStorage } from '@/lib/projectStorage';
 import { CategoryStorage } from '@/lib/categoryStorage';
 import { PROJECTS, PROJECT_CATEGORIES } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { optimizeCloudinaryUrl, CLOUDINARY_PRESETS } from '@/lib/cloudinaryUtils';
 
@@ -339,8 +340,11 @@ export default function ProjectPage({ params }: Props) {
           setCategories(PROJECT_CATEGORIES);
         }
 
-        // Check if project was found
-        const project = foundProject || PROJECTS.find(p => p.slug === slug);
+        // Check if project was found. La API solo devuelve borradores al
+        // admin con sesión iniciada; el público recibe únicamente publicados,
+        // por lo que un borrador aquí es una vista previa legítima.
+        const project = foundProject ||
+          PROJECTS.find(p => p.slug === slug && p.status === 'published');
 
         if (!project) {
           notFound();
@@ -551,6 +555,7 @@ export default function ProjectPage({ params }: Props) {
 
   return (
     <MainLayout>
+      <DraftPreviewNotice status={project.status} />
       <div className="container-mobile py-4 lg:py-8 pt-12 lg:pt-24">
         {/* Mobile: Breadcrumb al inicio */}
         <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">

@@ -240,9 +240,10 @@ export default function RichContent({ content, className = '' }: RichContentProp
           margin-bottom: 1em;
         }
 
+        /* Los <br> bajan exactamente una línea (comportamiento nativo) */
         .rich-content .line-break {
-          display: block;
-          height: 0.5em;
+          display: inline;
+          height: auto;
         }
 
         .rich-content p:last-child {

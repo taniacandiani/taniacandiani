@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { renderToStream } from '@react-pdf/renderer';
 import { ProjectService } from '@/lib/db/projectService';
 import { ProjectPDF } from '@/components/pdf/ProjectPDF';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export async function GET(
   request: NextRequest,
@@ -22,8 +23,8 @@ export async function GET(
       );
     }
 
-    // Only generate PDF for published projects
-    if (project.status !== 'published') {
+    // Only generate PDF for published projects (admin can preview drafts)
+    if (project.status !== 'published' && !isAdminRequest(request)) {
       return NextResponse.json(
         { error: 'Project is not published' },
         { status: 403 }

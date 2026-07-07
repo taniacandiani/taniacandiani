@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ExhibitionService } from '@/lib/db/exhibitionService';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const exhibition = await ExhibitionService.getBySlug(params.slug);
+    // El admin con sesión iniciada puede previsualizar borradores;
+    // el público solo ve exposiciones publicadas
+    const exhibition = isAdminRequest(request)
+      ? await ExhibitionService.getBySlugIncludingDrafts(params.slug)
+      : await ExhibitionService.getBySlug(params.slug);
 
     if (!exhibition) {
       return NextResponse.json(

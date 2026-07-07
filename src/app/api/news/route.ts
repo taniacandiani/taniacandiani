@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NewsService } from '@/lib/db/newsService';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const includeAll = searchParams.get('includeAll') === 'true';
 
-    const news = includeAll
+    // Los borradores solo se incluyen para el admin con sesión iniciada
+    const news = includeAll && isAdminRequest(request)
       ? await NewsService.getAllIncludingDrafts()
       : await NewsService.getAll();
 
@@ -19,6 +21,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const newsData = await request.json();
 
     // Validate that slug is unique
@@ -50,6 +56,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const newsData = await request.json();
 
     if (!newsData.id) {
@@ -71,6 +81,10 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

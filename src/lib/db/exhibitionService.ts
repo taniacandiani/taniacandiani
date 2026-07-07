@@ -98,6 +98,16 @@ export class ExhibitionService {
     return result.rows.length > 0 ? this.rowToExhibition(result.rows[0]) : null;
   }
 
+  // Get exhibition by slug including drafts (for admin preview)
+  static async getBySlugIncludingDrafts(slug: string): Promise<Exhibition | null> {
+    const nile = await this.getClient();
+    const result = await nile.db.query(
+      `SELECT * FROM exhibitions WHERE slug = $1`,
+      [slug]
+    );
+    return result.rows.length > 0 ? this.rowToExhibition(result.rows[0]) : null;
+  }
+
   // Get exhibitions by category
   static async getByCategory(category: string): Promise<Exhibition[]> {
     const nile = await this.getClient();

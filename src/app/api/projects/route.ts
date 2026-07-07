@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/db/projectService';
 import { moveFolderInCloudinary } from '@/lib/cloudinary';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const includeAll = searchParams.get('includeAll') === 'true';
-
-    // For now, ProjectService.getAll() returns all projects regardless of status
-    // This is fine for admin, but we could add a filter later if needed
     const projects = await ProjectService.getAll();
 
-    return NextResponse.json(projects);
+    // Los borradores/archivados solo son visibles para el admin con sesión iniciada
+    if (isAdminRequest(request)) {
+      return NextResponse.json(projects);
+    }
+
+    return NextResponse.json(projects.filter(p => p.status === 'published'));
   } catch (error) {
     console.error('Error reading projects data:', error);
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
@@ -20,6 +21,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const projectData = await request.json();
 
     console.log('=== POST /api/projects ===');
@@ -150,6 +155,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const projectData = await request.json();
 
     if (!projectData.id) {
@@ -245,6 +254,10 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

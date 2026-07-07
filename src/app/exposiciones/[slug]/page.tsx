@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
 import RichContent from '@/components/ui/RichContent';
+import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
 import { Exhibition } from '@/types';
 import { ExhibitionStorage } from '@/lib/exhibitionStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -68,6 +69,7 @@ export default function ExhibitionDetailPage() {
 
   return (
     <MainLayout>
+      <DraftPreviewNotice status={exhibition.status} />
       <article className="container-mobile py-8 pt-16">
         {/* Breadcrumb */}
         <nav className="mb-8" aria-label="Breadcrumb">

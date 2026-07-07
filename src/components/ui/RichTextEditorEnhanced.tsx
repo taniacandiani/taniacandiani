@@ -187,6 +187,30 @@ export default function RichTextEditorEnhanced({
         style: 'white-space: pre-wrap;',
       },
       handleKeyDown: (view, event) => {
+        // Enter inserta un salto de línea simple (<br>) en lugar de un párrafo
+        // nuevo, para que el texto baje una sola línea (sin necesidad de
+        // Shift+Enter). En listas, encabezados y bloques de código se conserva
+        // el comportamiento normal de Enter.
+        if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
+          const { state } = view;
+          const { $from } = state.selection;
+
+          if ($from.parent.type.name !== 'paragraph') {
+            return false;
+          }
+
+          for (let depth = $from.depth; depth > 0; depth--) {
+            if ($from.node(depth).type.name === 'listItem') {
+              return false;
+            }
+          }
+
+          const hardBreak = state.schema.nodes.hardBreak;
+          if (hardBreak) {
+            view.dispatch(state.tr.replaceSelectionWith(hardBreak.create()).scrollIntoView());
+            return true;
+          }
+        }
         return false;
       },
       handlePaste: (view, event) => {

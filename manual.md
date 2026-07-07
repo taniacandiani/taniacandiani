@@ -241,6 +241,8 @@ Elige la visibilidad de tu proyecto:
 - **Borrador:** El proyecto se guarda pero NO es visible. Útil cuando aún estás trabajando en él
 - **Archivado:** Similar a borrador, pero para proyectos que ya no quieres mostrar pero no quieres eliminar
 
+**Vista previa de borradores:** Mientras tengas la sesión de administrador iniciada, puedes previsualizar un borrador (proyecto, noticia o exposición) haciendo clic en el ícono del ojito 👁 en la lista del panel. Verás la página tal como quedará publicada, con un aviso amarillo de "Borrador" en la esquina inferior. Los visitantes del sitio NO pueden ver esa página ni acceder a ella por su dirección (URL): les aparece "página no encontrada" hasta que cambies el estado a Publicado.
+
 #### Cómo guardar el proyecto
 
 1. Revisa que toda la información esté correcta
@@ -620,6 +622,14 @@ En la parte superior del editor verás varios botones. Aquí explicamos cada uno
 **Colores:**
 - **Color de texto**: Cambia el color de las letras
 - **Color de fondo**: Resalta el texto con un color de fondo
+
+### Saltos de línea (tecla Enter)
+
+- **Enter**: baja **una sola línea** (como en un mensaje de texto)
+- **Enter dos veces**: deja una línea en blanco para separar párrafos
+- Dentro de una lista, Enter sigue creando un nuevo elemento de la lista, como siempre
+
+Ya no es necesario usar Shift+Enter para bajar una sola línea.
 
 ### Consejos para escribir buen contenido
 

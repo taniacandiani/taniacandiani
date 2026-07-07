@@ -85,7 +85,10 @@ export class NewsStorage {
 
   static async getBySlug(slug: string): Promise<NewsItem | null> {
     try {
-      const news = await this.getAll();
+      // Se pide includeAll para que el admin con sesión iniciada pueda
+      // previsualizar borradores; para el público la API ignora el parámetro
+      // y devuelve solo noticias publicadas.
+      const news = await this.getAllIncludingDrafts();
       return news.find(n => n.slug === slug) || null;
     } catch (error) {
       console.error('Error getting news by slug:', error);

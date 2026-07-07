@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ExhibitionService } from '@/lib/db/exhibitionService';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     let exhibitions;
 
-    if (includeAll) {
+    if (includeAll && isAdminRequest(request)) {
       // For admin: get all exhibitions including drafts
       exhibitions = await ExhibitionService.getAllIncludingDrafts();
     } else if (category) {
@@ -38,6 +39,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const exhibitionData = await request.json();
 
     console.log('=== POST /api/exhibitions ===');

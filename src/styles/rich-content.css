@@ -22,18 +22,13 @@
   margin-bottom: 0;
 }
 
-/* Saltos de línea */
-.rich-content br {
-  display: block;
-  content: "";
-  margin: 0.5em 0;
-}
-
-/* Saltos de línea específicos */
+/* Saltos de línea: comportamiento nativo (baja exactamente una línea) */
+.rich-content br,
 .rich-content .line-break {
-  display: block;
-  height: 0.5em;
-  content: "";
+  display: inline;
+  content: normal;
+  margin: 0;
+  height: auto;
 }
 
 /* Párrafos procesados */

@@ -10,6 +10,7 @@ import { NewsStorage } from '@/lib/newsStorage';
 import { NewsCategoryStorage } from '@/lib/newsCategoryStorage';
 import { NEWS_CATEGORIES, SAMPLE_NEWS } from '@/data/content';
 import RichContent from '@/components/ui/RichContent';
+import DraftPreviewNotice from '@/components/ui/DraftPreviewNotice';
 import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -58,11 +59,13 @@ export default function NoticiaPage({ params }: Props) {
         const updatedCategories = await NewsCategoryStorage.updateCounts();
         setCategories(updatedCategories);
         
-        // Find news item by slug
-        const foundNews = await NewsStorage.getBySlug(slug) || 
-                          SAMPLE_NEWS.find(n => n.slug === slug);
-        
-        if (!foundNews || foundNews.status !== 'published') {
+        // Find news item by slug. La API solo devuelve borradores al admin
+        // con sesión iniciada, así que si llega un borrador aquí es una
+        // vista previa legítima; el público nunca lo recibe.
+        const foundNews = await NewsStorage.getBySlug(slug) ||
+                          SAMPLE_NEWS.find(n => n.slug === slug && n.status === 'published');
+
+        if (!foundNews) {
           notFound();
           return;
         }
@@ -178,6 +181,7 @@ export default function NoticiaPage({ params }: Props) {
 
   return (
     <MainLayout>
+      <DraftPreviewNotice status={newsItem.status} />
       <div className="container-mobile py-4 lg:py-8 pt-8 lg:pt-24">
         {/* Mobile: Breadcrumb al inicio */}
         <div className="lg:hidden mb-4 pb-4 border-b border-gray-200">
